@@ -1,3 +1,17 @@
+/**
+ * NOTE: Next.js 16.2.1 Migration Deferred
+ *
+ * Next.js 16.2.1 deprecated `middleware.ts` in favor of `proxy.ts`.
+ * However, Clerk's `clerkMiddleware` requires Edge runtime features,
+ * and `proxy.ts` only supports Node.js runtime (Edge is NOT supported
+ * per Next.js 16 docs: "The edge runtime is NOT supported in proxy").
+ *
+ * The codemod (`npx @next/codemod@canary middleware-to-proxy`) skipped
+ * this file due to Edge runtime incompatibility.
+ *
+ * Therefore, keeping `middleware.ts` until Clerk supports Node.js proxy runtime.
+ * This file continues to work in Next.js 16.2.1 (deprecated but not removed).
+ */
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 const isProtectedRoute = createRouteMatcher([

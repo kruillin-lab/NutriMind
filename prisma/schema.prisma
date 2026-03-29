@@ -1,0 +1,261 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id                String             @id @default(cuid())
+  email             String             @unique
+  name              String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  // Profile & Goals
+  profile           UserProfile?
+  metabolicProfile  MetabolicProfile?
+  calorieBank       CalorieBank?
+
+  // Daily tracking
+  dailyLogs         DailyLog[]
+  weightEntries     WeightEntry[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Physical stats
+  heightCm        Float?
+  birthDate       DateTime?
+  gender          Gender?
+
+  // Goals
+  goalWeightKg    Float?
+  targetDate      DateTime?
+  activityLevel   ActivityLevel @default(SEDENTARY)
+
+  // Preferences
+  timezone        String   @default("America/New_York")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+model MetabolicProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Learned values (not estimates)
+  trueMetabolicRate   Float    // Actual calories burned per day
+  bmrEstimate         Float    // Baseline BMR for comparison
+  adaptiveFactor      Float    @default(0) // Metabolic adaptation %
+  weightChangeFactor  Float    @default(3500) // Calories per pound (learned)
+
+  // Prediction accuracy tracking
+  predictionAccuracy  Float    @default(0) // 0-1, how accurate predictions are
+  predictionsMade     Int      @default(0)
+  predictionsCorrect  Int      @default(0)
+
+  // Last calculation
+  lastCalculatedAt    DateTime @default(now())
+  calculationMethod   String   @default("harris_benedict") // How we started
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("metabolic_profiles")
+}
+
+model CalorieBank {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Current state
+  currentBalance  Float    @default(0)  // Available to spend
+  totalBanked     Float    @default(0)  // Lifetime earned
+  totalSpent      Float    @default(0)  // Lifetime spent
+
+  // Daily tracking
+  dailyTarget     Float    @default(2000) // Current target (learned)
+  weeklyAverage   Float    @default(0)    // Avg consumed last 7 days
+
+  // Smart features
+  recommendedSpend    Float?   // AI recommendation
+  spendByDate         DateTime? // Suggested deadline
+
+  // Settings
+  allowNegative     Boolean  @default(false) // Can go into debt?
+  expireAfterDays   Int      @default(30)    // Banked calories expire?
+
+  // Relationships
+  transactions    BankTransaction[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("calorie_banks")
+}
+
+model BankTransaction {
+  id          String   @id @default(cuid())
+  bankId      String
+  bank        CalorieBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
+  type        TransactionType
+  amount      Float
+  reason      String   // Human-readable explanation
+
+  // Context
+  caloriesConsumed  Float?   // What they actually ate
+  caloriesTarget    Float?   // What they should have eaten
+  weightAtTime      Float?   // Current weight when transaction happened
+
+  // AI context
+  llmAdvice         String?  // What the AI recommended
+  userFollowed      Boolean? // Did they follow the advice?
+
+  // Metadata
+  sourceId    String?  // ID of meal log, etc.
+  sourceType  String?  // "daily_log", "manual", "adjustment"
+
+  createdAt   DateTime @default(now())
+
+  @@map("bank_transactions")
+}
+
+model DailyLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date        DateTime
+
+  // Nutrition
+  caloriesConsumed  Float    @default(0)
+  proteinG          Float    @default(0)
+  carbsG            Float    @default(0)
+  fatG              Float    @default(0)
+  fiberG            Float    @default(0)
+
+  // Targets for this day
+  calorieTarget     Float    @default(2000)
+
+  // Exercise
+  caloriesBurned    Float    @default(0)
+  exerciseMinutes   Int      @default(0)
+
+  // Bank result
+  bankedAmount      Float    @default(0)   // Positive = banked, negative = spent
+
+  // Water tracking (in milliliters)
+  waterMl           Float    @default(0)
+
+  // Meals
+  meals     Meal[]
+
+  @@unique([userId, date])
+  @@map("daily_logs")
+}
+
+model Meal {
+  id          String   @id @default(cuid())
+  dailyLogId  String
+  dailyLog    DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+
+  name        String
+  mealType    MealType @default(OTHER) // breakfast, lunch, dinner, snack
+
+  // Nutrition
+  calories    Float
+  proteinG    Float    @default(0)
+  carbsG      Float    @default(0)
+  fatG        Float    @default(0)
+
+  // Source
+  source      String   @default("manual") // manual, photo, voice, recipe, barcode
+  aiConfidence Float?  // If AI parsed it
+
+  createdAt   DateTime @default(now())
+
+  @@map("meals")
+}
+
+model WeightEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  weightKg    Float
+  date        DateTime
+
+  // Context
+  source      String   @default("manual") // manual, smart_scale, import
+
+  @@unique([userId, date])
+  @@map("weight_entries")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum ActivityLevel {
+  SEDENTARY      // Little/no exercise
+  LIGHT          // 1-3 days/week
+  MODERATE       // 3-5 days/week
+  ACTIVE         // 6-7 days/week
+  VERY_ACTIVE    // 2x per day, physical job
+}
+
+enum TransactionType {
+  BANK      // Underspent, added to bank
+  SPEND     // Overspent, removed from bank
+  ADJUST    // Manual adjustment
+  EXPIRE    // Banked calories expired
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+  OTHER
+}
+
+model CachedFood {
+  id            String   @id @default(cuid())
+  normalizedKey String   @unique // lowercase, trimmed, spaces normalized
+  originalText  String   // What user typed (for reference)
+
+  // Nutrition data (from AI)
+  name          String
+  calories      Float
+  proteinG      Float    @default(0)
+  carbsG        Float    @default(0)
+  fatG          Float    @default(0)
+
+  // AI metadata
+  aiConfidence  Float
+  source        String   @default("openai") // openai, manual, usda, etc.
+
+  // Cache statistics
+  hitCount      Int      @default(1)
+  lastUsedAt    DateTime @updatedAt
+  createdAt     DateTime @default(now())
+
+  @@index([hitCount])
+  @@index([lastUsedAt])
+  @@map("cached_foods")
+}

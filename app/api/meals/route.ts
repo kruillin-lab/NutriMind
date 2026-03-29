@@ -1,0 +1,252 @@
+import { auth } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/src/lib/prisma";
+import { Prisma } from "@prisma/client";
+
+export async function POST(req: NextRequest) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { name, calories, proteinG, carbsG, fatG, mealType = "OTHER" } = body;
+
+    console.log("[MEALS API] POST received:", { name, calories, proteinG, carbsG, fatG, mealType });
+
+    if (!name || !calories || calories < 0) {
+      console.error("[MEALS API] Invalid meal data:", { name, calories });
+      return NextResponse.json(
+        { error: "Invalid meal data" },
+        { status: 400 }
+      );
+    }
+
+    // Get user with profile and calorie bank
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        calorieBank: true,
+      },
+    });
+
+    console.log("[MEALS API] User found:", user ? user.id : "null", "has calorieBank:", !!user?.calorieBank);
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (!user.calorieBank) {
+      return NextResponse.json(
+        { error: "Calorie bank not initialized" },
+        { status: 400 }
+      );
+    }
+
+    const dailyTarget = user.calorieBank.dailyTarget;
+    // Use UTC dates to ensure consistency across server/API boundaries
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+    console.log("[MEALS API] Date range:", { today: today.toISOString(), tomorrow: tomorrow.toISOString() });
+
+    // Create meal and update daily log in transaction
+    let transactionError: Error | null = null;
+    const result = await prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        // Find or create today's daily log
+        let dailyLog = await tx.dailyLog.findFirst({
+          where: {
+            userId: user.id,
+            date: {
+              gte: today,
+              lt: tomorrow,
+            },
+          },
+        });
+
+        console.log("[MEALS API] dailyLog found:", dailyLog ? dailyLog.id : "null");
+
+        if (!dailyLog) {
+          console.log("[MEALS API] Creating new dailyLog for user", user.id);
+          dailyLog = await tx.dailyLog.create({
+            data: {
+              userId: user.id,
+              date: today,
+              calorieTarget: dailyTarget,
+            },
+          });
+          console.log("[MEALS API] Created dailyLog:", dailyLog.id);
+        }
+
+        console.log("[MEALS API] Creating meal with dailyLogId:", dailyLog.id);
+
+        // Create the meal
+        const meal = await tx.meal.create({
+          data: {
+            dailyLogId: dailyLog.id,
+            name,
+            calories,
+            proteinG: proteinG || 0,
+            carbsG: carbsG || 0,
+            fatG: fatG || 0,
+            mealType,
+          },
+        });
+
+        // Update daily log consumed calories
+        const newConsumed = dailyLog.caloriesConsumed + calories;
+        const remaining = dailyLog.calorieTarget - newConsumed;
+
+        const updatedLog = await tx.dailyLog.update({
+          where: { id: dailyLog.id },
+          data: {
+            caloriesConsumed: newConsumed,
+          },
+        });
+
+        // Update Calorie Bank if user went over budget
+        let bankTransaction = null;
+        let bankUpdate = null;
+        
+        if (remaining < 0) {
+          const overspend = Math.abs(remaining);
+          const currentBalance = user.calorieBank!.currentBalance;
+          const newBalance = currentBalance - overspend;
+
+          // Only allow if balance permits or negative balances are allowed
+          if (newBalance >= 0 || user.calorieBank!.allowNegative) {
+            bankUpdate = await tx.calorieBank.update({
+              where: { userId: user.id },
+              data: {
+                currentBalance: newBalance,
+                totalSpent: {
+                  increment: overspend,
+                },
+              },
+            });
+
+            // Create bank transaction record
+            bankTransaction = await tx.bankTransaction.create({
+              data: {
+                bankId: user.calorieBank!.id,
+                type: "SPEND",
+                amount: overspend,
+                reason: `Overspend from meal: ${name}`,
+                caloriesConsumed: newConsumed,
+                caloriesTarget: dailyTarget,
+                sourceType: "daily_log",
+              },
+            });
+          }
+        }
+
+        return { meal, dailyLog: updatedLog, bankTransaction, remaining, bankUpdate };
+      }
+    );
+
+    return NextResponse.json({
+      success: true,
+      meal: result.meal,
+      remainingCalories: result.remaining,
+      bankBalance: result.bankUpdate?.currentBalance ?? user.calorieBank.currentBalance,
+      message:
+        result.remaining >= 0
+          ? `Logged ${calories} calories. ${Math.round(result.remaining)} remaining today.`
+          : `Logged ${calories} calories. Used ${Math.abs(Math.round(result.remaining))} from bank.`,
+    });
+  } catch (error) {
+    console.error("Error logging meal:", error);
+    return NextResponse.json(
+      { error: "Failed to log meal" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const dateParam = searchParams.get("date");
+    const date = dateParam ? new Date(dateParam) : new Date();
+    date.setUTCHours(0, 0, 0, 0);
+    const nextDay = new Date(date);
+    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+
+    // Get user with daily log and meals for the date
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        calorieBank: true,
+        dailyLogs: {
+          where: {
+            date: {
+              gte: date,
+              lt: nextDay,
+            },
+          },
+          include: {
+            meals: {
+              orderBy: {
+                createdAt: "desc",
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    const dailyLog = user.dailyLogs[0] || {
+      calorieTarget: user.calorieBank?.dailyTarget || 2000,
+      caloriesConsumed: 0,
+      bankedAmount: 0,
+      waterMl: 0,
+      meals: [],
+    };
+
+    const remainingCalories = dailyLog.calorieTarget - dailyLog.caloriesConsumed;
+
+    return NextResponse.json({
+      targetCalories: dailyLog.calorieTarget,
+      consumedCalories: dailyLog.caloriesConsumed,
+      remainingCalories,
+      meals: dailyLog.meals.map((meal) => ({
+        id: meal.id,
+        name: meal.name,
+        calories: meal.calories,
+        protein: meal.proteinG,
+        carbs: meal.carbsG,
+        fat: meal.fatG,
+        mealType: meal.mealType,
+        createdAt: meal.createdAt,
+      })),
+      calorieBank: {
+        balance: user.calorieBank?.currentBalance || 0,
+        dailyTarget: user.calorieBank?.dailyTarget || 2000,
+        totalBanked: user.calorieBank?.totalBanked || 0,
+        totalSpent: user.calorieBank?.totalSpent || 0,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching meals:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch meals" },
+      { status: 500 }
+    );
+  }
+}

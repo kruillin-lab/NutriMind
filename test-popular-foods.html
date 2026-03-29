@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Popular Foods Test</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .food-item { display: inline-block; background: #f3f4f6; padding: 6px 12px; border-radius: 4px; margin: 4px; font-size: 14px; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f9fafb; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Popular Foods Test</h1>
+    <div id="result" class="card">Loading...</div>
+    
+    <script>
+        fetch('http://localhost:3000/api/cached-foods?limit=6')
+            .then(r => r.json())
+            .then(data => {
+                const div = document.getElementById('result');
+                if (data.success && data.foods.length > 0) {
+                    div.innerHTML = `
+                        <h2 class="success">✓ Popular Foods Loaded (${data.foods.length} items)</h2>
+                        <div style="margin: 15px 0;">
+                            ${data.foods.map(f => `
+                                <span class="food-item" title="Hit count: ${f.hitCount}">
+                                    ${f.name} <small>(${f.calories})</small>
+                                </span>
+                            `).join('')}
+                        </div>
+                        <h3>Full API Response:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    div.innerHTML = `<p class="error">No foods found or API error</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            })
+            .catch(e => {
+                document.getElementById('result').innerHTML = 
+                    `<p class="error">Error: ${e.message}</p>`;
+            });
+    </script>
+</body>
+</html>

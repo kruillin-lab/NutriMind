@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 
@@ -13,6 +14,11 @@ function normalizeText(text: string): string {
 // GET /api/cached-foods - Get popular cached foods
 export async function GET(req: NextRequest) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "20");
     const query = searchParams.get("query") || "";
@@ -20,17 +26,18 @@ export async function GET(req: NextRequest) {
     let foods;
 
     if (query) {
-      // Search by normalized key (for autocomplete)
       const normalizedQuery = normalizeText(query);
       foods = await prisma.cachedFood.findMany({
         where: {
-          normalizedKey: {
-            contains: normalizedQuery,
-          },
+          OR: [
+            { name: { contains: query } },
+            { originalText: { contains: query } },
+            { normalizedKey: { contains: normalizedQuery } },
+          ],
         },
-        orderBy: {
-          hitCount: "desc",
-        },
+        orderBy: [
+          { hitCount: "desc" },
+        ],
         take: limit,
       });
     } else {
@@ -50,7 +57,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error("[cached-foods] Error fetching cached foods:", error);
     return NextResponse.json(
-      { error: "Failed to fetch cached foods", details: String(error) },
+      { error: "Failed to fetch cached foods" },
       { status: 500 }
     );
   }
@@ -59,6 +66,11 @@ export async function GET(req: NextRequest) {
 // POST /api/cached-foods - Manually add or update a cached food
 export async function POST(req: NextRequest) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const {
       originalText,
@@ -67,6 +79,7 @@ export async function POST(req: NextRequest) {
       proteinG = 0,
       carbsG = 0,
       fatG = 0,
+      servingSizeG,
       aiConfidence,
       source = "manual",
     } = body;
@@ -105,6 +118,7 @@ export async function POST(req: NextRequest) {
         proteinG,
         carbsG,
         fatG,
+        servingSizeG: servingSizeG != null ? servingSizeG : null,
         aiConfidence: aiConfidence ?? 1.0,
         source,
         hitCount: { increment: 1 },
@@ -117,6 +131,7 @@ export async function POST(req: NextRequest) {
         proteinG,
         carbsG,
         fatG,
+        servingSizeG: servingSizeG != null ? servingSizeG : null,
         aiConfidence: aiConfidence ?? 1.0,
         source,
       },
@@ -138,6 +153,11 @@ export async function POST(req: NextRequest) {
 // PATCH /api/cached-foods - Update cache hit count
 export async function PATCH(req: NextRequest) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const { normalizedKey, increment = 1 } = body;
 

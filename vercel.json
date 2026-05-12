@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/bank-calories",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/expire-calories",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

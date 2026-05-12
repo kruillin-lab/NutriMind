@@ -1,35 +1,29 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/src/lib/prisma";
 import { NextResponse } from "next/server";
+import { getSystemTimezone } from "@/lib/date-utils";
 
 export async function POST(req: Request) {
   let userId: string | null = null;
-  
+
   // Check for test mode bypass header (E2E testing)
   const testUserId = req.headers.get("X-Test-User-Id");
-  console.log("[initialize] Headers received:", {
-    "X-Test-User-Id": testUserId,
-    "Content-Type": req.headers.get("Content-Type"),
-  });
-  console.log("[initialize] NODE_ENV:", process.env.NODE_ENV);
-  
+
   if (testUserId && process.env.NODE_ENV !== "production") {
     userId = testUserId;
-    console.log("[initialize] Using test user ID:", userId);
   } else {
     // Normal Clerk auth
     const authResult = await auth();
     userId = authResult.userId;
-    console.log("[initialize] Using Clerk auth user ID:", userId);
   }
-  
+
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const body = await req.json();
-    const { 
+    const {
       profile,
       metabolicProfile,
       calorieBank,
@@ -44,12 +38,13 @@ export async function POST(req: Request) {
       goalWeightKg,
       targetDate,
       activityLevel,
-      timezone = "America/New_York",
+      timezone = getSystemTimezone(),
     } = profile || {};
 
     const { trueMetabolicRate, bmrEstimate } = metabolicProfile || {};
     const { dailyTarget, allowNegative = false } = calorieBank || {};
     const { weightKg, bodyFatPercent } = weightEntry || {};
+    void bodyFatPercent;
 
     // Map frontend ActivityLevel values to Prisma enum values
     const activityLevelMap: Record<string, "SEDENTARY" | "LIGHT" | "MODERATE" | "ACTIVE" | "VERY_ACTIVE"> = {
@@ -60,7 +55,35 @@ export async function POST(req: Request) {
       "EXTRA_ACTIVE": "VERY_ACTIVE",
     };
     const prismaActivityLevel = activityLevelMap[activityLevel] ?? "SEDENTARY";
-    console.log("[initialize] Activity level mapping:", activityLevel, "->", prismaActivityLevel);
+
+    // Ensure user exists first - create if not (handles webhook failures)
+    const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (!existingUser) {
+      // Try to get user info from Clerk or use defaults
+      let email = "unknown@example.com";
+      let name: string | null = null;
+
+      // Only try Clerk if not in test mode
+      if (!testUserId) {
+        try {
+          const { clerkClient } = await import("@clerk/nextjs/server");
+          const client = await clerkClient();
+          const clerkUser = await client.users.getUser(userId);
+          email = clerkUser.emailAddresses[0]?.emailAddress || email;
+          name = `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || null;
+        } catch (clerkError) {
+          console.warn("[initialize] Could not fetch user from Clerk:", clerkError);
+        }
+      }
+
+      await prisma.user.create({
+        data: {
+          id: userId,
+          email,
+          name,
+        },
+      });
+    }
 
     // Create or update UserProfile
     await prisma.userProfile.upsert({
@@ -129,10 +152,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error initializing user:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const errorStack = error instanceof Error ? error.stack : "";
     return NextResponse.json(
-      { error: "Failed to initialize user", details: errorMessage, stack: errorStack },
+      { error: "Failed to initialize user" },
       { status: 500 }
     );
   }

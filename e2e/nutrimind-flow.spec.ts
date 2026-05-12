@@ -11,7 +11,7 @@ test.describe.serial('NutriMind Full User Flow', () => {
   
   let TEST_USER_ID: string;
 
-test('1. Create test user via test-auth endpoint', async ({ page, context }) => {
+test('1. Create test user via test-auth endpoint', async ({ page }) => {
     // Create test user via API
     const response = await page.request.post('http://localhost:3000/api/test-auth', {
       data: {
@@ -32,7 +32,7 @@ test('1. Create test user via test-auth endpoint', async ({ page, context }) => 
     // Inject test user ID into page for API calls
     await page.goto('http://localhost:3000/onboarding');
     await page.evaluate((userId) => {
-      (window as any).__TEST_USER_ID__ = userId;
+      (window as unknown as Record<string, string>).__TEST_USER_ID__ = userId;
     }, TEST_USER_ID);
     
     await page.screenshot({ path: 'e2e/screenshots/01-test-user-created.png' });
@@ -45,7 +45,7 @@ test('1. Create test user via test-auth endpoint', async ({ page, context }) => 
     
     // Inject test user ID for API authentication (test bypass)
     await page.evaluate((userId) => {
-      (window as any).__TEST_USER_ID__ = userId;
+      (window as unknown as Record<string, string>).__TEST_USER_ID__ = userId;
     }, TEST_USER_ID);
     
     console.log(`🔑 Injected test user ID: ${TEST_USER_ID}`);
@@ -122,6 +122,7 @@ test('1. Create test user via test-auth endpoint', async ({ page, context }) => 
         { timeout: 10000 }
       );
     } catch (e) {
+      void e;
       console.log('Response wait timed out, continuing...');
     }
     
@@ -134,7 +135,7 @@ test('1. Create test user via test-auth endpoint', async ({ page, context }) => 
     
     // Capture console errors if any
     const logs = await page.evaluate(() => {
-      return (window as any).__lastError__ || 'No captured error';
+      return (window as unknown as Record<string, string | undefined>).__lastError__ || 'No captured error';
     });
     if (logs !== 'No captured error') {
       console.log(`   Page error: ${logs}`);
@@ -245,7 +246,7 @@ test('1. Create test user via test-auth endpoint', async ({ page, context }) => 
     // Get the parent container which should have the consumedCalories value
     const consumedValueEl = consumedLabel.locator('xpath=preceding-sibling::p[1]');
     const consumedCaloriesText = await consumedValueEl.textContent().catch(() => '0');
-    const consumedCaloriesValue = parseInt(consumedCaloriesText) || 0;
+    const consumedCaloriesValue = parseInt(consumedCaloriesText ?? '0', 10) || 0;
     
     console.log(`   Consumed calories found: ${consumedCaloriesValue}`);
     
@@ -267,8 +268,6 @@ test('1. Create test user via test-auth endpoint', async ({ page, context }) => 
     await expect(page).toHaveURL(/.*dashboard.*/);
     
     // Look for water tracking section
-    const waterSection = page.locator('div:has-text("Water"):has(button), [data-testid*="water"]').first();
-    
     // Find the "Add 250ml" button to add water
     const addWaterButton = page.locator('button:has-text("Add 250ml"), button[aria-label*="add water"]').first();
     await addWaterButton.scrollIntoViewIfNeeded();
@@ -304,14 +303,14 @@ test('1. Create test user via test-auth endpoint', async ({ page, context }) => 
     const consumedSection = page.locator('text=Consumed').locator('xpath=..').first();
     await expect(consumedSection).toBeVisible();
     const consumedValue = await consumedSection.locator('text=/^\\d+$/').first().textContent().catch(() => '0');
-    expect(parseInt(consumedValue)).toBeGreaterThan(0);
+    expect(parseInt(consumedValue ?? '0', 10)).toBeGreaterThan(0);
     console.log(`   Consumed calories: ${consumedValue}`);
     
     // Verify remaining calories shows a number
     const remainingSection = page.locator('text=Remaining').locator('xpath=..').first();
     await expect(remainingSection).toBeVisible();
     const remainingValue = await remainingSection.locator('text=/^\\d+$/').first().textContent().catch(() => '0');
-    expect(parseInt(remainingValue)).toBeGreaterThanOrEqual(0);
+    expect(parseInt(remainingValue ?? '0', 10)).toBeGreaterThanOrEqual(0);
     console.log(`   Remaining calories: ${remainingValue}`);
     
     // Verify the meal from Test 4 still appears in Recent Meals (persistence check)

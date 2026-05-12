@@ -37,7 +37,7 @@ test.describe.serial('Popular Foods Feature Test', () => {
     
     // Inject test user ID for API authentication
     await page.evaluate((userId) => {
-      (window as any).__TEST_USER_ID__ = userId;
+      (window as unknown as Record<string, string>).__TEST_USER_ID__ = userId;
     }, TEST_USER_ID);
     
     console.log(`🔑 Injected test user ID: ${TEST_USER_ID}`);

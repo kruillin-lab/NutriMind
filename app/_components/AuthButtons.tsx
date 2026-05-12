@@ -4,15 +4,20 @@ import { useClerk, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 
 export function AuthButtons() {
-  const { user, openSignIn } = useClerk();
+  const { openSignIn, user } = useClerk();
 
-  if (!user) {
-    return (
-      <Button variant="outline" size="sm" onClick={() => openSignIn()}>
-        Sign In
-      </Button>
-    );
+  if (user) {
+    return <UserButton />;
   }
 
-  return <UserButton />;
+  return (
+    <Button
+      type="button"
+      size="sm"
+      className="border-[#FFF8E7]/20 bg-transparent text-[#FFF8E7]/80 hover:border-[#DFFF35]/40 hover:bg-[#DFFF35]/12 hover:text-[#DFFF35]"
+      onClick={() => openSignIn({ forceRedirectUrl: "/dashboard" })}
+    >
+      Sign In
+    </Button>
+  );
 }

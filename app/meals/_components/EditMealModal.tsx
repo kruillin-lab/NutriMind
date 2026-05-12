@@ -1,0 +1,345 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Leaf, Candy, Droplet, Pill, Bone, Cross, Zap } from 'lucide-react';
+
+interface Meal {
+  id: string;
+  name: string;
+  mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK' | 'OTHER';
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  fiberG?: number;
+  sugarG?: number;
+  sodiumMg?: number;
+  vitaminCMg?: number;
+  calciumMg?: number;
+  ironMg?: number;
+  potassiumMg?: number;
+  servingSizeG?: number | null;
+  source: 'AI_PARSED' | 'MANUAL_ENTRY';
+  aiConfidence: number | null;
+  createdAt: string;
+}
+
+interface EditMealModalProps {
+  meal: Meal;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+export function EditMealModal({ meal, isOpen, onClose, onSuccess }: EditMealModalProps) {
+  const [formData, setFormData] = useState({
+    name: meal.name,
+    mealType: meal.mealType,
+    calories: meal.calories,
+    proteinG: meal.proteinG,
+    carbsG: meal.carbsG,
+    fatG: meal.fatG,
+    fiberG: meal.fiberG || 0,
+    sugarG: meal.sugarG || 0,
+    sodiumMg: meal.sodiumMg || 0,
+    vitaminCMg: meal.vitaminCMg || 0,
+    calciumMg: meal.calciumMg || 0,
+    ironMg: meal.ironMg || 0,
+    potassiumMg: meal.potassiumMg || 0,
+    servingSizeG: meal.servingSizeG?.toString() ?? '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const servingSizeG = formData.servingSizeG.trim()
+        ? Number(formData.servingSizeG)
+        : null;
+
+      if (servingSizeG !== null && (!Number.isFinite(servingSizeG) || servingSizeG < 0)) {
+        setError('Serving size must be zero or higher.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const response = await fetch(`/api/meals/${meal.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          servingSizeG,
+        }),
+      });
+
+      if (response.ok) {
+        onSuccess();
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to update meal');
+      }
+    } catch (err) {
+      void err;
+      setError('An error occurred while updating the meal');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (field: string, value: string | number | null) => {
+    if (value === null) return;
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Meal</DialogTitle>
+          <DialogDescription>
+            Update the details for this meal. Changes will affect your calorie tracking.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Meal Name</Label>
+            <Textarea
+              id="name"
+              value={formData.name}
+              onChange={(e) => handleChange('name', e.target.value)}
+              placeholder="e.g., Grilled chicken breast with rice"
+              required
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mealType">Meal Type</Label>
+            <Select
+              value={formData.mealType}
+              onValueChange={(value) => handleChange('mealType', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select meal type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="BREAKFAST">Breakfast</SelectItem>
+                <SelectItem value="LUNCH">Lunch</SelectItem>
+                <SelectItem value="DINNER">Dinner</SelectItem>
+                <SelectItem value="SNACK">Snack</SelectItem>
+                <SelectItem value="OTHER">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="calories">Calories</Label>
+            <Input
+              id="calories"
+              type="number"
+              min="0"
+              value={formData.calories}
+              onChange={(e) => handleChange('calories', parseInt(e.target.value) || 0)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="servingSizeG">Serving Size (g)</Label>
+            <Input
+              id="servingSizeG"
+              type="number"
+              min="0"
+              step="0.1"
+              value={formData.servingSizeG}
+              onChange={(e) => handleChange('servingSizeG', e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="proteinG">Protein (g)</Label>
+              <Input
+                id="proteinG"
+                type="number"
+                min="0"
+                step="0.1"
+                value={formData.proteinG}
+                onChange={(e) => handleChange('proteinG', parseFloat(e.target.value) || 0)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="carbsG">Carbs (g)</Label>
+              <Input
+                id="carbsG"
+                type="number"
+                min="0"
+                step="0.1"
+                value={formData.carbsG}
+                onChange={(e) => handleChange('carbsG', parseFloat(e.target.value) || 0)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fatG">Fat (g)</Label>
+              <Input
+                id="fatG"
+                type="number"
+                min="0"
+                step="0.1"
+                value={formData.fatG}
+                onChange={(e) => handleChange('fatG', parseFloat(e.target.value) || 0)}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Micronutrients Section */}
+          <div className="space-y-2 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium text-gray-700">Micronutrients</Label>
+              <span className="text-xs text-gray-500">Optional</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="fiberG" className="text-xs flex items-center gap-1">
+                  <Leaf className="h-3 w-3 text-green-500" /> Fiber (g)
+                </Label>
+                <Input
+                  id="fiberG"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={formData.fiberG}
+                  onChange={(e) => handleChange('fiberG', parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="sugarG" className="text-xs flex items-center gap-1">
+                  <Candy className="h-3 w-3 text-pink-500" /> Sugar (g)
+                </Label>
+                <Input
+                  id="sugarG"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={formData.sugarG}
+                  onChange={(e) => handleChange('sugarG', parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="sodiumMg" className="text-xs flex items-center gap-1">
+                  <Droplet className="h-3 w-3 text-blue-400" /> Sodium (mg)
+                </Label>
+                <Input
+                  id="sodiumMg"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formData.sodiumMg}
+                  onChange={(e) => handleChange('sodiumMg', parseInt(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="vitaminCMg" className="text-xs flex items-center gap-1">
+                  <Pill className="h-3 w-3 text-orange-500" /> Vitamin C (mg)
+                </Label>
+                <Input
+                  id="vitaminCMg"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={formData.vitaminCMg}
+                  onChange={(e) => handleChange('vitaminCMg', parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="calciumMg" className="text-xs flex items-center gap-1">
+                  <Bone className="h-3 w-3 text-gray-500" /> Calcium (mg)
+                </Label>
+                <Input
+                  id="calciumMg"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formData.calciumMg}
+                  onChange={(e) => handleChange('calciumMg', parseInt(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ironMg" className="text-xs flex items-center gap-1">
+                  <Cross className="h-3 w-3 text-red-400" /> Iron (mg)
+                </Label>
+                <Input
+                  id="ironMg"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={formData.ironMg}
+                  onChange={(e) => handleChange('ironMg', parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-1 col-span-2">
+                <Label htmlFor="potassiumMg" className="text-xs flex items-center gap-1">
+                  <Zap className="h-3 w-3 text-yellow-500" /> Potassium (mg)
+                </Label>
+                <Input
+                  id="potassiumMg"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formData.potassiumMg}
+                  onChange={(e) => handleChange('potassiumMg', parseInt(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-500">{error}</p>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

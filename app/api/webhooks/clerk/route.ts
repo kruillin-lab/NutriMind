@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { getSystemTimezone } from "@/lib/date-utils";
 
 const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
@@ -86,7 +87,7 @@ export async function POST(req: Request) {
             goalWeightKg: null,
             targetDate: null,
             activityLevel: "SEDENTARY",
-            timezone: "America/New_York",
+            timezone: getSystemTimezone(),
           },
         });
 
@@ -123,7 +124,6 @@ export async function POST(req: Request) {
         });
       });
 
-      console.log(`User ${id} initialized successfully`);
       return NextResponse.json(
         { message: "User created successfully" },
         { status: 200 }
@@ -147,7 +147,6 @@ export async function POST(req: Request) {
         where: { id },
       });
 
-      console.log(`User ${id} deleted successfully`);
       return NextResponse.json(
         { message: "User deleted successfully" },
         { status: 200 }

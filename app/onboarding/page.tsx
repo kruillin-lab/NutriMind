@@ -62,7 +62,7 @@ export default function OnboardingPage() {
       const tdee = calculateTDEE(bmr);
 
       // Check for test user ID (set by E2E tests)
-      const testUserId = (window as any).__TEST_USER_ID__;
+      const testUserId = (window as unknown as Record<string, string | undefined>).__TEST_USER_ID__;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (testUserId) {
         headers["X-Test-User-Id"] = testUserId;
@@ -95,7 +95,7 @@ export default function OnboardingPage() {
       if (response.ok) {
         router.push("/dashboard");
       } else {
-        let errorData: any = {};
+        let errorData: Record<string, string | number | undefined> = {};
         const contentType = response.headers.get("content-type");
         try {
           if (contentType?.includes("application/json")) {
@@ -105,11 +105,12 @@ export default function OnboardingPage() {
             errorData = { error: "Request failed", status: response.status, body: text.slice(0, 500) };
           }
         } catch (parseError) {
+          void parseError;
           errorData = { error: "Failed to parse response", status: response.status };
         }
         console.error("Failed to initialize user:", errorData);
         // Store error on window for E2E tests to capture
-        (window as any).__lastError__ = JSON.stringify(errorData);
+        (window as unknown as Record<string, string | undefined>).__lastError__ = JSON.stringify(errorData);
         // Show user-friendly error message
         alert(`Failed to initialize: ${errorData.error || errorData.message || "Unknown error"}`);
       }
@@ -124,7 +125,7 @@ export default function OnboardingPage() {
         <CardHeader>
           <CardTitle>Welcome to NutriMind</CardTitle>
           <CardDescription>
-            Let's set up your profile to personalize your Calorie Bank
+            Let&apos;s set up your profile to personalize your Calorie Bank
           </CardDescription>
         </CardHeader>
         <CardContent>

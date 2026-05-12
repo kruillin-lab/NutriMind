@@ -76,8 +76,8 @@ async function updateTestUser() {
     
     console.log('\nTest user is now ready for dashboard access!');
     
-  } catch (e: any) {
-    console.error('Error:', e.message);
+  } catch (e: unknown) {
+    console.error('Error:', e instanceof Error ? e.message : String(e));
     console.error(e);
   } finally {
     await prisma.$disconnect();

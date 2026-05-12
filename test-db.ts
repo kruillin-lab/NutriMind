@@ -11,8 +11,8 @@ async function test() {
     });
     console.log('Foods found:', foods.length);
     console.log('Foods:', foods);
-  } catch (e: any) {
-    console.error('Error:', e.message);
+  } catch (e: unknown) {
+    console.error('Error:', e instanceof Error ? e.message : String(e));
   } finally {
     await prisma.$disconnect();
   }

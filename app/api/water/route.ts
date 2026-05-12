@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Update water intake in transaction
     const result = await prisma.$transaction(
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
             userId: user.id,
             date: {
               gte: today,
-              lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+              lt: tomorrow,
             },
           },
         });
@@ -103,6 +105,8 @@ export async function GET(req: NextRequest) {
     const dateParam = searchParams.get("date");
     const date = dateParam ? new Date(dateParam) : new Date();
     date.setHours(0, 0, 0, 0);
+    const nextDay = new Date(date);
+    nextDay.setDate(nextDay.getDate() + 1);
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -117,7 +121,7 @@ export async function GET(req: NextRequest) {
         userId: user.id,
         date: {
           gte: date,
-          lt: new Date(date.getTime() + 24 * 60 * 60 * 1000),
+          lt: nextDay,
         },
       },
     });

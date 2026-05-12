@@ -1,10 +1,11 @@
+import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// NUTRIMIND_OPENAI_API_KEY avoids collision with any system-level OPENAI_API_KEY env var
+const OPENAI_API_KEY = process.env.NUTRIMIND_OPENAI_API_KEY || process.env.OPENAI_API_KEY || "";
+const OPENAI_API_BASE = process.env.OPENAI_API_BASE || null;
 
 interface ParsedFood {
   name: string;
@@ -12,6 +13,14 @@ interface ParsedFood {
   protein?: number;
   carbs?: number;
   fat?: number;
+  fiber?: number;
+  sugar?: number;
+  sodium?: number;
+  vitaminC?: number;
+  calcium?: number;
+  iron?: number;
+  potassium?: number;
+  servingSize?: number; // in grams
   confidence: number;
 }
 
@@ -26,6 +35,31 @@ function normalizeText(text: string): string {
 
 export async function POST(req: NextRequest) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Validate we have a proper OpenAI key
+    if (!OPENAI_API_KEY || !OPENAI_API_KEY.startsWith('sk-')) {
+      return NextResponse.json(
+        { error: "Invalid or missing OpenAI API key. Please check .env.local" },
+        { status: 500 }
+      );
+    }
+
+    // Initialize OpenAI client with values from .env.local (bypassing system env vars)
+    const openaiConfig: { apiKey: string; baseURL?: string } = {
+      apiKey: OPENAI_API_KEY,
+    };
+
+    // Only set baseURL if it's provided and is a real OpenAI endpoint (not localhost/Ollama)
+    if (OPENAI_API_BASE && !OPENAI_API_BASE.includes('localhost')) {
+      openaiConfig.baseURL = OPENAI_API_BASE;
+    }
+
+    const openai = new OpenAI(openaiConfig);
+
     const body = await req.json();
     const { text } = body;
 
@@ -59,9 +93,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      console.log(`[CACHE HIT] "${text}" -> "${cachedFood.name}" (${cachedFood.hitCount + 1} hits)`);
-
-      // Return cached result
+      // Return cached result with all nutrients
       return NextResponse.json({
         success: true,
         foods: [
@@ -71,6 +103,14 @@ export async function POST(req: NextRequest) {
             protein: cachedFood.proteinG,
             carbs: cachedFood.carbsG,
             fat: cachedFood.fatG,
+            fiber: cachedFood.fiberG,
+            sugar: cachedFood.sugarG,
+            sodium: cachedFood.sodiumMg,
+            vitaminC: cachedFood.vitaminCMg,
+            calcium: cachedFood.calciumMg,
+            iron: cachedFood.ironMg,
+            potassium: cachedFood.potassiumMg,
+            servingSize: cachedFood.servingSizeG ?? undefined,
             confidence: cachedFood.aiConfidence,
           },
         ],
@@ -78,8 +118,6 @@ export async function POST(req: NextRequest) {
         cacheHits: cachedFood.hitCount + 1,
       });
     }
-
-    console.log(`[CACHE MISS] "${text}" - calling OpenAI...`);
 
     // Cache miss - call OpenAI
     const prompt = `Parse the following meal description and return a JSON array of food items with their nutritional information.
@@ -94,6 +132,14 @@ Return ONLY a JSON array in this exact format (no markdown, no explanation, just
     "protein": number (in grams),
     "carbs": number (in grams),
     "fat": number (in grams),
+    "fiber": number (in grams),
+    "sugar": number (in grams),
+    "sodium": number (in milligrams),
+    "vitaminC": number (in milligrams),
+    "calcium": number (in milligrams),
+    "iron": number (in milligrams),
+    "potassium": number (in milligrams),
+    "servingSize": number (in grams, estimated total weight of the described portion),
     "confidence": number (0.0 to 1.0 representing confidence in the estimate)
   }
 ]
@@ -104,7 +150,10 @@ Guidelines:
 - Be precise: if "2 slices of pizza", calculate for 2 slices
 - If "large coffee with oat milk", estimate accordingly
 - Round calories to nearest 5, macros to nearest 0.1g
-- Confidence should reflect certainty in the estimate (e.g., 0.95 for standard items, 0.70 for vague descriptions)`;
+- Micronutrients should be estimated where possible (e.g., fruit has vitamin C, dairy has calcium)
+- Use 0 if a nutrient is not applicable or negligible
+- Confidence should reflect certainty in the estimate (e.g., 0.95 for standard items, 0.70 for vague descriptions)
+- CRITICAL: If the input is NOT a food description (e.g., file paths, URLs, code, random text), return an empty array []`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -139,6 +188,7 @@ Guidelines:
     try {
       parsedFoods = JSON.parse(jsonString);
     } catch (parseError) {
+      void parseError;
       console.error("Failed to parse AI response:", responseContent);
       return NextResponse.json(
         { error: "AI returned invalid JSON format" },
@@ -155,14 +205,33 @@ Guidelines:
     }
 
     // Sanitize and validate each food item
-    const validatedFoods = parsedFoods.map((food) => ({
-      name: String(food.name || "Unknown item"),
-      calories: Math.max(0, Math.round(Number(food.calories) || 0)),
-      protein: food.protein !== undefined ? Math.max(0, Number(food.protein)) : undefined,
-      carbs: food.carbs !== undefined ? Math.max(0, Number(food.carbs)) : undefined,
-      fat: food.fat !== undefined ? Math.max(0, Number(food.fat)) : undefined,
-      confidence: Math.max(0, Math.min(1, Number(food.confidence) || 0.5)),
-    }));
+    const validatedFoods = parsedFoods.map((food) => {
+      let name = String(food.name || "Unknown item");
+      // Reject file-path-like strings (Windows, Unix, or UNC paths)
+      if (/^[a-zA-Z]:\\|^[\\/]{2}|^\/(home|Users|usr|var|tmp|etc|root|Users)/i.test(name)) {
+        name = "Unknown item";
+      }
+      // Truncate excessively long names
+      if (name.length > 100) {
+        name = name.slice(0, 100) + "...";
+      }
+      return {
+        name,
+        calories: Math.max(0, Math.round(Number(food.calories) || 0)),
+        protein: food.protein !== undefined ? Math.max(0, Number(food.protein)) : undefined,
+        carbs: food.carbs !== undefined ? Math.max(0, Number(food.carbs)) : undefined,
+        fat: food.fat !== undefined ? Math.max(0, Number(food.fat)) : undefined,
+        fiber: food.fiber !== undefined ? Math.max(0, Number(food.fiber)) : undefined,
+        sugar: food.sugar !== undefined ? Math.max(0, Number(food.sugar)) : undefined,
+        sodium: food.sodium !== undefined ? Math.max(0, Number(food.sodium)) : undefined,
+        vitaminC: food.vitaminC !== undefined ? Math.max(0, Number(food.vitaminC)) : undefined,
+        calcium: food.calcium !== undefined ? Math.max(0, Number(food.calcium)) : undefined,
+        iron: food.iron !== undefined ? Math.max(0, Number(food.iron)) : undefined,
+        potassium: food.potassium !== undefined ? Math.max(0, Number(food.potassium)) : undefined,
+        servingSize: food.servingSize !== undefined ? Math.max(0, Number(food.servingSize)) : undefined,
+        confidence: Math.max(0, Math.min(1, Number(food.confidence) || 0.5)),
+      };
+    });
 
     // Cache the result for the first food item (most common case)
     if (validatedFoods.length > 0) {
@@ -177,11 +246,18 @@ Guidelines:
             proteinG: firstFood.protein ?? 0,
             carbsG: firstFood.carbs ?? 0,
             fatG: firstFood.fat ?? 0,
+            fiberG: firstFood.fiber ?? 0,
+            sugarG: firstFood.sugar ?? 0,
+            sodiumMg: firstFood.sodium ?? 0,
+            vitaminCMg: firstFood.vitaminC ?? 0,
+            calciumMg: firstFood.calcium ?? 0,
+            ironMg: firstFood.iron ?? 0,
+            potassiumMg: firstFood.potassium ?? 0,
+            servingSizeG: firstFood.servingSize ?? null,
             aiConfidence: firstFood.confidence,
             source: "openai",
           },
         });
-        console.log(`[CACHE WRITE] "${text}" -> "${firstFood.name}" (${firstFood.calories} cal)`);
       } catch (cacheError) {
         // Don't fail the request if caching fails
         console.error("Failed to cache food:", cacheError);
@@ -194,9 +270,15 @@ Guidelines:
       cached: false,
     });
   } catch (error) {
-    console.error("Error parsing meal:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : "";
+    console.error("[PARSE MEAL ERROR]", {
+      message: errorMessage,
+      stack: errorStack,
+      timestamp: new Date().toISOString(),
+    });
     return NextResponse.json(
-      { error: "Failed to parse meal description" },
+      { error: `Failed to parse meal: ${errorMessage}` },
       { status: 500 }
     );
   }

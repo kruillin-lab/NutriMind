@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { email = "test@example.com", externalId = "test-user-123" } = await req.json();
+    const { email = "test@example.com" } = await req.json();
 
     // Create or update test user
     const user = await prisma.user.upsert({
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Test auth error:", error);
     return NextResponse.json(
-      { error: "Failed to create test user", details: String(error) },
+      { error: "Failed to create test user" },
       { status: 500 }
     );
   }

@@ -21,6 +21,11 @@ model User {
   // Daily tracking
   dailyLogs         DailyLog[]
   weightEntries     WeightEntry[]
+  mealTemplates     MealTemplate[]
+  bodyMeasurements  BodyMeasurement[]
+  mealPlans         MealPlan[]
+  progressPhotos    ProgressPhoto[]
+  pushSubscriptions PushSubscription[]
 
   @@map("users")
 }
@@ -96,6 +101,12 @@ model CalorieBank {
   // Settings
   allowNegative     Boolean  @default(false) // Can go into debt?
   expireAfterDays   Int      @default(30)    // Banked calories expire?
+  expiredAmount     Float    @default(0)     // Total calories already expired
+
+  // Macro targets (grams per day)
+  proteinTargetG    Float    @default(0)     // 0 = not set
+  carbsTargetG      Float    @default(0)
+  fatTargetG        Float    @default(0)
 
   // Relationships
   transactions    BankTransaction[]
@@ -127,6 +138,7 @@ model BankTransaction {
   // Metadata
   sourceId    String?  // ID of meal log, etc.
   sourceType  String?  // "daily_log", "manual", "adjustment"
+  expired     Boolean  @default(false) // Has this been expired?
 
   createdAt   DateTime @default(now())
 
@@ -146,6 +158,12 @@ model DailyLog {
   carbsG            Float    @default(0)
   fatG              Float    @default(0)
   fiberG            Float    @default(0)
+  sugarG            Float    @default(0)
+  sodiumMg          Float    @default(0)
+  vitaminCMg        Float    @default(0)
+  calciumMg         Float    @default(0)
+  ironMg            Float    @default(0)
+  potassiumMg       Float    @default(0)
 
   // Targets for this day
   calorieTarget     Float    @default(2000)
@@ -159,6 +177,9 @@ model DailyLog {
 
   // Water tracking (in milliliters)
   waterMl           Float    @default(0)
+
+  // Daily notes
+  notes             String?  // Free text journal entry
 
   // Meals
   meals     Meal[]
@@ -180,6 +201,16 @@ model Meal {
   proteinG    Float    @default(0)
   carbsG      Float    @default(0)
   fatG        Float    @default(0)
+  fiberG      Float    @default(0)
+  sugarG      Float    @default(0)
+  sodiumMg    Float    @default(0)
+  vitaminCMg  Float    @default(0)
+  calciumMg   Float    @default(0)
+  ironMg      Float    @default(0)
+  potassiumMg Float    @default(0)
+
+  // Serving size
+  servingSizeG Float?   // Serving size in grams
 
   // Source
   source      String   @default("manual") // manual, photo, voice, recipe, barcode
@@ -203,6 +234,35 @@ model WeightEntry {
 
   @@unique([userId, date])
   @@map("weight_entries")
+}
+
+model BodyMeasurement {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date        DateTime
+
+  // Body measurements (in cm)
+  waistCm     Float?
+  hipsCm      Float?
+  chestCm     Float?
+  thighCm     Float?
+  bicepCm     Float?
+  shoulderCm  Float?
+  neckCm      Float?
+
+  // Body composition
+  bodyFatPct  Float?   // Body fat percentage
+  muscleMassKg Float?  // Muscle mass in kg
+
+  // Context
+  source      String   @default("manual") // manual, smart_scale, tape, import
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId, date])
+  @@map("body_measurements")
 }
 
 enum Gender {
@@ -245,6 +305,16 @@ model CachedFood {
   proteinG      Float    @default(0)
   carbsG        Float    @default(0)
   fatG          Float    @default(0)
+  fiberG        Float    @default(0)
+  sugarG        Float    @default(0)
+  sodiumMg      Float    @default(0)
+  vitaminCMg    Float    @default(0)
+  calciumMg     Float    @default(0)
+  ironMg        Float    @default(0)
+  potassiumMg   Float    @default(0)
+
+  // Serving size
+  servingSizeG  Float?
 
   // AI metadata
   aiConfidence  Float
@@ -258,4 +328,153 @@ model CachedFood {
   @@index([hitCount])
   @@index([lastUsedAt])
   @@map("cached_foods")
+}
+
+model MealTemplate {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  mealType    MealType @default(OTHER)
+
+  // Nutrition
+  calories    Float
+  proteinG    Float    @default(0)
+  carbsG      Float    @default(0)
+  fatG        Float    @default(0)
+  fiberG      Float    @default(0)
+  sugarG      Float    @default(0)
+  sodiumMg    Float    @default(0)
+  vitaminCMg  Float    @default(0)
+  calciumMg   Float    @default(0)
+  ironMg      Float    @default(0)
+  potassiumMg Float    @default(0)
+
+  // Serving size
+  servingSizeG Float?
+
+  // Usage tracking
+  useCount    Int      @default(0)
+  lastUsedAt  DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([useCount])
+  @@map("meal_templates")
+}
+
+model MealPlan {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String   // e.g., "Week of Jan 15", "Cutting Phase"
+  description String?
+
+  startDate   DateTime // Plan start date
+  endDate     DateTime // Plan end date
+
+  // Status
+  isActive    Boolean  @default(true)
+  isTemplate  Boolean  @default(false) // Can be reused
+
+  // Relations
+  items       MealPlanItem[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([startDate])
+  @@index([isTemplate])
+  @@map("meal_plans")
+}
+
+model MealPlanItem {
+  id          String   @id @default(cuid())
+  mealPlanId  String
+  mealPlan    MealPlan @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+
+  // When this meal is planned for
+  plannedDate DateTime
+  mealType    MealType @default(OTHER)
+
+  // Meal details
+  name        String
+  description String?
+
+  // Nutrition (can be from template or custom)
+  calories    Float
+  proteinG    Float    @default(0)
+  carbsG      Float    @default(0)
+  fatG        Float    @default(0)
+  fiberG      Float    @default(0)
+  sugarG      Float    @default(0)
+  sodiumMg    Float    @default(0)
+
+  // Source tracking
+  mealTemplateId String? // If created from a template
+
+  // Status
+  isLogged    Boolean  @default(false) // Has this been logged as an actual meal?
+  loggedMealId String? // Reference to the actual Meal if logged
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([mealPlanId])
+  @@index([plannedDate])
+  @@index([mealType])
+  @@map("meal_plan_items")
+}
+
+model ProgressPhoto {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Photo data (base64 encoded)
+  imageData   String   // Base64 encoded image data
+  mimeType    String   // e.g., "image/jpeg", "image/png"
+
+  // Photo metadata
+  photoDate   DateTime @default(now())
+  caption     String?  // Optional caption/description
+
+  // Body measurements at time of photo (optional)
+  weightKg    Float?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([photoDate])
+  @@map("progress_photos")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Push subscription data (from PushManager.subscribe())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+
+  // Device/user agent info
+  userAgent String?
+
+  // Notification preferences
+  enabled   Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([endpoint])
+  @@map("push_subscriptions")
 }

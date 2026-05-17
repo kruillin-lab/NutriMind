@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { getSystemTimezone } from "@/lib/date-utils";
 
@@ -22,7 +23,7 @@ export async function initializeUser({ id, email, name }: InitializeUserParams) 
   }
 
   // Create user and all related records in a transaction
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Create the user
     const user = await tx.user.create({
       data: {

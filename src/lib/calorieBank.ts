@@ -187,7 +187,7 @@ export async function bankPendingCompletedDays(
       day: "numeric",
     });
 
-    const banked = await prisma.$transaction(async (tx) => {
+    const banked = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const claim = await tx.dailyLog.updateMany({
         where: { id: log.id, bankedAmount: 0 },
         data: { bankedAmount: surplus },

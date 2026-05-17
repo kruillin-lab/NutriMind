@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/src/lib/prisma";
 import { createCalorieBankResetData } from "@/src/lib/calorieBank";
 
@@ -22,7 +23,7 @@ export async function POST() {
       );
     }
 
-    const resetBank = await prisma.$transaction(async (tx) => {
+    const resetBank = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updatedBank = await tx.calorieBank.update({
         where: { id: bank.id },
         data: createCalorieBankResetData(),

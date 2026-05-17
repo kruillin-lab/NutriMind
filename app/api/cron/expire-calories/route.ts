@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/src/lib/prisma";
 
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
       const actualExpire = Math.min(totalToExpire, bank.currentBalance);
       if (actualExpire <= 0) continue;
 
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.calorieBank.update({
           where: { id: bank.id },
           data: {

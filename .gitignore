@@ -56,3 +56,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .gstack/
+
+apply-turso-schema.mjs
+verify-turso.mjs
+turso-schema.sql
+
+.quality-gate/

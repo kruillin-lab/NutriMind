@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, User, Target, Settings as SettingsIcon, Clock, Download, Bell } from "lucide-react";
+import { AlertTriangle, Loader2, RotateCcw, Save, User, Target, Settings as SettingsIcon, Clock, Download, Bell } from "lucide-react";
 import { PushNotifications } from "@/app/dashboard/_components/PushNotifications";
 
 interface ProfileData {
@@ -26,6 +26,9 @@ interface CalorieBankData {
   proteinTargetG: number;
   carbsTargetG: number;
   fatTargetG: number;
+  currentBalance: number;
+  totalBanked: number;
+  totalSpent: number;
 }
 
 interface SettingsClientProps {
@@ -44,6 +47,8 @@ export function SettingsClient({
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [expireResult, setExpireResult] = useState<string | null>(null);
   const [isExpiring, setIsExpiring] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [exportDays, setExportDays] = useState(90);
 
   const handleSaveProfile = async () => {
@@ -141,6 +146,42 @@ export function SettingsClient({
     }
   };
 
+  const handleResetCalorieBank = async () => {
+    if (!resetConfirm) {
+      setResetConfirm(true);
+      setSaveMessage("Click reset again to confirm. This clears your bank balance totals, not meal history.");
+      return;
+    }
+
+    setIsResetting(true);
+    setSaveMessage(null);
+
+    try {
+      const response = await fetch("/api/calorie-bank/reset", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCalorieBank((current) => ({
+          ...current,
+          currentBalance: data.calorieBank.currentBalance,
+          totalBanked: data.calorieBank.totalBanked,
+          totalSpent: data.calorieBank.totalSpent,
+        }));
+        setSaveMessage("Calorie bank reset to zero.");
+        setResetConfirm(false);
+      } else {
+        setSaveMessage("Failed to reset calorie bank.");
+      }
+    } catch (error) {
+      console.error("Error resetting calorie bank:", error);
+      setSaveMessage("Error resetting calorie bank.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   const tabs = [
     { id: "profile" as const, label: "Profile", icon: User },
     { id: "goals" as const, label: "Goals", icon: Target },
@@ -148,6 +189,12 @@ export function SettingsClient({
     { id: "notifications" as const, label: "Notifications", icon: Bell },
     { id: "export" as const, label: "Export", icon: Download },
   ];
+
+  const saveMessageClass = saveMessage?.startsWith("Click reset")
+    ? "border border-[#FFB000]/30 bg-[#FFB000]/14 text-[#FFE8A8]"
+    : saveMessage?.includes("success") || saveMessage?.includes("saved") || saveMessage === "Calorie bank reset to zero."
+      ? "border border-[#DFFF35]/30 bg-[#DFFF35]/18 text-[#DFFF35]"
+      : "border border-[#FF5A3D]/30 bg-[#FF5A3D]/14 text-[#FFB4A4]";
 
   return (
     <div className="space-y-6">
@@ -174,13 +221,7 @@ export function SettingsClient({
 
       {/* Save Message */}
       {saveMessage && (
-        <div
-          className={`p-3 rounded-lg text-sm ${
-            saveMessage.includes("success")
-              ? "border border-[#DFFF35]/30 bg-[#DFFF35]/18 text-[#DFFF35]"
-              : "border border-[#FF5A3D]/30 bg-[#FF5A3D]/14 text-[#FFB4A4]"
-          }`}
-        >
+        <div className={`p-3 rounded-lg text-sm ${saveMessageClass}`}>
           {saveMessage}
         </div>
       )}
@@ -339,6 +380,19 @@ export function SettingsClient({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: "Balance", value: calorieBank.currentBalance },
+                { label: "Banked", value: calorieBank.totalBanked },
+                { label: "Spent", value: calorieBank.totalSpent },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg border-2 border-[#18120E]/18 bg-[#FFF0B8] p-3 shadow-[2px_2px_0_#18120E]">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B5738]">{item.label}</p>
+                  <p className="num mt-1 text-lg font-semibold text-[#18120E]">{Math.round(item.value)} kcal</p>
+                </div>
+              ))}
+            </div>
+
             <div>
               <Label htmlFor="dailyTarget">Daily Calorie Target</Label>
               <Input
@@ -458,6 +512,29 @@ export function SettingsClient({
               <p className="text-xs text-muted-foreground mt-2">
                 Set to 0 to disable. When set, daily macros will show progress bars.
               </p>
+            </div>
+
+            <div className="pt-4 border-t space-y-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-[#FF5A3D]" />
+                <p className="text-sm font-medium">Reset Bank</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Set the current balance and lifetime bank totals back to zero. Meal logs and daily nutrition history stay intact.
+              </p>
+              <Button
+                variant={resetConfirm ? "destructive" : "outline"}
+                onClick={handleResetCalorieBank}
+                disabled={isResetting}
+                className="w-full"
+              >
+                {isResetting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                )}
+                {resetConfirm ? "Confirm Reset Calorie Bank" : "Reset Calorie Bank"}
+              </Button>
             </div>
 
             <div className="pt-4 border-t space-y-3">

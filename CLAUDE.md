@@ -1,3 +1,13 @@
+---
+tags:
+  - type/doc
+  - project/nutrimind
+  - status/active
+type: doc
+project: nutrimind
+status: active
+aliases: []
+---
 @AGENTS.md
 
 # NutriMind
@@ -18,7 +28,7 @@ npx prisma migrate dev
 - **Prisma import**: always `@/src/lib/prisma` — NOT `@/lib/prisma`
 - **OpenAI env collision**: use `NUTRIMIND_OPENAI_API_KEY` (not `OPENAI_API_KEY`) to avoid system-level override. Routes read this first with fallback.
 - **`parse-meal/route.ts`** reads `.env.local` via `readFileSync` directly — intentional workaround, do not remove
-- **middleware.ts**: deprecated in Next.js 16 but kept — Clerk requires Edge runtime which `proxy.ts` doesn't support. Do NOT run `middleware-to-proxy` codemod
+- **proxy.ts**: Next.js 16 proxy convention is active. Clerk's wrapper is still named `clerkMiddleware`; keep it there for route protection.
 - **Refresh strategy**: client components call `window.location.reload()` after mutations — intentional, no SWR/React Query yet
 - **Dates**: always UTC midnight (`setUTCHours(0,0,0,0)`) everywhere
 - **E2E auth bypass**: `X-Test-User-Id` header or `?test-user-id=` query param (non-prod only)

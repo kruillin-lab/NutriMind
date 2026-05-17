@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { addLocalDays, getLocalMidnight, parseLocalDate } from "@/lib/date-utils";
+import { applyCalorieBankOverageAdjustment } from "@/src/lib/calorieBank";
 
 export async function POST(req: NextRequest) {
   try {
@@ -111,43 +112,25 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Update Calorie Bank if user went over budget
-        let bankTransaction = null;
-        let bankUpdate = null;
-        
-        if (remaining < 0) {
-          const overspend = Math.abs(remaining);
-          const currentBalance = user.calorieBank!.currentBalance;
-          const newBalance = currentBalance - overspend;
+        const bankAdjustment = await applyCalorieBankOverageAdjustment({
+          bank: user.calorieBank,
+          tx,
+          previousConsumed: dailyLog.caloriesConsumed,
+          nextConsumed: newConsumed,
+          calorieTarget: dailyLog.calorieTarget,
+          sourceId: dailyLog.id,
+          spendReason: `Overspend from meal: ${name}`,
+          refundReason: `Refund from meal: ${name}`,
+        });
 
-          // Only allow if balance permits or negative balances are allowed
-          if (newBalance >= 0 || user.calorieBank!.allowNegative) {
-            bankUpdate = await tx.calorieBank.update({
-              where: { userId: user.id },
-              data: {
-                currentBalance: newBalance,
-                totalSpent: {
-                  increment: overspend,
-                },
-              },
-            });
-
-            // Create bank transaction record
-            bankTransaction = await tx.bankTransaction.create({
-              data: {
-                bankId: user.calorieBank!.id,
-                type: "SPEND",
-                amount: overspend,
-                reason: `Overspend from meal: ${name}`,
-                caloriesConsumed: newConsumed,
-                caloriesTarget: dailyTarget,
-                sourceType: "daily_log",
-              },
-            });
-          }
-        }
-
-        return { meal, dailyLog: updatedLog, bankTransaction, remaining, bankUpdate };
+        return {
+          meal,
+          dailyLog: updatedLog,
+          bankTransaction: bankAdjustment.bankTransaction,
+          bankAdjustment: bankAdjustment.adjustment,
+          remaining,
+          bankUpdate: bankAdjustment.bankUpdate,
+        };
       }
     );
 
@@ -160,7 +143,7 @@ export async function POST(req: NextRequest) {
         result.remaining >= 0
           ? `Logged ${calories} calories. ${Math.round(result.remaining)} remaining today.`
           : result.bankTransaction
-            ? `Logged ${calories} calories. Used ${Math.abs(Math.round(result.remaining))} from bank.`
+            ? `Logged ${calories} calories. Used ${Math.round(result.bankAdjustment.amount)} from bank.`
             : `Logged ${calories} calories. ${Math.abs(Math.round(result.remaining))} over budget (insufficient bank balance).`,
     });
   } catch (error) {

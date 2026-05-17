@@ -1,3 +1,13 @@
+---
+tags:
+  - type/instruction
+  - project/nutrimind
+  - status/active
+type: instruction
+project: nutrimind
+status: active
+aliases: []
+---
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 
@@ -220,7 +230,7 @@ TDEE is calculated using **Harris-Benedict equation**:
 ## 7. Authentication
 
 **Clerk** is used for authentication:
-- Middleware protects routes automatically
+- Proxy protects routes automatically via Clerk's `clerkMiddleware`
 - `auth()` function gets current user in server components
 - E2E tests can bypass auth via `X-Test-User-Id` header
 
@@ -289,8 +299,8 @@ DATABASE_URL=
 - Uses libSQL adapter (`@prisma/adapter-libsql`)
 - Connection URL format differs from standard SQLite
 
-**Clerk Middleware**
-- Auto-protects routes based on config
+**Clerk Proxy**
+- Auto-protects routes based on `proxy.ts` config
 - Webhook signature verification required for `/api/webhooks/*`
 
 **OpenAI API Key Caching - ACTIVE INVESTIGATION**

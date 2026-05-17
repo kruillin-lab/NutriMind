@@ -70,6 +70,9 @@ export default async function SettingsPage() {
             proteinTargetG: data.calorieBank?.proteinTargetG || 0,
             carbsTargetG: data.calorieBank?.carbsTargetG || 0,
             fatTargetG: data.calorieBank?.fatTargetG || 0,
+            currentBalance: data.calorieBank?.currentBalance || 0,
+            totalBanked: data.calorieBank?.totalBanked || 0,
+            totalSpent: data.calorieBank?.totalSpent || 0,
           }}
         />
       </div>

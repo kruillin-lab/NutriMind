@@ -1,3 +1,13 @@
+---
+tags:
+  - type/readme
+  - project/nutrimind
+  - status/active
+type: readme
+project: nutrimind
+status: active
+aliases: []
+---
 # E2E Testing for NutriMind
 
 ## Setup

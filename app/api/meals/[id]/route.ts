@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { applyCalorieBankOverageAdjustment } from '@/src/lib/calorieBank';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -95,73 +96,18 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           },
         });
 
-        // Handle calorie bank changes if target is exceeded
-        let bankUpdate = null;
-        const oldRemaining = existingMeal.dailyLog.calorieTarget - existingMeal.dailyLog.caloriesConsumed;
-        const newRemaining = existingMeal.dailyLog.calorieTarget - newConsumed;
+        const bankAdjustment = await applyCalorieBankOverageAdjustment({
+          bank: user.calorieBank,
+          tx,
+          previousConsumed: existingMeal.dailyLog.caloriesConsumed,
+          nextConsumed: newConsumed,
+          calorieTarget: existingMeal.dailyLog.calorieTarget,
+          sourceId: existingMeal.dailyLog.id,
+          spendReason: `Overspend from edited meal: ${name}`,
+          refundReason: `Refund from edited meal: ${name}`,
+        });
 
-        // If we went from under to over budget
-        if (oldRemaining >= 0 && newRemaining < 0 && user.calorieBank) {
-          const overspend = Math.abs(newRemaining);
-          const currentBalance = user.calorieBank.currentBalance;
-          const newBalance = currentBalance - overspend;
-
-          if (newBalance >= 0 || user.calorieBank.allowNegative) {
-            bankUpdate = await tx.calorieBank.update({
-              where: { userId: user.id },
-              data: {
-                currentBalance: newBalance,
-                totalSpent: {
-                  increment: overspend,
-                },
-              },
-            });
-
-            // Create bank transaction
-            await tx.bankTransaction.create({
-              data: {
-                bankId: user.calorieBank.id,
-                type: 'SPEND',
-                amount: overspend,
-                reason: `Overspend from edited meal: ${name}`,
-                caloriesConsumed: newConsumed,
-                caloriesTarget: existingMeal.dailyLog.calorieTarget,
-                sourceType: 'daily_log',
-              },
-            });
-          }
-        }
-
-        // If we went from over to under budget (refund bank)
-        if (oldRemaining < 0 && newRemaining >= 0 && user.calorieBank) {
-          const refund = Math.abs(oldRemaining);
-          bankUpdate = await tx.calorieBank.update({
-            where: { userId: user.id },
-            data: {
-              currentBalance: {
-                increment: refund,
-              },
-              totalSpent: {
-                decrement: refund,
-              },
-            },
-          });
-
-          // Create bank transaction for refund
-          await tx.bankTransaction.create({
-            data: {
-              bankId: user.calorieBank.id,
-              type: 'BANK',
-              amount: refund,
-              reason: `Refund from edited meal: ${name}`,
-              caloriesConsumed: newConsumed,
-              caloriesTarget: existingMeal.dailyLog.calorieTarget,
-              sourceType: 'daily_log',
-            },
-          });
-        }
-
-        return { meal: updatedMeal, dailyLog: updatedLog, bankUpdate };
+        return { meal: updatedMeal, dailyLog: updatedLog, bankUpdate: bankAdjustment.bankUpdate };
       }
     );
 
@@ -241,41 +187,18 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
           },
         });
 
-        // Handle calorie bank changes if we were over budget
-        let bankUpdate = null;
-        const oldRemaining = existingMeal.dailyLog.calorieTarget - existingMeal.dailyLog.caloriesConsumed;
-        const newRemaining = existingMeal.dailyLog.calorieTarget - newConsumed;
+        const bankAdjustment = await applyCalorieBankOverageAdjustment({
+          bank: user.calorieBank,
+          tx,
+          previousConsumed: existingMeal.dailyLog.caloriesConsumed,
+          nextConsumed: newConsumed,
+          calorieTarget: existingMeal.dailyLog.calorieTarget,
+          sourceId: existingMeal.dailyLog.id,
+          spendReason: `Overspend after deleting meal: ${existingMeal.name}`,
+          refundReason: `Refund from deleted meal: ${existingMeal.name}`,
+        });
 
-        // If we were over budget and now we're under (refund bank)
-        if (oldRemaining < 0 && newRemaining >= 0 && user.calorieBank) {
-          const refund = Math.abs(oldRemaining);
-          bankUpdate = await tx.calorieBank.update({
-            where: { userId: user.id },
-            data: {
-              currentBalance: {
-                increment: refund,
-              },
-              totalSpent: {
-                decrement: refund,
-              },
-            },
-          });
-
-          // Create bank transaction for refund
-          await tx.bankTransaction.create({
-            data: {
-              bankId: user.calorieBank.id,
-              type: 'BANK',
-              amount: refund,
-              reason: `Refund from deleted meal: ${existingMeal.name}`,
-              caloriesConsumed: newConsumed,
-              caloriesTarget: existingMeal.dailyLog.calorieTarget,
-              sourceType: 'daily_log',
-            },
-          });
-        }
-
-        return { dailyLog: updatedLog, bankUpdate };
+        return { dailyLog: updatedLog, bankUpdate: bankAdjustment.bankUpdate };
       }
     );
 

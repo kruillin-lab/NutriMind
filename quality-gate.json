@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "project": "nutrimind-my-app",
+  "profile": "node-next",
+  "paths": {
+    "report_dir": ".quality-gate/reports",
+    "run_dir": ".quality-gate/runs",
+    "log_dir": ".quality-gate/logs"
+  },
+  "levels": {
+    "smoke": {
+      "required": ["changed-files"]
+    },
+    "normal": {
+      "required": ["changed-files", "lint", "test", "build"],
+      "conditional": ["markdown-audit-if-docs-changed"]
+    },
+    "release": {
+      "required": ["changed-files", "build", "test-hack-detector"]
+    }
+  },
+  "commands": {
+    "lint": {
+      "shell": "powershell",
+      "command": "npm run lint",
+      "timeout_seconds": 240
+    },
+    "test": {
+      "shell": "powershell",
+      "command": "npm test",
+      "timeout_seconds": 240
+    },
+    "build": {
+      "shell": "powershell",
+      "command": "npm run build",
+      "timeout_seconds": 300
+    },
+    "markdown-audit": {
+      "shell": "powershell",
+      "command": "python C:\\Users\\kruil\\.codex\\skills\\obsidian-markdown-auditor\\scripts\\obsidian_markdown_audit.py validate --root C:\\Users\\kruil\\Documents\\Projects --stage stage2",
+      "timeout_seconds": 240
+    }
+  },
+  "changed_file_rules": {
+    "docs": {
+      "patterns": ["**/*.md"],
+      "checks": ["markdown-audit-if-docs-changed"]
+    },
+    "frontend": {
+      "patterns": [
+        "app/**/*.ts",
+        "app/**/*.tsx",
+        "components/**/*.ts",
+        "components/**/*.tsx",
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "e2e/**/*.ts"
+      ],
+      "risk": "app-critical"
+    },
+    "gate": {
+      "patterns": [
+        "quality-gate.json",
+        "package.json",
+        "package-lock.json",
+        "next.config.*",
+        "tsconfig.json",
+        "eslint.config.*",
+        "vitest.config.*",
+        "playwright.config.*",
+        "AGENTS.md",
+        ".codex/**",
+        ".agents/**"
+      ],
+      "risk": "gate-critical"
+    }
+  },
+  "exceptions": {
+    "allow_with_expiry": true,
+    "max_days": 14
+  }
+}

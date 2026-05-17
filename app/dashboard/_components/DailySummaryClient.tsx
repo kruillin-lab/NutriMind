@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { DailySummary } from "./DailySummary";
 import {
@@ -56,12 +57,14 @@ export function DailySummaryClient({
   waterTarget,
   userId,
   macroTargets,
-  bankBalance = 0,
+  bankBalance: initialBankBalance = 0,
 }: DailySummaryClientProps) {
   void userId;
+  const router = useRouter();
   const [waterIntake, setWaterIntake] = useState(initialWaterIntake);
   const [meals, setMeals] = useState(initialMeals);
   const [consumedCalories, setConsumedCalories] = useState(initialConsumedCalories);
+  const [currentBankBalance, setCurrentBankBalance] = useState(initialBankBalance);
   const [isAddingWater, setIsAddingWater] = useState(false);
 
   const [editMeal, setEditMeal] = useState<Meal | null>(null);
@@ -69,6 +72,10 @@ export function DailySummaryClient({
   const [editServingSizeG, setEditServingSizeG] = useState("");
   const [multiplier, setMultiplier] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setCurrentBankBalance(initialBankBalance);
+  }, [initialBankBalance]);
 
   const handleAddWater = async () => {
     if (isAddingWater) return;
@@ -130,6 +137,7 @@ export function DailySummaryClient({
       });
 
       if (response.ok) {
+        const data = await response.json().catch(() => ({}));
         const calorieDiff = newCalories - editMeal.calories;
         setMeals((prev) =>
           prev.map((m) =>
@@ -154,7 +162,11 @@ export function DailySummaryClient({
           )
         );
         setConsumedCalories((prev) => prev + calorieDiff);
+        if (typeof data.bankBalance === "number") {
+          setCurrentBankBalance(data.bankBalance);
+        }
         setEditMeal(null);
+        router.refresh();
       }
     } catch (error) {
       console.error("Error updating meal:", error);
@@ -169,8 +181,13 @@ export function DailySummaryClient({
     try {
       const response = await fetch(`/api/meals/${mealId}`, { method: "DELETE" });
       if (response.ok) {
+        const data = await response.json().catch(() => ({}));
         setMeals((prev) => prev.filter((m) => m.id !== mealId));
         setConsumedCalories((prev) => prev - meal.calories);
+        if (typeof data.bankBalance === "number") {
+          setCurrentBankBalance(data.bankBalance);
+        }
+        router.refresh();
       }
     } catch (error) {
       console.error("Error deleting meal:", error);
@@ -197,7 +214,7 @@ export function DailySummaryClient({
         onEditMeal={handleEditMeal}
         onDeleteMeal={handleDeleteMeal}
         macroTargets={macroTargets}
-        bankBalance={bankBalance}
+        bankBalance={currentBankBalance}
       />
       <Dialog open={!!editMeal} onOpenChange={(open) => !open && setEditMeal(null)}>
         <DialogContent className="sm:max-w-sm">

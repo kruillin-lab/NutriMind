@@ -16,6 +16,7 @@ import FoodDatabaseSearch from "./FoodDatabaseSearch";
 import MealPlanner from "./MealPlanner";
 import { ProgressPhotos } from "./ProgressPhotos";
 import { QuickWeightLog } from "./QuickWeightLog";
+import { RecipeBuilder } from "./RecipeBuilder";
 
 interface Meal {
   id: string;
@@ -181,6 +182,7 @@ export function DashboardTabs({
       {/* PLANNING */}
       <TabsContent value="planning" className="mt-0 space-y-4">
         <MealTemplatesWrapper />
+        <RecipeBuilder />
         <MealPlanner />
       </TabsContent>
 

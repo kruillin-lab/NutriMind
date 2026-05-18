@@ -67,6 +67,7 @@ export default async function SettingsPage() {
             dailyTarget: data.calorieBank?.dailyTarget || 2000,
             allowNegative: data.calorieBank?.allowNegative || false,
             expireAfterDays: data.calorieBank?.expireAfterDays || 30,
+            autoAdjustTarget: data.calorieBank?.autoAdjustTarget || false,
             proteinTargetG: data.calorieBank?.proteinTargetG || 0,
             carbsTargetG: data.calorieBank?.carbsTargetG || 0,
             fatTargetG: data.calorieBank?.fatTargetG || 0,
@@ -74,6 +75,17 @@ export default async function SettingsPage() {
             totalBanked: data.calorieBank?.totalBanked || 0,
             totalSpent: data.calorieBank?.totalSpent || 0,
           }}
+          initialMetabolic={
+            data.metabolicProfile
+              ? {
+                  trueMetabolicRate: data.metabolicProfile.trueMetabolicRate,
+                  predictionAccuracy: data.metabolicProfile.predictionAccuracy,
+                  predictionsMade: data.metabolicProfile.predictionsMade,
+                  lastCalculatedAt: data.metabolicProfile.lastCalculatedAt.toISOString(),
+                  calculationMethod: data.metabolicProfile.calculationMethod,
+                }
+              : null
+          }
         />
       </div>
     </div>

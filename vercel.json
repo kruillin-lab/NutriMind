@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/expire-calories",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/recalc-metabolism",
+      "schedule": "0 1 * * 0"
     }
   ]
 }

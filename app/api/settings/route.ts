@@ -39,7 +39,7 @@ export async function PUT(req: NextRequest) {
     }
 
     if (body.calorieBank) {
-      const { dailyTarget, allowNegative, expireAfterDays, proteinTargetG, carbsTargetG, fatTargetG } = body.calorieBank;
+      const { dailyTarget, allowNegative, expireAfterDays, autoAdjustTarget, proteinTargetG, carbsTargetG, fatTargetG } = body.calorieBank;
 
       await prisma.calorieBank.update({
         where: { userId },
@@ -47,6 +47,7 @@ export async function PUT(req: NextRequest) {
           dailyTarget,
           allowNegative,
           expireAfterDays,
+          autoAdjustTarget,
           proteinTargetG: proteinTargetG ?? undefined,
           carbsTargetG: carbsTargetG ?? undefined,
           fatTargetG: fatTargetG ?? undefined,

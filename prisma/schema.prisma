@@ -26,6 +26,7 @@ model User {
   mealPlans         MealPlan[]
   progressPhotos    ProgressPhoto[]
   pushSubscriptions PushSubscription[]
+  achievements      Achievement[]
 
   @@map("users")
 }
@@ -478,4 +479,21 @@ model PushSubscription {
   @@index([userId])
   @@index([endpoint])
   @@map("push_subscriptions")
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        String
+  title       String
+  description String
+  icon        String   @default("🏆")
+
+  unlockedAt  DateTime @default(now())
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@map("achievements")
 }

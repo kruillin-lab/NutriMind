@@ -16,6 +16,7 @@ import FoodDatabaseSearch from "./FoodDatabaseSearch";
 import MealPlanner from "./MealPlanner";
 import { ProgressPhotos } from "./ProgressPhotos";
 import { QuickWeightLog } from "./QuickWeightLog";
+import { AchievementBadges } from "./AchievementBadges";
 
 interface Meal {
   id: string;
@@ -186,6 +187,7 @@ export function DashboardTabs({
 
       {/* BODY */}
       <TabsContent value="body" className="mt-0 space-y-4">
+        <AchievementBadges />
         <DailyJournal />
         <BodyMeasurements />
         <ProgressPhotos />

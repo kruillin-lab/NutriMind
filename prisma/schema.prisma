@@ -47,6 +47,7 @@ model UserProfile {
 
   // Preferences
   timezone        String   @default("America/New_York")
+  emailDigest     Boolean  @default(false)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

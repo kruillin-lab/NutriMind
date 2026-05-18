@@ -62,6 +62,7 @@ export default async function SettingsPage() {
             targetDate: data.userProfile.targetDate?.toISOString().split("T")[0] || "",
             activityLevel: data.userProfile.activityLevel || "SEDENTARY",
             timezone: data.userProfile.timezone || getSystemTimezone(),
+            emailDigest: data.userProfile.emailDigest ?? false,
           }}
           initialCalorieBank={{
             dailyTarget: data.calorieBank?.dailyTarget || 2000,

@@ -323,17 +323,18 @@ DATABASE_URL=
 
 ## 13. Next Steps (Potential)
 
-- Macro Targets
-- Meal Templates / Favorites
-- Calorie Expiration Cron
-- Daily Notes/Journal
-- Data Export (CSV)
-- Body Measurements
-- Dark Mode Toggle
-- Food Database Search
-- Meal Planning
-- Progress Photos
-- Push Notifications
+Tracked in Linear under project [NutriMind](https://linear.app/kruillin-lab/project/nutrimind-2a1b591c0d2e). Backlog:
+
+- [KRU-19](https://linear.app/kruillin-lab/issue/KRU-19/barcode-meal-logging) — Barcode Meal Logging
+- [KRU-20](https://linear.app/kruillin-lab/issue/KRU-20/photo-meal-logging) — Photo Meal Logging
+- [KRU-21](https://linear.app/kruillin-lab/issue/KRU-21/voice-meal-logging) — Voice Meal Logging
+- [KRU-22](https://linear.app/kruillin-lab/issue/KRU-22/recipe-builder) — Recipe Builder
+- [KRU-23](https://linear.app/kruillin-lab/issue/KRU-23/adaptive-daily-calorie-target) — Adaptive Daily Calorie Target
+- [KRU-24](https://linear.app/kruillin-lab/issue/KRU-24/grocery-list-from-meal-plans) — Grocery List from Meal Plans
+- [KRU-25](https://linear.app/kruillin-lab/issue/KRU-25/weight-trend-smoothing-chart) — Weight Trend Smoothing Chart
+- [KRU-26](https://linear.app/kruillin-lab/issue/KRU-26/health-platform-integrations-apple-health-google-fit) — Health Platform Integrations (Apple Health / Google Fit)
+- [KRU-27](https://linear.app/kruillin-lab/issue/KRU-27/daily-digest-email) — Daily Digest Email
+- [KRU-28](https://linear.app/kruillin-lab/issue/KRU-28/achievement-badges) — Achievement Badges
 
 ## 14. Feature Roadmap (In Progress)
 

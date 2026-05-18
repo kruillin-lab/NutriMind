@@ -102,6 +102,7 @@ model CalorieBank {
   allowNegative     Boolean  @default(false) // Can go into debt?
   expireAfterDays   Int      @default(30)    // Banked calories expire?
   expiredAmount     Float    @default(0)     // Total calories already expired
+  autoAdjustTarget  Boolean  @default(false) // Weekly cron recomputes dailyTarget from observed metabolism
 
   // Macro targets (grams per day)
   proteinTargetG    Float    @default(0)     // 0 = not set

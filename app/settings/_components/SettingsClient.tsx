@@ -23,6 +23,7 @@ interface CalorieBankData {
   dailyTarget: number;
   allowNegative: boolean;
   expireAfterDays: number;
+  autoAdjustTarget: boolean;
   proteinTargetG: number;
   carbsTargetG: number;
   fatTargetG: number;
@@ -31,17 +32,28 @@ interface CalorieBankData {
   totalSpent: number;
 }
 
+interface MetabolicSummary {
+  trueMetabolicRate: number;
+  predictionAccuracy: number;
+  predictionsMade: number;
+  lastCalculatedAt: string;
+  calculationMethod: string;
+}
+
 interface SettingsClientProps {
   initialProfile: ProfileData;
   initialCalorieBank: CalorieBankData;
+  initialMetabolic: MetabolicSummary | null;
 }
 
 export function SettingsClient({
   initialProfile,
   initialCalorieBank,
+  initialMetabolic,
 }: SettingsClientProps) {
   const [profile, setProfile] = useState<ProfileData>(initialProfile);
   const [calorieBank, setCalorieBank] = useState<CalorieBankData>(initialCalorieBank);
+  const metabolic = initialMetabolic;
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "goals" | "bank" | "notifications" | "export">("profile");
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -446,6 +458,46 @@ export function SettingsClient({
               <Label htmlFor="allowNegative" className="text-sm">
                 Allow negative bank balance (go into debt)
               </Label>
+            </div>
+
+            <div className="rounded-lg border border-slate-200 p-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="autoAdjustTarget"
+                  checked={calorieBank.autoAdjustTarget}
+                  onChange={(e) =>
+                    setCalorieBank({ ...calorieBank, autoAdjustTarget: e.target.checked })
+                  }
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <div>
+                  <Label htmlFor="autoAdjustTarget" className="text-sm font-medium">
+                    Auto-adjust my daily target
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Recalculate weekly from observed weight and intake. Only applies once your metabolic estimate has stabilised.
+                  </p>
+                </div>
+              </div>
+              {metabolic && (
+                <div className="text-xs text-muted-foreground border-t pt-2 grid grid-cols-2 gap-y-1">
+                  <span>Estimated metabolic rate</span>
+                  <span className="text-right font-medium text-foreground">
+                    {Math.round(metabolic.trueMetabolicRate)} kcal/day
+                  </span>
+                  <span>Prediction accuracy</span>
+                  <span className="text-right font-medium text-foreground">
+                    {metabolic.predictionsMade === 0
+                      ? "—"
+                      : `${Math.round(metabolic.predictionAccuracy * 100)}% (${metabolic.predictionsMade} cycle${metabolic.predictionsMade === 1 ? "" : "s"})`}
+                  </span>
+                  <span>Last recalculated</span>
+                  <span className="text-right font-medium text-foreground">
+                    {new Date(metabolic.lastCalculatedAt).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="pt-4 border-t">

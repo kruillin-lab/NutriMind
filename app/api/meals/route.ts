@@ -4,6 +4,7 @@ import { prisma } from "@/src/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { addLocalDays, getLocalMidnight, parseLocalDate } from "@/lib/date-utils";
 import { applyCalorieBankOverageAdjustment } from "@/src/lib/calorieBank";
+import { checkAndAwardAchievements } from "@/src/lib/achievements";
 
 export async function POST(req: NextRequest) {
   try {
@@ -133,6 +134,9 @@ export async function POST(req: NextRequest) {
         };
       }
     );
+
+    // Fire-and-forget achievement check — never blocks the response
+    checkAndAwardAchievements(user.id).catch(() => {});
 
     return NextResponse.json({
       success: true,

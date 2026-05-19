@@ -12,7 +12,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
 
     if (body.profile) {
-      const { heightCm, birthDate, gender, activityLevel, timezone } = body.profile;
+      const { heightCm, birthDate, gender, activityLevel, timezone, emailDigest } = body.profile;
 
       await prisma.userProfile.update({
         where: { userId },
@@ -22,6 +22,7 @@ export async function PUT(req: NextRequest) {
           gender,
           activityLevel,
           timezone,
+          ...(emailDigest !== undefined && { emailDigest }),
         },
       });
     }

@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Loader2, RotateCcw, Save, User, Target, Settings as SettingsIcon, Clock, Download, Bell } from "lucide-react";
+import { AlertTriangle, Loader2, RotateCcw, Save, User, Target, Settings as SettingsIcon, Clock, Download, Bell, Activity } from "lucide-react";
 import { PushNotifications } from "@/app/dashboard/_components/PushNotifications";
+import { HealthIntegrations } from "./HealthIntegrations";
 
 interface ProfileData {
   heightCm: number;
@@ -17,6 +18,7 @@ interface ProfileData {
   targetDate: string;
   activityLevel: string;
   timezone: string;
+  emailDigest: boolean;
 }
 
 interface CalorieBankData {
@@ -55,7 +57,7 @@ export function SettingsClient({
   const [calorieBank, setCalorieBank] = useState<CalorieBankData>(initialCalorieBank);
   const metabolic = initialMetabolic;
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "goals" | "bank" | "notifications" | "export">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "goals" | "bank" | "notifications" | "export" | "integrations">("profile");
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [expireResult, setExpireResult] = useState<string | null>(null);
   const [isExpiring, setIsExpiring] = useState(false);
@@ -199,6 +201,7 @@ export function SettingsClient({
     { id: "goals" as const, label: "Goals", icon: Target },
     { id: "bank" as const, label: "Calorie Bank", icon: SettingsIcon },
     { id: "notifications" as const, label: "Notifications", icon: Bell },
+    { id: "integrations" as const, label: "Integrations", icon: Activity },
     { id: "export" as const, label: "Export", icon: Download },
   ];
 
@@ -631,7 +634,46 @@ export function SettingsClient({
       )}
 
       {/* Notifications Tab */}
-      {activeTab === "notifications" && <PushNotifications />}
+      {activeTab === "notifications" && (
+        <div className="space-y-4">
+          <PushNotifications />
+          <div className="rounded-2xl border border-[#18120E]/12 bg-[#FFF8E7] p-6 space-y-4">
+            <div>
+              <h3 className="text-base font-semibold text-[#18120E]">Daily Email Digest</h3>
+              <p className="mt-1 text-sm text-[#6B5738]">
+                Receive a daily summary of yesterday&apos;s calories, macros, and bank balance at 8 AM UTC.
+                Requires <code className="text-xs bg-[#FFF0B8] px-1 py-0.5 rounded">RESEND_API_KEY</code> to be configured.
+              </p>
+            </div>
+            <label className="flex items-center justify-between gap-4 cursor-pointer">
+              <span className="text-sm font-medium text-[#18120E]">Enable daily digest email</span>
+              <button
+                onClick={async () => {
+                  const next = !profile.emailDigest;
+                  setProfile((p) => ({ ...p, emailDigest: next }));
+                  await fetch("/api/settings", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ profile: { emailDigest: next } }),
+                  });
+                }}
+                className={`relative h-6 w-11 rounded-full border-2 border-[#18120E] transition-colors ${
+                  profile.emailDigest ? "bg-[#00C875]" : "bg-[#FFF0B8]"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full border border-[#18120E] bg-[#FFF8E7] transition-transform ${
+                    profile.emailDigest ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* Integrations Tab */}
+      {activeTab === "integrations" && <HealthIntegrations />}
 
       {/* Export Tab */}
       {activeTab === "export" && (

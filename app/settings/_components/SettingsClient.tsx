@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Loader2, RotateCcw, Save, User, Target, Settings as SettingsIcon, Clock, Download, Bell } from "lucide-react";
+import { AlertTriangle, Loader2, RotateCcw, Save, User, Target, Settings as SettingsIcon, Clock, Download, Bell, Activity } from "lucide-react";
 import { PushNotifications } from "@/app/dashboard/_components/PushNotifications";
+import { HealthIntegrations } from "./HealthIntegrations";
 
 interface ProfileData {
   heightCm: number;
@@ -55,7 +56,7 @@ export function SettingsClient({
   const [calorieBank, setCalorieBank] = useState<CalorieBankData>(initialCalorieBank);
   const metabolic = initialMetabolic;
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "goals" | "bank" | "notifications" | "export">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "goals" | "bank" | "notifications" | "export" | "integrations">("profile");
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [expireResult, setExpireResult] = useState<string | null>(null);
   const [isExpiring, setIsExpiring] = useState(false);
@@ -199,6 +200,7 @@ export function SettingsClient({
     { id: "goals" as const, label: "Goals", icon: Target },
     { id: "bank" as const, label: "Calorie Bank", icon: SettingsIcon },
     { id: "notifications" as const, label: "Notifications", icon: Bell },
+    { id: "integrations" as const, label: "Integrations", icon: Activity },
     { id: "export" as const, label: "Export", icon: Download },
   ];
 
@@ -632,6 +634,9 @@ export function SettingsClient({
 
       {/* Notifications Tab */}
       {activeTab === "notifications" && <PushNotifications />}
+
+      {/* Integrations Tab */}
+      {activeTab === "integrations" && <HealthIntegrations />}
 
       {/* Export Tab */}
       {activeTab === "export" && (

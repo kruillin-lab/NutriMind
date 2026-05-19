@@ -26,6 +26,8 @@ model User {
   mealPlans         MealPlan[]
   progressPhotos    ProgressPhoto[]
   pushSubscriptions PushSubscription[]
+  recipes           Recipe[]
+  achievements      Achievement[]
 
   @@map("users")
 }
@@ -478,4 +480,52 @@ model PushSubscription {
   @@index([userId])
   @@index([endpoint])
   @@map("push_subscriptions")
+}
+
+model Recipe {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  servings    Int      @default(1)
+
+  // JSON array of {name, calories, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg}
+  ingredients String   @default("[]")
+
+  // Pre-computed totals (whole recipe, divide by servings for per-serving)
+  calories    Float    @default(0)
+  proteinG    Float    @default(0)
+  carbsG      Float    @default(0)
+  fatG        Float    @default(0)
+  fiberG      Float    @default(0)
+  sugarG      Float    @default(0)
+  sodiumMg    Float    @default(0)
+
+  useCount    Int      @default(0)
+  lastUsedAt  DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("recipes")
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        String
+  title       String
+  description String
+  icon        String   @default("🏆")
+
+  unlockedAt  DateTime @default(now())
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@map("achievements")
 }

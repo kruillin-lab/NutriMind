@@ -69,7 +69,7 @@ export function DailyJournal({ initialDate }: DailyJournalProps) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <BookOpen className="h-5 w-5 text-indigo-500" />
+          <BookOpen className="h-5 w-5 text-[#00C8FF]" />
           Daily Journal
         </CardTitle>
       </CardHeader>

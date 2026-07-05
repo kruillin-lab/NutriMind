@@ -4,6 +4,7 @@ import { prisma } from "@/src/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { addLocalDays, getLocalMidnight, parseLocalDate } from "@/lib/date-utils";
 import { applyCalorieBankOverageAdjustment } from "@/src/lib/calorieBank";
+import { clampInt, clampNumber, isValidDateString, truncate } from "@/src/lib/validation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,12 +16,37 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, calories, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg, vitaminCMg, calciumMg, ironMg, potassiumMg, servingSizeG, mealType = "OTHER", date: dateParam } = body;
 
-    if (!name || calories == null || calories < 0) {
+    const safeName = truncate(name, 200);
+    const safeCalories = clampInt(calories, 0, 10000);
+
+    if (!safeName || safeCalories === null) {
       return NextResponse.json(
         { error: "Invalid meal data" },
         { status: 400 }
       );
     }
+
+    if (dateParam != null && !isValidDateString(dateParam)) {
+      return NextResponse.json(
+        { error: "Invalid date" },
+        { status: 400 }
+      );
+    }
+
+    // Clamp macros (grams) to 0..1000 and micros (mg) to 0..10000; non-numeric values fall back to 0
+    const nutrients = {
+      proteinG: clampNumber(proteinG, 0, 1000) ?? 0,
+      carbsG: clampNumber(carbsG, 0, 1000) ?? 0,
+      fatG: clampNumber(fatG, 0, 1000) ?? 0,
+      fiberG: clampNumber(fiberG, 0, 1000) ?? 0,
+      sugarG: clampNumber(sugarG, 0, 1000) ?? 0,
+      sodiumMg: clampNumber(sodiumMg, 0, 10000) ?? 0,
+      vitaminCMg: clampNumber(vitaminCMg, 0, 10000) ?? 0,
+      calciumMg: clampNumber(calciumMg, 0, 10000) ?? 0,
+      ironMg: clampNumber(ironMg, 0, 10000) ?? 0,
+      potassiumMg: clampNumber(potassiumMg, 0, 10000) ?? 0,
+    };
+    const safeServingSizeG = servingSizeG != null ? clampNumber(servingSizeG, 0, 10000) : null;
 
     // Get user with profile and calorie bank
     const user = await prisma.user.findUnique({
@@ -74,41 +100,41 @@ export async function POST(req: NextRequest) {
         const meal = await tx.meal.create({
           data: {
             dailyLogId: dailyLog.id,
-            name,
-            calories,
-            proteinG: proteinG || 0,
-            carbsG: carbsG || 0,
-            fatG: fatG || 0,
-            fiberG: fiberG || 0,
-            sugarG: sugarG || 0,
-            sodiumMg: sodiumMg || 0,
-            vitaminCMg: vitaminCMg || 0,
-            calciumMg: calciumMg || 0,
-            ironMg: ironMg || 0,
-            potassiumMg: potassiumMg || 0,
-            servingSizeG: servingSizeG != null ? servingSizeG : null,
+            name: safeName,
+            calories: safeCalories,
+            proteinG: nutrients.proteinG,
+            carbsG: nutrients.carbsG,
+            fatG: nutrients.fatG,
+            fiberG: nutrients.fiberG,
+            sugarG: nutrients.sugarG,
+            sodiumMg: nutrients.sodiumMg,
+            vitaminCMg: nutrients.vitaminCMg,
+            calciumMg: nutrients.calciumMg,
+            ironMg: nutrients.ironMg,
+            potassiumMg: nutrients.potassiumMg,
+            servingSizeG: safeServingSizeG,
             mealType,
           },
         });
 
         // Update daily log consumed calories and all nutrients
-        const newConsumed = dailyLog.caloriesConsumed + calories;
+        const newConsumed = dailyLog.caloriesConsumed + safeCalories;
         const remaining = dailyLog.calorieTarget - newConsumed;
 
         const updatedLog = await tx.dailyLog.update({
           where: { id: dailyLog.id },
           data: {
             caloriesConsumed: newConsumed,
-            proteinG: (dailyLog.proteinG || 0) + (proteinG || 0),
-            carbsG: (dailyLog.carbsG || 0) + (carbsG || 0),
-            fatG: (dailyLog.fatG || 0) + (fatG || 0),
-            fiberG: (dailyLog.fiberG || 0) + (fiberG || 0),
-            sugarG: (dailyLog.sugarG || 0) + (sugarG || 0),
-            sodiumMg: (dailyLog.sodiumMg || 0) + (sodiumMg || 0),
-            vitaminCMg: (dailyLog.vitaminCMg || 0) + (vitaminCMg || 0),
-            calciumMg: (dailyLog.calciumMg || 0) + (calciumMg || 0),
-            ironMg: (dailyLog.ironMg || 0) + (ironMg || 0),
-            potassiumMg: (dailyLog.potassiumMg || 0) + (potassiumMg || 0),
+            proteinG: (dailyLog.proteinG || 0) + nutrients.proteinG,
+            carbsG: (dailyLog.carbsG || 0) + nutrients.carbsG,
+            fatG: (dailyLog.fatG || 0) + nutrients.fatG,
+            fiberG: (dailyLog.fiberG || 0) + nutrients.fiberG,
+            sugarG: (dailyLog.sugarG || 0) + nutrients.sugarG,
+            sodiumMg: (dailyLog.sodiumMg || 0) + nutrients.sodiumMg,
+            vitaminCMg: (dailyLog.vitaminCMg || 0) + nutrients.vitaminCMg,
+            calciumMg: (dailyLog.calciumMg || 0) + nutrients.calciumMg,
+            ironMg: (dailyLog.ironMg || 0) + nutrients.ironMg,
+            potassiumMg: (dailyLog.potassiumMg || 0) + nutrients.potassiumMg,
           },
         });
 
@@ -119,8 +145,8 @@ export async function POST(req: NextRequest) {
           nextConsumed: newConsumed,
           calorieTarget: dailyLog.calorieTarget,
           sourceId: dailyLog.id,
-          spendReason: `Overspend from meal: ${name}`,
-          refundReason: `Refund from meal: ${name}`,
+          spendReason: `Overspend from meal: ${safeName}`,
+          refundReason: `Refund from meal: ${safeName}`,
         });
 
         return {
@@ -141,10 +167,10 @@ export async function POST(req: NextRequest) {
       bankBalance: result.bankUpdate?.currentBalance ?? user.calorieBank.currentBalance,
       message:
         result.remaining >= 0
-          ? `Logged ${calories} calories. ${Math.round(result.remaining)} remaining today.`
+          ? `Logged ${safeCalories} calories. ${Math.round(result.remaining)} remaining today.`
           : result.bankTransaction
-            ? `Logged ${calories} calories. Used ${Math.round(result.bankAdjustment.amount)} from bank.`
-            : `Logged ${calories} calories. ${Math.abs(Math.round(result.remaining))} over budget (insufficient bank balance).`,
+            ? `Logged ${safeCalories} calories. Used ${Math.round(result.bankAdjustment.amount)} from bank.`
+            : `Logged ${safeCalories} calories. ${Math.abs(Math.round(result.remaining))} over budget (insufficient bank balance).`,
     });
   } catch (error) {
     console.error("Error logging meal:", error);
@@ -164,6 +190,9 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
+    if (dateParam && !isValidDateString(dateParam)) {
+      return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+    }
     const date = dateParam ? parseLocalDate(dateParam) : getLocalMidnight();
     const nextDay = addLocalDays(date, 1);
 

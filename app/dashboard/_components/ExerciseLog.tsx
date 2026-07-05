@@ -82,7 +82,7 @@ export function ExerciseLog({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <Dumbbell className="h-5 w-5 text-purple-500" />
+          <Dumbbell className="h-5 w-5 text-[#FFB000]" />
           Exercise Log
         </CardTitle>
       </CardHeader>
@@ -90,19 +90,19 @@ export function ExerciseLog({
       <CardContent className="space-y-4">
         {/* Today's Summary */}
         {(exerciseMinutes > 0 || caloriesBurned > 0) && (
-          <div className="grid grid-cols-2 gap-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+          <div className="grid grid-cols-2 gap-3 p-3 bg-[#FFB000]/10 rounded-lg border border-[#FFB000]/30">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-purple-500" />
+              <Clock className="h-4 w-4 text-[#FFB000]" />
               <div>
-                <p className="text-lg font-bold text-purple-700">{exerciseMinutes} min</p>
-                <p className="text-xs text-purple-600">Total today</p>
+                <p className="text-lg font-bold text-[#B87A00]">{exerciseMinutes} min</p>
+                <p className="text-xs text-[#B87A00]">Total today</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Flame className="h-4 w-4 text-orange-500" />
+              <Flame className="h-4 w-4 text-[#FF5A3D]" />
               <div>
-                <p className="text-lg font-bold text-orange-600">{caloriesBurned} kcal</p>
-                <p className="text-xs text-orange-500">Burned today</p>
+                <p className="text-lg font-bold text-[#FF5A3D]">{caloriesBurned} kcal</p>
+                <p className="text-xs text-[#FF5A3D]/80">Burned today</p>
               </div>
             </div>
           </div>

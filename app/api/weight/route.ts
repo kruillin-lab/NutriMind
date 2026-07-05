@@ -12,7 +12,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { weightKg, date } = body;
 
-    if (!weightKg || weightKg <= 0 || weightKg > 500) {
+    if (
+      typeof weightKg !== "number" ||
+      !Number.isFinite(weightKg) ||
+      weightKg < 20 ||
+      weightKg > 500
+    ) {
       return NextResponse.json(
         { error: "Invalid weight value" },
         { status: 400 }

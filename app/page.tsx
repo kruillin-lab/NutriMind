@@ -7,7 +7,7 @@ export default function Home() {
       title: "Plain-language logging",
       copy: "Type dinner once. AI structures calories, macros, and micronutrients.",
       Icon: Sparkles,
-      color: "#DFFF35",
+      color: "#00C875",
     },
     {
       title: "Fast scan flow",

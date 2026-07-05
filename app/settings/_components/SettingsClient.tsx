@@ -441,7 +441,7 @@ export function SettingsClient({
                 onChange={(e) =>
                   setCalorieBank({ ...calorieBank, allowNegative: e.target.checked })
                 }
-                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                className="h-4 w-4 rounded border-[#18120E]/30 text-[#00C875] focus:ring-[#DFFF35]"
               />
               <Label htmlFor="allowNegative" className="text-sm">
                 Allow negative bank balance (go into debt)
@@ -613,23 +613,23 @@ export function SettingsClient({
               <p className="text-sm font-medium">What&apos;s included:</p>
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <div className="w-2 h-2 rounded-full bg-[#DFFF35]" />
                   <span>Meals (name, macros, source, timestamps)</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <div className="w-2 h-2 rounded-full bg-[#00C875]" />
                   <span>Daily logs (calories, macros, water, exercise, notes)</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-purple-500" />
+                  <div className="w-2 h-2 rounded-full bg-[#FF5A3D]" />
                   <span>Weight entries</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-orange-500" />
+                  <div className="w-2 h-2 rounded-full bg-[#FFB000]" />
                   <span>Exercise log</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                  <div className="w-2 h-2 rounded-full bg-[#00C8FF]" />
                   <span>Journal entries</span>
                 </li>
               </ul>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { MealTemplates } from "./MealTemplates";
 
 interface MealTemplate {
@@ -31,6 +32,7 @@ function scaleValue(value: number | null | undefined, quantity: number) {
 }
 
 export function MealTemplatesWrapper() {
+  const router = useRouter();
   const handleUseTemplate = async (template: MealTemplate, quantity: number) => {
     const name = quantity === 1 ? template.name : `${template.name} x${formatQuantity(quantity)}`;
 
@@ -67,7 +69,7 @@ export function MealTemplatesWrapper() {
           }),
         });
 
-        window.location.reload();
+        router.refresh();
       }
     } catch (error) {
       console.error("Error logging template meal:", error);

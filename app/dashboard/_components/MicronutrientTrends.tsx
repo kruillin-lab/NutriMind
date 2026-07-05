@@ -34,13 +34,13 @@ interface NutritionHistoryResponse {
 }
 
 const COLORS = [
-  '#ef4444', // red
-  '#f97316', // orange
-  '#eab308', // yellow
-  '#22c55e', // green
-  '#3b82f6', // blue
-  '#8b5cf6', // purple
-  '#ec4899', // pink
+  '#00C875', // green
+  '#DFFF35', // lime
+  '#00C8FF', // cyan
+  '#FFB000', // amber
+  '#FF5A3D', // red
+  '#B87A00', // dark amber
+  '#6B5738', // brown
 ];
 
 export default function MicronutrientTrends() {

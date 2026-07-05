@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { clampInt } from "@/src/lib/validation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,9 +14,18 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { exerciseMinutes, caloriesBurned, description } = body;
 
-    if (!exerciseMinutes || exerciseMinutes <= 0) {
+    const safeMinutes = clampInt(exerciseMinutes, 0, 1440);
+    if (safeMinutes === null || safeMinutes <= 0) {
       return NextResponse.json(
         { error: "Invalid exercise duration" },
+        { status: 400 }
+      );
+    }
+
+    const safeBurned = caloriesBurned != null ? clampInt(caloriesBurned, 0, 10000) : 0;
+    if (safeBurned === null) {
+      return NextResponse.json(
+        { error: "Invalid calories burned" },
         { status: 400 }
       );
     }
@@ -58,17 +68,17 @@ export async function POST(req: NextRequest) {
       const updatedLog = await tx.dailyLog.update({
         where: { id: dailyLog.id },
         data: {
-          exerciseMinutes: (dailyLog.exerciseMinutes || 0) + exerciseMinutes,
-          caloriesBurned: (dailyLog.caloriesBurned || 0) + (caloriesBurned || 0),
+          exerciseMinutes: (dailyLog.exerciseMinutes || 0) + safeMinutes,
+          caloriesBurned: (dailyLog.caloriesBurned || 0) + safeBurned,
         },
       });
 
-      if (caloriesBurned > 0 && user.calorieBank) {
+      if (safeBurned > 0 && user.calorieBank) {
         await tx.calorieBank.update({
           where: { userId: user.id },
           data: {
-            currentBalance: { increment: caloriesBurned },
-            totalBanked: { increment: caloriesBurned },
+            currentBalance: { increment: safeBurned },
+            totalBanked: { increment: safeBurned },
           },
         });
 
@@ -76,10 +86,10 @@ export async function POST(req: NextRequest) {
           data: {
             bankId: user.calorieBank.id,
             type: "BANK",
-            amount: caloriesBurned,
+            amount: safeBurned,
             reason: description
-              ? `Exercise: ${description} (+${caloriesBurned} kcal)`
-              : `Exercise: +${caloriesBurned} kcal`,
+              ? `Exercise: ${description} (+${safeBurned} kcal)`
+              : `Exercise: +${safeBurned} kcal`,
             caloriesConsumed: updatedLog.caloriesConsumed,
             caloriesTarget: updatedLog.calorieTarget,
             sourceType: "exercise",

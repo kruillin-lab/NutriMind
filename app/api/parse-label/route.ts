@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/src/lib/rateLimit";
 import OpenAI from "openai";
 
 // NUTRIMIND_OPENAI_API_KEY avoids collision with any system-level OPENAI_API_KEY env var
@@ -29,6 +30,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Best-effort per-instance rate limit: 10 requests per user per minute
+  if (!checkRateLimit(`parse-label:${userId}`, 10, 60_000)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   if (!OPENAI_API_KEY.startsWith("sk-")) {
     return NextResponse.json({ error: "Invalid or missing OpenAI API key" }, { status: 500 });
   }
@@ -36,8 +42,13 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { image } = body;
 
-  if (!image || !image.startsWith("data:image/")) {
+  if (!image || typeof image !== "string" || !image.startsWith("data:image/")) {
     return NextResponse.json({ error: "Missing or invalid image" }, { status: 400 });
+  }
+
+  // Data-URL length cap (~6MB of image data once base64 overhead is included)
+  if (image.length > 8_000_000) {
+    return NextResponse.json({ error: "Image too large" }, { status: 413 });
   }
 
   const openai = new OpenAI({ apiKey: OPENAI_API_KEY });

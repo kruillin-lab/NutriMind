@@ -12,6 +12,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     heightCm: "",
     birthDate: "",
@@ -57,6 +58,7 @@ export default function OnboardingPage() {
 
   const handleSubmit = async () => {
     setLoading(true);
+    setSubmitError(null);
     try {
       const bmr = calculateBMR();
       const tdee = calculateTDEE(bmr);
@@ -111,8 +113,7 @@ export default function OnboardingPage() {
         console.error("Failed to initialize user:", errorData);
         // Store error on window for E2E tests to capture
         (window as unknown as Record<string, string | undefined>).__lastError__ = JSON.stringify(errorData);
-        // Show user-friendly error message
-        alert(`Failed to initialize: ${errorData.error || errorData.message || "Unknown error"}`);
+        setSubmitError(String(errorData.error || errorData.message || "Something went wrong. Please try again."));
       }
     } finally {
       setLoading(false);
@@ -120,8 +121,8 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-      <Card className="w-full max-w-lg">
+    <div className="min-h-screen flex items-center justify-center p-4 app-field">
+      <Card className="w-full max-w-lg border-2 border-[#18120E] bg-[#FFF8E7] shadow-[7px_7px_0_#18120E]">
         <CardHeader>
           <CardTitle>Welcome to NutriMind</CardTitle>
           <CardDescription>
@@ -135,7 +136,7 @@ export default function OnboardingPage() {
               <div
                 key={s}
                 className={`h-2 flex-1 rounded-full ${
-                  s <= step ? "bg-blue-600" : "bg-gray-200"
+                  s <= step ? "bg-[#DFFF35] border border-[#18120E]/40" : "bg-[#18120E]/12"
                 }`}
               />
             ))}
@@ -256,15 +257,21 @@ export default function OnboardingPage() {
               </div>
 
               {profile.heightCm && currentWeight && profile.birthDate && (
-                <div className="bg-blue-50 p-4 rounded-lg mt-4">
-                  <p className="text-sm text-blue-900 font-medium">
+                <div className="mt-4 rounded-lg border-2 border-[#18120E] bg-[#DFFF35]/30 p-4">
+                  <p className="text-sm font-medium text-[#18120E]">
                     Your estimated daily target: {calculateTDEE(calculateBMR())} calories
                   </p>
-                  <p className="text-xs text-blue-700 mt-1">
+                  <p className="mt-1 text-xs text-[#6B5738]">
                     This will be your starting budget for the Calorie Bank
                   </p>
                 </div>
               )}
+            </div>
+          )}
+
+          {submitError && (
+            <div className="mt-4 rounded-lg border border-[#FF5A3D]/30 bg-[#FF5A3D]/10 p-3 text-sm text-[#FF5A3D]" role="alert">
+              {submitError}
             </div>
           )}
 

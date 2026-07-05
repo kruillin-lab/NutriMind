@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ScannerModal, type NutritionResult } from "./ScannerModal";
 import {
   Camera,
@@ -95,6 +96,7 @@ function parseManualNumber(value: string) {
 
 export function QuickLogClient({ userId }: QuickLogClientProps) {
   void userId;
+  const router = useRouter();
   const [mode, setMode] = useState<LogMode>("ai");
   const [input, setInput] = useState("");
   const [manualMeal, setManualMeal] = useState<ManualMealState>(INITIAL_MANUAL_MEAL);
@@ -209,7 +211,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
       setInput("");
       setParsedFoods([]);
       setShowParsed(false);
-      window.location.reload();
+      router.refresh();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Failed to log meal");
     } finally {
@@ -291,7 +293,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
       }
 
       setManualMeal(INITIAL_MANUAL_MEAL);
-      window.location.reload();
+      router.refresh();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Failed to log meal");
     } finally {
@@ -312,7 +314,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
         const d = await res.json().catch(() => ({}));
         throw new Error(d.error || `Failed (${res.status})`);
       }
-      window.location.reload();
+      router.refresh();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Failed to log meal");
     } finally {
@@ -462,18 +464,18 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
 
           {/* Error */}
           {mode === "ai" && error && (
-            <div className="rounded-lg border border-rose-500/20 bg-rose-500/[0.07] p-3.5 space-y-2">
+            <div className="rounded-lg border border-[#FF5A3D]/30 bg-[#FF5A3D]/10 p-3.5 space-y-2">
               <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                <AlertCircle className="h-4 w-4 text-[#FF5A3D] shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm text-rose-300 font-medium">Failed to parse</p>
-                  <p className="text-xs text-rose-400/70 mt-0.5">{error}</p>
+                  <p className="text-sm text-[#FF5A3D] font-medium">Failed to parse</p>
+                  <p className="text-xs text-[#FF5A3D]/80 mt-0.5">{error}</p>
                 </div>
               </div>
               <button
                 onClick={() => handleParse(0)}
                 disabled={isLoading}
-                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-rose-500/20 py-1.5 text-xs text-rose-300 hover:bg-rose-500/10 transition-colors"
+                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-[#FF5A3D]/30 py-1.5 text-xs text-[#FF5A3D] hover:bg-[#FF5A3D]/10 transition-colors"
               >
                 <RotateCcw className="h-3 w-3" />
                 Try Again
@@ -522,9 +524,9 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
 
           {/* Submit error */}
           {submitError && (
-            <div className="flex items-start gap-2 rounded-lg border border-rose-500/20 bg-rose-500/[0.07] p-3">
-              <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-rose-300">{submitError}</p>
+            <div className="flex items-start gap-2 rounded-lg border border-[#FF5A3D]/30 bg-[#FF5A3D]/10 p-3">
+              <AlertCircle className="h-4 w-4 text-[#FF5A3D] shrink-0 mt-0.5" />
+              <p className="text-xs text-[#FF5A3D]">{submitError}</p>
             </div>
           )}
 

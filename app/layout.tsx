@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AuthButtons } from "./_components/AuthButtons";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { ThemeProvider } from "@wrksz/themes/next";
+import { MobileNav } from "@/components/MobileNav";
 import Link from "next/link";
 import { Activity, BarChart3, Database, Settings, Utensils } from "lucide-react";
 import "./globals.css";
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: "Modern nutrition tracking with AI-powered Calorie Bank",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -59,8 +59,8 @@ export default function RootLayout({
                       Database
                     </Link>
                   )}
-                  <ThemeToggle />
                   <AuthButtons />
+                  <MobileNav />
                 </nav>
               </div>
             </header>

@@ -4,24 +4,25 @@ export const dynamic = "force-dynamic";
 
 export default function SignUpPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-black">
+    <div className="flex min-h-screen items-center justify-center bg-[#FFF8E7] px-4 py-16 dark:bg-[#18120E]">
       <SignUp
         routing="hash"
         appearance={{
+          variables: {
+            colorPrimary: "#DFFF35",
+          },
           elements: {
             rootBox: "mx-auto",
-            card: "bg-white dark:bg-zinc-900 shadow-lg rounded-xl",
-            headerTitle: "text-zinc-900 dark:text-zinc-50",
-            headerSubtitle: "text-zinc-600 dark:text-zinc-400",
-            socialButtonsBlockButton: "border-zinc-300 dark:border-zinc-700",
-            socialButtonsBlockButtonText: "text-zinc-900 dark:text-zinc-50",
-            formFieldLabel: "text-zinc-700 dark:text-zinc-300",
+            card: "rounded-xl border-2 border-[#18120E] bg-white shadow-[8px_8px_0_#DFFF35] dark:border-[#FFF8E7] dark:bg-[#241A13]",
+            headerTitle: "text-[#18120E] dark:text-[#FFF8E7]",
+            headerSubtitle: "text-[#5B4A3D] dark:text-[#FFF8E7]/70",
+            socialButtonsBlockButton: "border-[#18120E]/20 dark:border-[#FFF8E7]/20",
+            socialButtonsBlockButtonText: "text-[#18120E] dark:text-[#FFF8E7]",
+            formFieldLabel: "text-[#18120E] dark:text-[#FFF8E7]",
             formFieldInput:
-              "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50",
-            footerActionLink:
-              "text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400",
-            primaryButton:
-              "bg-emerald-600 hover:bg-emerald-700 text-white",
+              "border-[#18120E]/25 bg-white text-[#18120E] dark:border-[#FFF8E7]/20 dark:bg-[#18120E] dark:text-[#FFF8E7]",
+            footerActionLink: "text-[#007E8A] hover:text-[#005E67] dark:text-[#00C8FF]",
+            primaryButton: "bg-[#18120E] text-[#DFFF35] hover:bg-[#2A211A] dark:bg-[#DFFF35] dark:text-[#18120E]",
           },
         }}
         forceRedirectUrl="/onboarding"

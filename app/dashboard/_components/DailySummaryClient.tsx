@@ -209,7 +209,7 @@ export function DailySummaryClient({
         meals={meals}
         waterIntake={waterIntake}
         waterTarget={waterTarget}
-        onAddMeal={() => window.location.reload()}
+        onAddMeal={() => router.refresh()}
         onAddWater={handleAddWater}
         onEditMeal={handleEditMeal}
         onDeleteMeal={handleDeleteMeal}

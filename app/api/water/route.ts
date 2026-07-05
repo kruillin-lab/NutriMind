@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { clampInt } from "@/src/lib/validation";
 
 // POST /api/water - Add water intake
 export async function POST(req: NextRequest) {
@@ -14,7 +15,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { amountMl } = body;
 
-    if (!amountMl || amountMl <= 0) {
+    const safeAmountMl = clampInt(amountMl, 0, 10000);
+    if (safeAmountMl === null || safeAmountMl <= 0) {
       return NextResponse.json(
         { error: "Invalid water amount" },
         { status: 400 }
@@ -69,7 +71,7 @@ export async function POST(req: NextRequest) {
           where: { id: dailyLog.id },
           data: {
             waterMl: {
-              increment: amountMl,
+              increment: safeAmountMl,
             },
           },
         });
@@ -81,8 +83,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       waterMl: result.dailyLog.waterMl,
-      amountAdded: amountMl,
-      message: `Added ${amountMl}ml of water`,
+      amountAdded: safeAmountMl,
+      message: `Added ${safeAmountMl}ml of water`,
     });
   } catch (error) {
     console.error("Error logging water:", error);

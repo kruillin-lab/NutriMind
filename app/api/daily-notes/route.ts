@@ -48,6 +48,13 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const { notes, date } = body;
 
+    if (typeof notes !== "string" || notes.length > 10000) {
+      return NextResponse.json(
+        { error: "Notes must be a string of at most 10000 characters" },
+        { status: 400 }
+      );
+    }
+
     const noteDate = date ? new Date(date) : new Date();
     noteDate.setHours(0, 0, 0, 0);
     const nextDay = new Date(noteDate);

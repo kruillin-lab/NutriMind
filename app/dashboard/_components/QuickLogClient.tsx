@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { ScannerModal, type NutritionResult } from "./ScannerModal";
 import {
   Camera,
@@ -95,7 +94,6 @@ function parseManualNumber(value: string) {
 }
 
 export function QuickLogClient({ userId }: QuickLogClientProps) {
-  const router = useRouter();
   const [mode, setMode] = useState<LogMode>("ai");
   const [input, setInput] = useState("");
   const [manualMeal, setManualMeal] = useState<ManualMealState>(INITIAL_MANUAL_MEAL);
@@ -124,7 +122,11 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
     const fetch_ = async () => {
       setIsLoadingPopular(true);
       try {
-        const res = await fetch("/api/cached-foods?limit=6");
+        const headers: Record<string, string> = {};
+        if (process.env.NODE_ENV !== "production") {
+          headers["X-Test-User-Id"] = userId;
+        }
+        const res = await fetch("/api/cached-foods?limit=6", { headers });
         if (!res.ok) throw new Error("failed");
         const data = await res.json();
         if (data.success) setPopularFoods(data.foods);
@@ -135,7 +137,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
       }
     };
     fetch_();
-  }, []);
+  }, [userId]);
 
   const handleScanResult = (result: NutritionResult) => {
     setParsedFoods([{
@@ -218,7 +220,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
       setInput("");
       setParsedFoods([]);
       setShowParsed(false);
-      router.refresh();
+      window.location.reload();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Failed to log meal");
     } finally {
@@ -300,7 +302,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
       }
 
       setManualMeal(INITIAL_MANUAL_MEAL);
-      router.refresh();
+      window.location.reload();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Failed to log meal");
     } finally {
@@ -321,7 +323,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
         const d = await res.json().catch(() => ({}));
         throw new Error(d.error || `Failed (${res.status})`);
       }
-      router.refresh();
+      window.location.reload();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Failed to log meal");
     } finally {
@@ -374,6 +376,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
             {MEAL_TYPES.map((t) => (
               <button
                 key={t}
+                type="button"
                 onClick={() => setMealType(t)}
                 className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider border transition-colors ${
                   mealType === t
@@ -398,6 +401,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                   className="w-full resize-none rounded-lg border border-input bg-background px-3.5 py-3 pr-10 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
                 />
                 <button
+                  type="button"
                   onClick={() => setShowScanner(true)}
                   className="absolute bottom-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                   title="Scan barcode or nutrition label"
@@ -408,6 +412,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
 
               {/* Parse button */}
               <button
+                type="button"
                 onClick={() => handleParse(0)}
                 disabled={!input.trim() || isLoading || isSubmitting}
                 className="btn-primary w-full gap-2 disabled:cursor-not-allowed disabled:opacity-40"
@@ -480,6 +485,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => handleParse(0)}
                 disabled={isLoading}
                 className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-destructive/25 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
@@ -495,7 +501,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
             <div className="overflow-hidden rounded-xl border border-border bg-secondary">
               <div className="flex items-center justify-between border-b border-border px-3.5 py-2.5">
                 <span className="text-xs font-medium text-foreground">Detected items</span>
-                <button onClick={() => setShowParsed(false)} className="text-muted-foreground transition-colors hover:text-foreground">
+                <button type="button" onClick={() => setShowParsed(false)} className="text-muted-foreground transition-colors hover:text-foreground">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -518,6 +524,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
               <div className="flex items-center justify-between border-t border-border px-3.5 py-2.5">
                 <span className="num text-sm font-semibold text-foreground">Total: {totalCal} kcal</span>
                 <button
+                  type="button"
                   onClick={handleConfirm}
                   disabled={isSubmitting}
                   className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
@@ -554,6 +561,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                   {popularFoods.map((food) => (
                     <button
                       key={food.id}
+                      type="button"
                       onClick={() => { setInput(food.originalText); setIsExpanded(false); }}
                       disabled={isSubmitting}
                       title={`${food.calories} kcal · Used ${food.hitCount}×`}
@@ -579,6 +587,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
               ].map(({ label, cal }) => (
                 <button
                   key={label}
+                  type="button"
                   onClick={() => handleQuickAdd(label, cal)}
                   disabled={isSubmitting}
                   className="rounded-full border border-border bg-background px-2.5 py-0.5 text-[11px] text-foreground transition-colors hover:border-input hover:bg-secondary disabled:opacity-40"
@@ -593,6 +602,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
           {mode === "ai" && (
           <div className="border-t border-border pt-1">
             <button
+              type="button"
               onClick={() => setIsExpanded(!isExpanded)}
               className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
             >
@@ -610,6 +620,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                 ].map((s, i) => (
                   <button
                     key={i}
+                    type="button"
                     onClick={() => { setInput(s); setIsExpanded(false); }}
                     className="block w-full rounded-lg px-2 py-1 text-left text-[11px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                   >

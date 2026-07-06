@@ -10,7 +10,9 @@ export async function POST(req: NextRequest) {
   return handleRoute("Failed to log meal", async () => {
     const userId = await requireUserId();
 
-    const body = await req.json();
+    const body = await req.json().catch(() => {
+      throw new ApiError(400, "Invalid meal data");
+    });
     const { name, calories, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg, vitaminCMg, calciumMg, ironMg, potassiumMg, servingSizeG, mealType = "OTHER", date: dateParam } = body;
 
     const safeName = truncate(name, 200);

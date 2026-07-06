@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -119,17 +118,19 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
     });
 
     const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+    const areaD = `${pathD} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`;
 
     return (
-      <div className="mt-4 p-3 bg-slate-50 rounded-lg">
+      <div className="mt-4 rounded-xl border border-border bg-secondary/60 p-3">
         <div className="flex justify-between text-xs text-muted-foreground mb-2">
-          <span>{minWeight.toFixed(1)} kg</span>
-          <span>{maxWeight.toFixed(1)} kg</span>
+          <span className="num">{minWeight.toFixed(1)} kg</span>
+          <span className="num">{maxWeight.toFixed(1)} kg</span>
         </div>
-        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-28">
-          <path d={pathD} fill="none" stroke="hsl(142, 76%, 36%)" strokeWidth="2" />
+        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-28" preserveAspectRatio="none">
+          <path d={areaD} fill="#D97757" fillOpacity="0.12" stroke="none" />
+          <path d={pathD} fill="none" stroke="#D97757" strokeWidth="2" vectorEffect="non-scaling-stroke" />
           {points.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r="2" fill="hsl(142, 76%, 36%)" />
+            <circle key={i} cx={p.x} cy={p.y} r="2" fill="#D97757" />
           ))}
         </svg>
         <div className="flex justify-between text-xs text-muted-foreground mt-2">
@@ -141,31 +142,39 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <Scale className="h-5 w-5 text-teal-500" />
-          Weight Tracker
-        </CardTitle>
-      </CardHeader>
+    <section className="surface overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+        <Scale className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">Weight Tracker</h3>
+      </div>
 
-      <CardContent className="space-y-4">
+      <div className="space-y-4 px-5 py-4">
         {loading ? (
           <div className="text-center py-4 text-muted-foreground">Loading weight data...</div>
         ) : (
           <>
             {/* Current Weight Display */}
             {latestWeight && (
-              <div className="flex items-center justify-between p-3 bg-teal-50 rounded-lg border border-teal-100">
+              <div className="flex items-center justify-between rounded-xl surface-raised p-4">
                 <div>
-                  <p className="text-2xl font-bold text-teal-700">{latestWeight.toFixed(1)} kg</p>
-                  <p className="text-xs text-teal-600">Current weight</p>
+                  <p className="font-serif text-3xl font-medium text-foreground num">
+                    {latestWeight.toFixed(1)} kg
+                  </p>
+                  <p className="mt-1 text-xs tracking-wide text-muted-foreground">Current weight</p>
                 </div>
                 {trend && (
-                  <div className={`flex items-center gap-1 ${trend.isDown ? "text-green-600" : trend.isUp ? "text-red-600" : "text-gray-500"}`}>
-                    {trend.isDown ? <TrendingDown className="h-5 w-5" /> : trend.isUp ? <TrendingUp className="h-5 w-5" /> : null}
-                    <span className="text-sm font-medium">{trend.diff} kg</span>
-                  </div>
+                  <span
+                    className={`flex items-center gap-1 ${
+                      trend.isDown ? "chip-green" : trend.isUp ? "chip-rose" : "text-xs text-muted-foreground"
+                    }`}
+                  >
+                    {trend.isDown ? (
+                      <TrendingDown className="h-3.5 w-3.5" />
+                    ) : trend.isUp ? (
+                      <TrendingUp className="h-3.5 w-3.5" />
+                    ) : null}
+                    {trend.diff} kg
+                  </span>
                 )}
               </div>
             )}
@@ -174,8 +183,8 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
             {simpleChart()}
 
             {/* Log Weight Form */}
-            <div className="space-y-3 pt-2 border-t">
-              <Label className="text-sm font-medium">Log Weight</Label>
+            <div className="space-y-3 border-t border-border pt-4">
+              <Label className="text-sm font-medium text-foreground">Log Weight</Label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="weight" className="text-xs text-muted-foreground">
@@ -216,16 +225,18 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
 
             {/* Recent Entries */}
             {entries.length > 0 && (
-              <div className="space-y-2 pt-2 border-t">
-                <Label className="text-sm font-medium">Recent Entries</Label>
+              <div className="space-y-2 border-t border-border pt-4">
+                <Label className="text-sm font-medium text-foreground">Recent Entries</Label>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {[...entries].reverse().slice(0, 7).map((entry) => (
                     <div
                       key={entry.id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                      className="flex items-center justify-between rounded-lg bg-secondary/60 p-2"
                     >
                       <div>
-                        <p className="font-medium text-sm">{entry.weightKg.toFixed(1)} kg</p>
+                        <p className="num text-sm font-medium text-foreground">
+                          {entry.weightKg.toFixed(1)} kg
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(entry.date).toLocaleDateString()}
                         </p>
@@ -245,7 +256,7 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

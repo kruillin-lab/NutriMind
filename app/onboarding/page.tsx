@@ -122,9 +122,9 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 app-field">
-      <Card className="w-full max-w-lg border-2 border-[#18120E] bg-[#FFF8E7] shadow-[7px_7px_0_#18120E]">
+      <Card className="surface w-full max-w-lg">
         <CardHeader>
-          <CardTitle>Welcome to NutriMind</CardTitle>
+          <CardTitle className="font-serif text-2xl font-medium">Welcome to NutriMind</CardTitle>
           <CardDescription>
             Let&apos;s set up your profile to personalize your Calorie Bank
           </CardDescription>
@@ -135,8 +135,8 @@ export default function OnboardingPage() {
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
-                className={`h-2 flex-1 rounded-full ${
-                  s <= step ? "bg-[#DFFF35] border border-[#18120E]/40" : "bg-[#18120E]/12"
+                className={`h-1.5 flex-1 rounded-full ${
+                  s <= step ? "bg-primary" : "bg-foreground/10"
                 }`}
               />
             ))}
@@ -257,11 +257,11 @@ export default function OnboardingPage() {
               </div>
 
               {profile.heightCm && currentWeight && profile.birthDate && (
-                <div className="mt-4 rounded-lg border-2 border-[#18120E] bg-[#DFFF35]/30 p-4">
-                  <p className="text-sm font-medium text-[#18120E]">
+                <div className="mt-4 rounded-xl border border-border bg-secondary p-4">
+                  <p className="text-sm font-medium text-foreground">
                     Your estimated daily target: {calculateTDEE(calculateBMR())} calories
                   </p>
-                  <p className="mt-1 text-xs text-[#6B5738]">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     This will be your starting budget for the Calorie Bank
                   </p>
                 </div>
@@ -270,7 +270,7 @@ export default function OnboardingPage() {
           )}
 
           {submitError && (
-            <div className="mt-4 rounded-lg border border-[#FF5A3D]/30 bg-[#FF5A3D]/10 p-3 text-sm text-[#FF5A3D]" role="alert">
+            <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
               {submitError}
             </div>
           )}

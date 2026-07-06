@@ -1,29 +1,23 @@
-import { auth } from '@clerk/nextjs/server';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { applyCalorieBankOverageAdjustment } from '@/src/lib/calorieBank';
+import { ApiError, handleRoute, requireUserId } from '@/src/lib/api-helpers';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
 export async function PUT(req: NextRequest, { params }: RouteParams) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  return handleRoute('Failed to update meal', async () => {
+    const userId = await requireUserId();
 
     const { id } = await params;
     const body = await req.json();
     const { name, calories, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg, vitaminCMg, calciumMg, ironMg, potassiumMg, servingSizeG, mealType } = body;
 
     if (!name || !calories || calories < 0) {
-      return NextResponse.json(
-        { error: 'Invalid meal data' },
-        { status: 400 }
-      );
+      throw new ApiError(400, 'Invalid meal data');
     }
 
     // Find the meal and verify ownership
@@ -43,11 +37,11 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     });
 
     if (!existingMeal) {
-      return NextResponse.json({ error: 'Meal not found' }, { status: 404 });
+      throw new ApiError(404, 'Meal not found');
     }
 
     if (existingMeal.dailyLog.user.id !== userId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw new ApiError(403, 'Forbidden');
     }
 
     const calorieDifference = calories - existingMeal.calories;
@@ -111,27 +105,18 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       }
     );
 
-    return NextResponse.json({
+    return {
       success: true,
       meal: result.meal,
       remainingCalories: result.dailyLog.calorieTarget - result.dailyLog.caloriesConsumed,
       bankBalance: result.bankUpdate?.currentBalance ?? user.calorieBank?.currentBalance,
-    });
-  } catch (error) {
-    console.error('Error updating meal:', error);
-    return NextResponse.json(
-      { error: 'Failed to update meal' },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }
 
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  return handleRoute('Failed to delete meal', async () => {
+    const userId = await requireUserId();
 
     const { id } = await params;
 
@@ -152,11 +137,11 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     });
 
     if (!existingMeal) {
-      return NextResponse.json({ error: 'Meal not found' }, { status: 404 });
+      throw new ApiError(404, 'Meal not found');
     }
 
     if (existingMeal.dailyLog.user.id !== userId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw new ApiError(403, 'Forbidden');
     }
 
     const user = existingMeal.dailyLog.user;
@@ -202,16 +187,10 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       }
     );
 
-    return NextResponse.json({
+    return {
       success: true,
       remainingCalories: result.dailyLog.calorieTarget - result.dailyLog.caloriesConsumed,
       bankBalance: result.bankUpdate?.currentBalance ?? user.calorieBank?.currentBalance,
-    });
-  } catch (error) {
-    console.error('Error deleting meal:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete meal' },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }

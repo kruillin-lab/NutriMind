@@ -1,25 +1,15 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { calculateStreaks } from "@/src/lib/streakUtils";
+import { handleRoute, requireUserId } from "@/src/lib/api-helpers";
 
 export async function GET(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to fetch daily logs", async () => {
+    const userId = await requireUserId();
 
     const { searchParams } = new URL(req.url);
     const range = searchParams.get("range") || "week";
     const days = range === "month" ? 30 : range === "week" ? 7 : 14;
-
-    const startDate = new Date();
-    startDate.setHours(0, 0, 0, 0);
-    startDate.setDate(startDate.getDate() - days + 1);
-
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + days);
 
     const dailyLogs = await prisma.dailyLog.findMany({
       where: { userId },
@@ -77,7 +67,7 @@ export async function GET(req: NextRequest) {
       ? Math.round(logs.reduce((sum, l) => sum + l.fatG, 0) / logs.length)
       : 0;
 
-    return NextResponse.json({
+    return {
       logs,
       dailyTarget,
       stats: {
@@ -91,12 +81,6 @@ export async function GET(req: NextRequest) {
         currentStreak,
         maxStreak,
       },
-    });
-  } catch (error) {
-    console.error("Error fetching daily logs:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch daily logs" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }

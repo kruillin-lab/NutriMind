@@ -58,11 +58,11 @@ interface MealListProps {
 }
 
 const mealTypeColors: Record<string, string> = {
-  BREAKFAST: 'bg-orange-100 text-orange-800 border-orange-200',
-  LUNCH: 'bg-green-100 text-green-800 border-green-200',
-  DINNER: 'bg-blue-100 text-blue-800 border-blue-200',
-  SNACK: 'bg-purple-100 text-purple-800 border-purple-200',
-  OTHER: 'bg-gray-100 text-gray-800 border-gray-200',
+  BREAKFAST: 'border-chart-4/30 bg-chart-4/10 text-foreground',
+  LUNCH: 'border-chart-2/30 bg-chart-2/10 text-foreground',
+  DINNER: 'border-chart-3/30 bg-chart-3/10 text-foreground',
+  SNACK: 'border-chart-5/30 bg-chart-5/10 text-foreground',
+  OTHER: 'border-border bg-muted text-muted-foreground',
 };
 
 const mealTypeLabels: Record<string, string> = {
@@ -93,13 +93,13 @@ function MicronutrientBadge({
 }) {
   const displayValue = value ?? 0;
   return (
-    <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
+    <div className="flex items-center gap-2 rounded-lg bg-secondary p-2">
       <Icon className={`h-4 w-4 ${colorClass}`} />
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-500">{label}</p>
-        <p className="text-sm font-semibold text-gray-900">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="num text-sm font-semibold text-foreground">
           {displayValue.toFixed(1)}
-          <span className="text-xs font-normal text-gray-500 ml-0.5">{unit}</span>
+          <span className="text-xs font-normal text-muted-foreground ml-0.5">{unit}</span>
         </p>
       </div>
     </div>
@@ -120,7 +120,7 @@ function MealCard({
   const [showDetails, setShowDetails] = useState(false);
 
   return (
-    <div className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+    <div className="surface p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
@@ -130,7 +130,7 @@ function MealCard({
             >
               {mealTypeLabels[meal.mealType]}
             </Badge>
-            <span className="text-xs text-gray-500 flex items-center gap-1">
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {formatTime(meal.createdAt)}
             </span>
@@ -140,88 +140,88 @@ function MealCard({
               </Badge>
             )}
           </div>
-          <h3 className="font-semibold text-gray-900 truncate">{meal.name}</h3>
+          <h3 className="font-medium text-foreground truncate">{meal.name}</h3>
           {meal.servingSizeG != null && meal.servingSizeG > 0 && (
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="num mt-1 text-xs text-muted-foreground">
               Serving: {meal.servingSizeG.toFixed(1).replace(/\.0$/, '')}g
             </p>
           )}
         </div>
         <div className="text-right">
-          <p className="font-bold text-gray-900">{meal.calories} cal</p>
-          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-            <span>P: {meal.proteinG}g</span>
-            <span>C: {meal.carbsG}g</span>
-            <span>F: {meal.fatG}g</span>
+          <p className="num font-serif text-lg font-semibold text-foreground">{meal.calories} cal</p>
+          <div className="flex items-center justify-end gap-1.5 mt-1.5">
+            <span className="num rounded-full border border-chart-2/25 bg-chart-2/10 px-2 py-0.5 text-[11px] text-foreground">P {meal.proteinG}g</span>
+            <span className="num rounded-full border border-chart-4/30 bg-chart-4/10 px-2 py-0.5 text-[11px] text-foreground">C {meal.carbsG}g</span>
+            <span className="num rounded-full border border-chart-3/25 bg-chart-3/10 px-2 py-0.5 text-[11px] text-foreground">F {meal.fatG}g</span>
           </div>
         </div>
       </div>
 
       {/* Expandable Micronutrient Details */}
       {showDetails && (
-        <div className="mt-4 pt-4 border-t">
-          <p className="text-sm font-medium text-gray-700 mb-3">Micronutrients</p>
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">Micronutrients</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             <MicronutrientBadge
               icon={Leaf}
               label="Fiber"
               value={meal.fiberG}
               unit="g"
-              colorClass="text-green-500"
+              colorClass="text-chart-2"
             />
             <MicronutrientBadge
               icon={Candy}
               label="Sugar"
               value={meal.sugarG}
               unit="g"
-              colorClass="text-pink-500"
+              colorClass="text-chart-5"
             />
             <MicronutrientBadge
               icon={Droplet}
               label="Sodium"
               value={meal.sodiumMg}
               unit="mg"
-              colorClass="text-gray-500"
+              colorClass="text-chart-3"
             />
             <MicronutrientBadge
               icon={Pill}
               label="Vitamin C"
               value={meal.vitaminCMg}
               unit="mg"
-              colorClass="text-orange-500"
+              colorClass="text-chart-4"
             />
             <MicronutrientBadge
               icon={Bone}
               label="Calcium"
               value={meal.calciumMg}
               unit="mg"
-              colorClass="text-blue-500"
+              colorClass="text-muted-foreground"
             />
             <MicronutrientBadge
               icon={Cross}
               label="Iron"
               value={meal.ironMg}
               unit="mg"
-              colorClass="text-red-500"
+              colorClass="text-destructive"
             />
             <MicronutrientBadge
               icon={Zap}
               label="Potassium"
               value={meal.potassiumMg}
               unit="mg"
-              colorClass="text-yellow-500"
+              colorClass="text-chart-1"
             />
           </div>
         </div>
       )}
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-between mt-3 pt-3 border-t">
+      <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setShowDetails(!showDetails)}
-          className="text-gray-600"
+          className="text-muted-foreground"
         >
           {showDetails ? (
             <>
@@ -260,7 +260,7 @@ function MealCard({
           <Button
             variant="ghost"
             size="sm"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
             onClick={() => onDelete(meal.id)}
             disabled={isDeleting === meal.id}
           >
@@ -334,7 +334,7 @@ export function MealList({ meals, isLoading, onMealUpdated, onMealDeleted }: Mea
                 <Utensils className="h-5 w-5" />
                 Meals
               </CardTitle>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {meals.length} meal{meals.length !== 1 ? 's' : ''} logged
               </p>
             </div>
@@ -348,11 +348,11 @@ export function MealList({ meals, isLoading, onMealUpdated, onMealDeleted }: Mea
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-gray-500">Loading meals...</div>
+            <div className="text-center py-8 text-muted-foreground">Loading meals...</div>
           ) : meals.length === 0 ? (
             <div className="text-center py-8">
-              <Utensils className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4">No meals logged for this day</p>
+              <Utensils className="h-12 w-12 text-muted-foreground opacity-40 mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">No meals logged for this day</p>
               <a href="/dashboard">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
@@ -363,26 +363,26 @@ export function MealList({ meals, isLoading, onMealUpdated, onMealDeleted }: Mea
           ) : (
             <div className="space-y-4">
               {/* Macro Summary */}
-              <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg mb-6">
+              <div className="grid grid-cols-3 gap-4 p-4 bg-secondary rounded-xl mb-6">
                 <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-1">Protein</p>
+                  <p className="text-xs tracking-wide text-muted-foreground mb-1">Protein</p>
                   <div className="flex items-center justify-center gap-1">
-                    <Dumbbell className="h-4 w-4 text-blue-500" />
-                    <span className="font-semibold text-gray-900">{totalProtein.toFixed(1)}g</span>
+                    <Dumbbell className="h-4 w-4 text-chart-2" />
+                    <span className="num font-semibold text-foreground">{totalProtein.toFixed(1)}g</span>
                   </div>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-1">Carbs</p>
+                  <p className="text-xs tracking-wide text-muted-foreground mb-1">Carbs</p>
                   <div className="flex items-center justify-center gap-1">
-                    <Flame className="h-4 w-4 text-orange-500" />
-                    <span className="font-semibold text-gray-900">{totalCarbs.toFixed(1)}g</span>
+                    <Flame className="h-4 w-4 text-chart-4" />
+                    <span className="num font-semibold text-foreground">{totalCarbs.toFixed(1)}g</span>
                   </div>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-1">Fat</p>
+                  <p className="text-xs tracking-wide text-muted-foreground mb-1">Fat</p>
                   <div className="flex items-center justify-center gap-1">
-                    <Droplets className="h-4 w-4 text-yellow-500" />
-                    <span className="font-semibold text-gray-900">{totalFat.toFixed(1)}g</span>
+                    <Droplets className="h-4 w-4 text-chart-3" />
+                    <span className="num font-semibold text-foreground">{totalFat.toFixed(1)}g</span>
                   </div>
                 </div>
               </div>

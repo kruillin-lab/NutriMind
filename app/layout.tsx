@@ -31,30 +31,29 @@ export default async function RootLayout({
           signUpFallbackRedirectUrl="/onboarding"
         >
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <header className="sticky top-0 z-50 border-b border-[#DFFF35]/30 bg-[#18120E]/95 text-[#FFF8E7] backdrop-blur-xl">
-              <div className="h-2 bg-[linear-gradient(90deg,#DFFF35,#00C875,#00C8FF,#FF5A3D,#FFB000)]" />
+            <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
               <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
                 <Link href="/" className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg border-2 border-[#FFF8E7] bg-[#DFFF35] text-[#18120E] shadow-[4px_4px_0_#00C8FF]">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
                     <Activity className="h-4 w-4" />
                   </span>
-                  <span className="text-sm font-semibold tracking-tight text-[#FFF8E7]">NutriMind</span>
+                  <span className="font-serif text-base font-semibold tracking-tight text-foreground">NutriMind</span>
                 </Link>
                 <nav className="flex items-center gap-1.5">
-                  <Link href="/dashboard" className="hidden items-center gap-1.5 rounded-lg border border-transparent px-2.5 py-1.5 text-sm text-[#FFF8E7]/70 transition-colors hover:border-[#DFFF35]/30 hover:bg-[#DFFF35]/12 hover:text-[#DFFF35] sm:flex">
+                  <Link href="/dashboard" className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground sm:flex">
                     <BarChart3 className="h-3.5 w-3.5" />
                     Dashboard
                   </Link>
-                  <Link href="/meals" className="hidden items-center gap-1.5 rounded-lg border border-transparent px-2.5 py-1.5 text-sm text-[#FFF8E7]/70 transition-colors hover:border-[#00C8FF]/30 hover:bg-[#00C8FF]/12 hover:text-[#00C8FF] sm:flex">
+                  <Link href="/meals" className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground sm:flex">
                     <Utensils className="h-3.5 w-3.5" />
                     Meals
                   </Link>
-                  <Link href="/settings" className="hidden items-center gap-1.5 rounded-lg border border-transparent px-2.5 py-1.5 text-sm text-[#FFF8E7]/70 transition-colors hover:border-[#FFB000]/30 hover:bg-[#FFB000]/12 hover:text-[#FFB000] md:flex">
+                  <Link href="/settings" className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:flex">
                     <Settings className="h-3.5 w-3.5" />
                     Settings
                   </Link>
                   {process.env.NODE_ENV !== "production" && (
-                    <Link href="/database" className="hidden items-center gap-1.5 rounded-lg border border-transparent px-2.5 py-1.5 text-sm text-[#FFF8E7]/70 transition-colors hover:border-[#DFFF35]/30 hover:bg-[#DFFF35]/12 hover:text-[#DFFF35] lg:flex">
+                    <Link href="/database" className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:flex">
                       <Database className="h-3.5 w-3.5" />
                       Database
                     </Link>

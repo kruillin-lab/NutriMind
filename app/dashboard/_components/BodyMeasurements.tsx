@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,15 +38,15 @@ type MeasurementKey = Exclude<
 >;
 
 const MEASUREMENT_FIELDS: { key: MeasurementKey; label: string; unit: string; color: string }[] = [
-  { key: "waistCm", label: "Waist", unit: "cm", color: "#3b82f6" },
-  { key: "hipsCm", label: "Hips", unit: "cm", color: "#8b5cf6" },
-  { key: "chestCm", label: "Chest", unit: "cm", color: "#06b6d4" },
-  { key: "thighCm", label: "Thigh", unit: "cm", color: "#f59e0b" },
-  { key: "bicepCm", label: "Bicep", unit: "cm", color: "#10b981" },
-  { key: "shoulderCm", label: "Shoulder", unit: "cm", color: "#ef4444" },
-  { key: "neckCm", label: "Neck", unit: "cm", color: "#6366f1" },
-  { key: "bodyFatPct", label: "Body Fat", unit: "%", color: "#ec4899" },
-  { key: "muscleMassKg", label: "Muscle Mass", unit: "kg", color: "#14b8a6" },
+  { key: "waistCm", label: "Waist", unit: "cm", color: "#D97757" },
+  { key: "hipsCm", label: "Hips", unit: "cm", color: "#7D8A63" },
+  { key: "chestCm", label: "Chest", unit: "cm", color: "#6A96B8" },
+  { key: "thighCm", label: "Thigh", unit: "cm", color: "#D4A27F" },
+  { key: "bicepCm", label: "Bicep", unit: "cm", color: "#8E6C88" },
+  { key: "shoulderCm", label: "Shoulder", unit: "cm", color: "#B3402F" },
+  { key: "neckCm", label: "Neck", unit: "cm", color: "#C7913B" },
+  { key: "bodyFatPct", label: "Body Fat", unit: "%", color: "#D97757" },
+  { key: "muscleMassKg", label: "Muscle Mass", unit: "kg", color: "#7D8A63" },
 ];
 
 export default function BodyMeasurements() {
@@ -165,32 +164,28 @@ export default function BodyMeasurements() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-muted-foreground">Loading...</div>
-        </CardContent>
-      </Card>
+      <section className="surface p-6">
+        <div className="text-center text-muted-foreground">Loading...</div>
+      </section>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Body Measurements</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowForm(!showForm)}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Log
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <section className="surface overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <h3 className="text-sm font-semibold text-foreground">Body Measurements</h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowForm(!showForm)}
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Log
+        </Button>
+      </div>
+      <div className="space-y-4 px-5 py-4">
         {showForm && (
-          <form onSubmit={handleSubmit} className="space-y-3 border rounded-lg p-4">
+          <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-border bg-secondary/40 p-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <Label htmlFor="measure-date">Date</Label>
@@ -253,10 +248,10 @@ export default function BodyMeasurements() {
                 <button
                   key={field.key}
                   onClick={() => toggleMetric(field.key)}
-                  className={`px-2 py-1 text-xs rounded-full border transition ${
+                  className={`px-2.5 py-1 text-xs rounded-full border transition ${
                     selectedMetrics.includes(field.key)
                       ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted text-muted-foreground border-transparent"
+                      : "bg-muted text-muted-foreground border-border"
                   }`}
                 >
                   {field.label}
@@ -268,20 +263,28 @@ export default function BodyMeasurements() {
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(20,20,19,0.08)" />
                   <XAxis
                     dataKey="date"
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
+                    tick={{ fill: "var(--muted-foreground)" }}
                   />
-                  <YAxis fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "var(--muted-foreground)" }}
+                  />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "12px",
+                      boxShadow: "0 1px 2px rgba(20,20,19,0.04), 0 4px 16px rgba(20,20,19,0.05)",
                       fontSize: "12px",
+                      color: "var(--foreground)",
                     }}
                   />
                   {MEASUREMENT_FIELDS.filter((f) =>
@@ -306,7 +309,7 @@ export default function BodyMeasurements() {
               {measurements.slice(0, 5).map((m) => (
                 <div
                   key={m.id}
-                  className="flex items-center justify-between text-sm border-b pb-2 last:border-0"
+                  className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0"
                 >
                   <span className="text-muted-foreground w-20">
                     {format(parseISO(m.date), "MMM d, yyyy")}
@@ -314,7 +317,7 @@ export default function BodyMeasurements() {
                   <div className="flex flex-wrap gap-x-3 gap-y-1 flex-1 justify-end">
                     {MEASUREMENT_FIELDS.map((field) =>
                       m[field.key] !== null ? (
-                        <span key={field.key} className="text-xs">
+                        <span key={field.key} className="num text-xs text-foreground">
                           <span style={{ color: field.color }}>●</span>{" "}
                           {m[field.key]}
                           {field.unit}
@@ -335,7 +338,7 @@ export default function BodyMeasurements() {
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

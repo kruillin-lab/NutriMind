@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/src/lib/rateLimit";
+import { jsonError } from "@/src/lib/api-helpers";
 
 const BARCODE_PATTERN = /^[0-9]{6,14}$/;
 
@@ -18,21 +19,21 @@ function getNutrient(
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return jsonError(401, "Unauthorized");
   }
 
   // Best-effort per-instance rate limit: 30 requests per user per minute
   if (!checkRateLimit(`scan-barcode:${userId}`, 30, 60_000)) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return jsonError(429, "Too many requests");
   }
 
   const barcode = new URL(req.url).searchParams.get("barcode");
   if (!barcode) {
-    return NextResponse.json({ error: "Missing barcode" }, { status: 400 });
+    return jsonError(400, "Missing barcode");
   }
 
   if (!BARCODE_PATTERN.test(barcode)) {
-    return NextResponse.json({ error: "Invalid barcode" }, { status: 400 });
+    return jsonError(400, "Invalid barcode");
   }
 
   const res = await fetch(
@@ -41,13 +42,13 @@ export async function GET(req: NextRequest) {
   );
 
   if (!res.ok) {
-    return NextResponse.json({ error: "Failed to reach Open Food Facts" }, { status: 502 });
+    return jsonError(502, "Failed to reach Open Food Facts");
   }
 
   const data = await res.json();
 
   if (data.status !== 1 || !data.product) {
-    return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    return jsonError(404, "Product not found");
   }
 
   const { product } = data;

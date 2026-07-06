@@ -22,12 +22,12 @@ export function MobileNav() {
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#FFF8E7]/20 text-[#FFF8E7] transition-colors hover:border-[#DFFF35]/40 hover:text-[#DFFF35]"
+        className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-foreground transition-colors hover:bg-secondary"
       >
         {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
       </button>
       {open && (
-        <div className="absolute inset-x-0 top-full border-b-2 border-[#DFFF35]/30 bg-[#18120E] px-4 py-3 shadow-[0_20px_48px_rgba(0,0,0,0.5)]">
+        <div className="absolute inset-x-0 top-full border-b border-border bg-background px-4 py-3 shadow-sm">
           <nav className="flex flex-col gap-1">
             {links.map(({ href, label, icon: Icon }) => (
               <Link
@@ -36,8 +36,8 @@ export function MobileNav() {
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                   pathname.startsWith(href)
-                    ? "bg-[#DFFF35]/15 text-[#DFFF35]"
-                    : "text-[#FFF8E7]/80 hover:bg-[#FFF8E7]/8 hover:text-[#FFF8E7]"
+                    ? "bg-primary/10 font-medium text-primary"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
                 <Icon className="h-4 w-4" />

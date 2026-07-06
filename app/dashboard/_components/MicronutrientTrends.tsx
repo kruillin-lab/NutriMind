@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import {
@@ -33,14 +32,15 @@ interface NutritionHistoryResponse {
   data: HistoryData[];
 }
 
+// Approved chart palette, in order
 const COLORS = [
-  '#00C875', // green
-  '#DFFF35', // lime
-  '#00C8FF', // cyan
-  '#FFB000', // amber
-  '#FF5A3D', // red
-  '#B87A00', // dark amber
-  '#6B5738', // brown
+  '#D97757', // terracotta
+  '#7D8A63', // olive
+  '#6A96B8', // slate blue
+  '#D4A27F', // kraft
+  '#8E6C88', // plum
+  '#B3402F', // danger red
+  '#C7913B', // amber
 ];
 
 export default function MicronutrientTrends() {
@@ -104,31 +104,25 @@ export default function MicronutrientTrends() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="pt-6 flex items-center justify-center min-h-[300px]">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <section className="surface mt-6 flex min-h-[300px] items-center justify-center p-6">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </section>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="pt-6 text-center text-destructive min-h-[300px] flex items-center justify-center">
-          Error loading trends: {error}
-        </CardContent>
-      </Card>
+      <section className="surface mt-6 flex min-h-[300px] items-center justify-center p-6 text-center text-destructive">
+        Error loading trends: {error}
+      </section>
     );
   }
 
   if (!data || data.data.length === 0) {
     return (
-      <Card>
-        <CardContent className="pt-6 text-center text-muted-foreground min-h-[300px] flex items-center justify-center">
-          No nutrition data available for the selected period.
-        </CardContent>
-      </Card>
+      <section className="surface mt-6 flex min-h-[300px] items-center justify-center p-6 text-center text-muted-foreground">
+        No nutrition data available for the selected period.
+      </section>
     );
   }
 
@@ -140,10 +134,10 @@ export default function MicronutrientTrends() {
   }));
 
   return (
-    <Card className="mt-6">
-      <CardHeader className="pb-2">
+    <section className="surface mt-6 overflow-hidden">
+      <div className="border-b border-border px-5 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardTitle className="text-lg">Micronutrient Trends</CardTitle>
+          <h3 className="text-sm font-semibold text-foreground">Micronutrient Trends</h3>
           <div className="flex gap-2">
             {[7, 30, 90].map(dayOption => (
               <Button
@@ -176,25 +170,25 @@ export default function MicronutrientTrends() {
             </Button>
           ))}
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent>
+      <div className="px-5 py-4">
         <div className="h-[350px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(20,20,19,0.08)" />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
                 interval="preserveStartEnd"
               />
-              <YAxis tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }} />
               <Tooltip
                 content={({ active, payload, label }) => {
                   if (!active || !payload) return null;
                   return (
-                    <div className="bg-popover border rounded-lg p-2 shadow-lg">
-                      <p className="font-semibold text-sm mb-1">{label}</p>
+                    <div className="surface p-3">
+                      <p className="font-semibold text-sm mb-1 text-foreground">{label}</p>
                       {(payload as unknown as { dataKey: string; color: string; value: number }[]).map((entry) => {
                         const nutrient = data.nutrients.find(n => n.key === entry.dataKey);
                         if (!nutrient) return null;
@@ -215,7 +209,7 @@ export default function MicronutrientTrends() {
                   );
                 }}
               />
-              <Legend />
+              <Legend wrapperStyle={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
               {selectedNutrients.map(key => (
                 <Line
                   key={key}
@@ -236,7 +230,7 @@ export default function MicronutrientTrends() {
           Click nutrient buttons above to show/hide lines on the chart.
           Target values shown in tooltips.
         </p>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

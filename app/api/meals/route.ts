@@ -1,17 +1,14 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { addLocalDays, getLocalMidnight, parseLocalDate } from "@/lib/date-utils";
 import { applyCalorieBankOverageAdjustment } from "@/src/lib/calorieBank";
 import { clampInt, clampNumber, isValidDateString, truncate } from "@/src/lib/validation";
+import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
 
 export async function POST(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to log meal", async () => {
+    const userId = await requireUserId();
 
     const body = await req.json();
     const { name, calories, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg, vitaminCMg, calciumMg, ironMg, potassiumMg, servingSizeG, mealType = "OTHER", date: dateParam } = body;
@@ -20,17 +17,11 @@ export async function POST(req: NextRequest) {
     const safeCalories = clampInt(calories, 0, 10000);
 
     if (!safeName || safeCalories === null) {
-      return NextResponse.json(
-        { error: "Invalid meal data" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Invalid meal data");
     }
 
     if (dateParam != null && !isValidDateString(dateParam)) {
-      return NextResponse.json(
-        { error: "Invalid date" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Invalid date");
     }
 
     // Clamp macros (grams) to 0..1000 and micros (mg) to 0..10000; non-numeric values fall back to 0
@@ -57,14 +48,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      throw new ApiError(404, "User not found");
     }
 
     if (!user.calorieBank) {
-      return NextResponse.json(
-        { error: "Calorie bank not initialized" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Calorie bank not initialized");
     }
 
     const dailyTarget = user.calorieBank.dailyTarget;
@@ -160,7 +148,7 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    return NextResponse.json({
+    return {
       success: true,
       meal: result.meal,
       remainingCalories: result.remaining,
@@ -171,27 +159,18 @@ export async function POST(req: NextRequest) {
           : result.bankTransaction
             ? `Logged ${safeCalories} calories. Used ${Math.round(result.bankAdjustment.amount)} from bank.`
             : `Logged ${safeCalories} calories. ${Math.abs(Math.round(result.remaining))} over budget (insufficient bank balance).`,
-    });
-  } catch (error) {
-    console.error("Error logging meal:", error);
-    return NextResponse.json(
-      { error: "Failed to log meal" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }
 
 export async function GET(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to fetch meals", async () => {
+    const userId = await requireUserId();
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
     if (dateParam && !isValidDateString(dateParam)) {
-      return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+      throw new ApiError(400, "Invalid date");
     }
     const date = dateParam ? parseLocalDate(dateParam) : getLocalMidnight();
     const nextDay = addLocalDays(date, 1);
@@ -220,10 +199,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      throw new ApiError(404, "User not found");
     }
 
     const dailyLog = user.dailyLogs[0] || {
@@ -246,7 +222,7 @@ export async function GET(req: NextRequest) {
 
     const remainingCalories = dailyLog.calorieTarget - dailyLog.caloriesConsumed;
 
-    return NextResponse.json({
+    return {
       targetCalories: dailyLog.calorieTarget,
       consumedCalories: dailyLog.caloriesConsumed,
       remainingCalories,
@@ -290,12 +266,6 @@ export async function GET(req: NextRequest) {
           ? Math.max(0, (user.calorieBank?.currentBalance || 0) - Math.abs(remainingCalories))
           : remainingCalories,
       },
-    });
-  } catch (error) {
-    console.error("Error fetching meals:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch meals" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }

@@ -188,17 +188,14 @@ export function MealHistoryClient({
   return (
     <div className="min-h-screen app-field px-4 py-8">
       <div className="mx-auto max-w-5xl space-y-6">
-        <div className="flex flex-col gap-4 border-b border-[#FFF8E7]/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-4xl font-semibold tracking-[-0.02em] text-[#FFF8E7]">Meal History</h1>
-            <p className="mt-2 text-[#FFF8E7]/72">
+            <h1 className="text-4xl text-foreground">Meal History</h1>
+            <p className="mt-2 text-muted-foreground">
               Track and manage your meals over time
             </p>
           </div>
-          <a
-            href="/dashboard"
-            className="rounded-lg border-2 border-[#18120E] bg-[#DFFF35] px-3 py-2 text-sm font-semibold text-[#18120E] shadow-[3px_3px_0_#18120E] transition-colors hover:bg-[#00C8FF]"
-          >
+          <a href="/dashboard" className="btn-ghost">
             Back to Dashboard
           </a>
         </div>
@@ -216,12 +213,12 @@ export function MealHistoryClient({
               </Button>
 
               <div className="flex items-center gap-3 flex-1 justify-center">
-                <Calendar className="h-5 w-5 text-[#6B5738]" />
+                <Calendar className="h-5 w-5 text-muted-foreground" />
                 <div className="text-center">
-                  <p className="text-lg font-semibold text-[#18120E]">
+                  <p className="text-lg font-semibold text-foreground">
                     {formatDisplayDate(selectedDate)}
                   </p>
-                  <p className="text-sm text-[#6B5738]">
+                  <p className="text-sm text-muted-foreground">
                     {formatFullDate(selectedDate)}
                   </p>
                 </div>
@@ -253,34 +250,34 @@ export function MealHistoryClient({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="surface border-0 shadow-none">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">
+              <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Target
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <Flame className="h-5 w-5 text-[#FFB000]" />
-                <span className="num text-2xl font-semibold text-[#18120E]">
+                <Flame className="h-5 w-5 text-chart-1" />
+                <span className="num font-serif text-2xl font-semibold text-foreground">
                   {data.targetCalories.toLocaleString()}
                 </span>
-                <span className="text-[#6B5738]">cal</span>
+                <span className="text-muted-foreground">cal</span>
               </div>
             </CardContent>
           </Card>
 
           <Card className="surface border-0 shadow-none">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">
+              <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Consumed
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <Utensils className="h-5 w-5 text-[#00C875]" />
-                <span className="num text-2xl font-semibold text-[#18120E]">
+                <Utensils className="h-5 w-5 text-chart-2" />
+                <span className="num font-serif text-2xl font-semibold text-foreground">
                   {data.consumedCalories.toLocaleString()}
                 </span>
-                <span className="text-[#6B5738]">cal</span>
+                <span className="text-muted-foreground">cal</span>
               </div>
               <Progress value={caloriePercentage} className="mt-2" />
             </CardContent>
@@ -288,28 +285,28 @@ export function MealHistoryClient({
 
           <Card className="surface border-0 shadow-none">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">
+              <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Remaining
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
                 {isOverBudget ? (
-                  <TrendingDown className="h-5 w-5 text-[#FF5A3D]" />
+                  <TrendingDown className="h-5 w-5 text-destructive" />
                 ) : (
-                  <TrendingUp className="h-5 w-5 text-[#00C875]" />
+                  <TrendingUp className="h-5 w-5 text-chart-2" />
                 )}
                 <span
-                  className={`num text-2xl font-semibold ${
-                    isOverBudget ? 'text-[#FF5A3D]' : 'text-[#00C875]'
+                  className={`num font-serif text-2xl font-semibold ${
+                    isOverBudget ? 'text-destructive' : 'text-foreground'
                   }`}
                 >
                   {remainingDisplay.toLocaleString()}
                 </span>
-                <span className="text-[#6B5738]">cal</span>
+                <span className="text-muted-foreground">cal</span>
               </div>
               {isOverBudget && (
-                <p className="mt-1 text-xs text-[#FF5A3D]">
+                <p className="mt-1 text-xs text-destructive">
                   Over budget by {data.calorieBank?.borrowed?.toLocaleString() ?? 0} cal
                 </p>
               )}
@@ -322,8 +319,8 @@ export function MealHistoryClient({
           <Card className="surface border-0 shadow-none">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">
-                  <Leaf className="h-4 w-4 text-[#00C875]" />
+                <CardTitle className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <Leaf className="h-4 w-4 text-chart-2" />
                   Micronutrients
                 </CardTitle>
                 <Button
@@ -347,66 +344,66 @@ export function MealHistoryClient({
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="flex items-center gap-2">
-                    <Leaf className="h-4 w-4 text-green-500" />
+                    <Leaf className="h-4 w-4 text-chart-2" />
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">
+                      <p className="num text-lg font-semibold text-foreground">
                         {Math.round(totalFiber)}g
                       </p>
-                      <p className="text-xs text-gray-500">Fiber</p>
+                      <p className="text-xs text-muted-foreground">Fiber</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Candy className="h-4 w-4 text-pink-500" />
+                    <Candy className="h-4 w-4 text-chart-5" />
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">
+                      <p className="num text-lg font-semibold text-foreground">
                         {Math.round(totalSugar)}g
                       </p>
-                      <p className="text-xs text-gray-500">Sugar</p>
+                      <p className="text-xs text-muted-foreground">Sugar</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Droplet className="h-4 w-4 text-blue-500" />
+                    <Droplet className="h-4 w-4 text-chart-3" />
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">
+                      <p className="num text-lg font-semibold text-foreground">
                         {Math.round(totalSodium)}mg
                       </p>
-                      <p className="text-xs text-gray-500">Sodium</p>
+                      <p className="text-xs text-muted-foreground">Sodium</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Pill className="h-4 w-4 text-orange-500" />
+                    <Pill className="h-4 w-4 text-chart-4" />
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">
+                      <p className="num text-lg font-semibold text-foreground">
                         {Math.round(totalVitaminC)}mg
                       </p>
-                      <p className="text-xs text-gray-500">Vitamin C</p>
+                      <p className="text-xs text-muted-foreground">Vitamin C</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Bone className="h-4 w-4 text-gray-500" />
+                    <Bone className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">
+                      <p className="num text-lg font-semibold text-foreground">
                         {Math.round(totalCalcium)}mg
                       </p>
-                      <p className="text-xs text-gray-500">Calcium</p>
+                      <p className="text-xs text-muted-foreground">Calcium</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Cross className="h-4 w-4 text-red-500" />
+                    <Cross className="h-4 w-4 text-destructive" />
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">
+                      <p className="num text-lg font-semibold text-foreground">
                         {Math.round(totalIron)}mg
                       </p>
-                      <p className="text-xs text-gray-500">Iron</p>
+                      <p className="text-xs text-muted-foreground">Iron</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-yellow-500" />
+                    <Zap className="h-4 w-4 text-chart-1" />
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">
+                      <p className="num text-lg font-semibold text-foreground">
                         {Math.round(totalPotassium)}mg
                       </p>
-                      <p className="text-xs text-gray-500">Potassium</p>
+                      <p className="text-xs text-muted-foreground">Potassium</p>
                     </div>
                   </div>
                 </div>

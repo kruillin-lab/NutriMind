@@ -226,15 +226,15 @@ export function EditMealModal({ meal, isOpen, onClose, onSuccess }: EditMealModa
           </div>
 
           {/* Micronutrients Section */}
-          <div className="space-y-2 pt-4 border-t">
+          <div className="space-y-2 pt-4 border-t border-border">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-gray-700">Micronutrients</Label>
-              <span className="text-xs text-gray-500">Optional</span>
+              <Label className="text-sm font-medium text-foreground">Micronutrients</Label>
+              <span className="text-xs text-muted-foreground">Optional</span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label htmlFor="fiberG" className="text-xs flex items-center gap-1">
-                  <Leaf className="h-3 w-3 text-green-500" /> Fiber (g)
+                  <Leaf className="h-3 w-3 text-chart-2" /> Fiber (g)
                 </Label>
                 <Input
                   id="fiberG"
@@ -247,7 +247,7 @@ export function EditMealModal({ meal, isOpen, onClose, onSuccess }: EditMealModa
               </div>
               <div className="space-y-1">
                 <Label htmlFor="sugarG" className="text-xs flex items-center gap-1">
-                  <Candy className="h-3 w-3 text-pink-500" /> Sugar (g)
+                  <Candy className="h-3 w-3 text-chart-5" /> Sugar (g)
                 </Label>
                 <Input
                   id="sugarG"
@@ -260,7 +260,7 @@ export function EditMealModal({ meal, isOpen, onClose, onSuccess }: EditMealModa
               </div>
               <div className="space-y-1">
                 <Label htmlFor="sodiumMg" className="text-xs flex items-center gap-1">
-                  <Droplet className="h-3 w-3 text-blue-400" /> Sodium (mg)
+                  <Droplet className="h-3 w-3 text-chart-3" /> Sodium (mg)
                 </Label>
                 <Input
                   id="sodiumMg"
@@ -273,7 +273,7 @@ export function EditMealModal({ meal, isOpen, onClose, onSuccess }: EditMealModa
               </div>
               <div className="space-y-1">
                 <Label htmlFor="vitaminCMg" className="text-xs flex items-center gap-1">
-                  <Pill className="h-3 w-3 text-orange-500" /> Vitamin C (mg)
+                  <Pill className="h-3 w-3 text-chart-4" /> Vitamin C (mg)
                 </Label>
                 <Input
                   id="vitaminCMg"
@@ -286,7 +286,7 @@ export function EditMealModal({ meal, isOpen, onClose, onSuccess }: EditMealModa
               </div>
               <div className="space-y-1">
                 <Label htmlFor="calciumMg" className="text-xs flex items-center gap-1">
-                  <Bone className="h-3 w-3 text-gray-500" /> Calcium (mg)
+                  <Bone className="h-3 w-3 text-muted-foreground" /> Calcium (mg)
                 </Label>
                 <Input
                   id="calciumMg"
@@ -299,7 +299,7 @@ export function EditMealModal({ meal, isOpen, onClose, onSuccess }: EditMealModa
               </div>
               <div className="space-y-1">
                 <Label htmlFor="ironMg" className="text-xs flex items-center gap-1">
-                  <Cross className="h-3 w-3 text-red-400" /> Iron (mg)
+                  <Cross className="h-3 w-3 text-destructive" /> Iron (mg)
                 </Label>
                 <Input
                   id="ironMg"
@@ -312,7 +312,7 @@ export function EditMealModal({ meal, isOpen, onClose, onSuccess }: EditMealModa
               </div>
               <div className="space-y-1 col-span-2">
                 <Label htmlFor="potassiumMg" className="text-xs flex items-center gap-1">
-                  <Zap className="h-3 w-3 text-yellow-500" /> Potassium (mg)
+                  <Zap className="h-3 w-3 text-chart-1" /> Potassium (mg)
                 </Label>
                 <Input
                   id="potassiumMg"
@@ -327,7 +327,7 @@ export function EditMealModal({ meal, isOpen, onClose, onSuccess }: EditMealModa
           </div>
 
           {error && (
-            <p className="text-sm text-red-500">{error}</p>
+            <p className="text-sm text-destructive">{error}</p>
           )}
 
           <DialogFooter>

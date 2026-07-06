@@ -43,37 +43,37 @@ function formatRelativeTime(dateString: string): string {
 export function BankTransactionHistory({ transactions }: BankTransactionHistoryProps) {
   return (
     <div className="surface overflow-hidden">
-      <div className="flex items-center justify-between border-b border-black/[0.08] px-5 py-4">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div className="flex items-center gap-2">
-          <PiggyBank className="h-4 w-4 text-[#00C875]" />
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">Bank History</span>
+          <PiggyBank className="h-4 w-4 text-chart-2" />
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Bank History</span>
         </div>
         {transactions.length > 0 && (
-          <span className="text-[11px] text-[#6B5738]">{transactions.length} transactions</span>
+          <span className="text-[11px] text-muted-foreground">{transactions.length} transactions</span>
         )}
       </div>
 
       {transactions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 px-5 text-center">
-          <ArrowUpRight className="mb-3 h-8 w-8 text-[#B9C1BA]" />
-          <p className="text-sm text-[#6B5738]">No transactions yet</p>
-          <p className="mt-1 text-xs text-[#8A7350]">Stay under target to bank calories</p>
+          <ArrowUpRight className="mb-3 h-8 w-8 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">No transactions yet</p>
+          <p className="mt-1 text-xs text-muted-foreground/70">Stay under target to bank calories</p>
         </div>
       ) : (
-        <div className="max-h-[300px] divide-y divide-black/[0.06] overflow-y-auto">
+        <div className="max-h-[300px] divide-y divide-border overflow-y-auto">
           {transactions.map((tx) => {
             const config = typeConfig[tx.type] ?? typeConfig.ADJUST;
             const Icon = config.icon;
 
             return (
-              <div key={tx.id} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-[#FFE8A8]">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-black/[0.16] bg-[#FFF0B8]">
-                  <Icon className="h-3.5 w-3.5 text-[#6B5738]" />
+              <div key={tx.id} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-secondary">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-border bg-secondary">
+                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-sm text-[#2A2017]">{tx.reason}</p>
-                  <div className="mt-0.5 flex items-center gap-2 text-[11px] text-[#6B5738]">
+                  <p className="truncate text-sm text-foreground">{tx.reason}</p>
+                  <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
                     <span>{formatRelativeTime(tx.createdAt)}</span>
                     {tx.caloriesConsumed != null && tx.caloriesTarget != null && (
                       <>
@@ -84,7 +84,7 @@ export function BankTransactionHistory({ transactions }: BankTransactionHistoryP
                   </div>
                 </div>
 
-                <span className={`num shrink-0 text-xs font-semibold tabular-nums ${config.positive ? "text-[#00895A]" : "text-[#FF5A3D]"}`}>
+                <span className={`shrink-0 ${config.positive ? "chip-green" : "chip-rose"}`}>
                   {config.positive ? "+" : "-"}{tx.amount}
                 </span>
               </div>

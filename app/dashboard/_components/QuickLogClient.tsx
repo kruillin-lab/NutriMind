@@ -328,16 +328,16 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
     <>
       <div className="surface overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-black/[0.08] px-5 py-4">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2">
             {mode === "ai" ? (
-              <Sparkles className="h-4 w-4 text-[#FF5A3D]" />
+              <Sparkles className="h-4 w-4 text-primary" />
             ) : (
-              <ClipboardPenLine className="h-4 w-4 text-[#00C875]" />
+              <ClipboardPenLine className="h-4 w-4 text-chart-2" />
             )}
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">Quick Log</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Quick Log</span>
           </div>
-          <div className="flex rounded-lg border border-[#18120E]/20 bg-[#FFF0B8] p-0.5">
+          <div className="flex rounded-full border border-border bg-secondary p-0.5">
             {([
               { value: "ai", label: "AI" },
               { value: "manual", label: "Manual" },
@@ -349,10 +349,10 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                   setMode(option.value);
                   setSubmitError(null);
                 }}
-                className={`rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                className={`rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider transition-colors ${
                   mode === option.value
-                    ? "bg-[#18120E] text-[#DFFF35]"
-                    : "text-[#6B5738] hover:bg-[#FFE8A8] hover:text-[#18120E]"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {option.label}
@@ -370,8 +370,8 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                 onClick={() => setMealType(t)}
                 className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider border transition-colors ${
                   mealType === t
-                    ? "border-[#18120E] bg-[#DFFF35] text-[#18120E] shadow-[2px_2px_0_#18120E]"
-                    : "border-black/[0.12] text-[#6B5738] hover:border-black/[0.2] hover:bg-[#FFE8A8] hover:text-[#18120E]"
+                    ? "border-transparent bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
                 {t.charAt(0) + t.slice(1).toLowerCase()}
@@ -388,11 +388,11 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   rows={3}
-                  className="w-full resize-none rounded-lg border-2 border-[#18120E]/20 bg-[#FFF0B8] px-3.5 py-3 pr-10 text-sm text-[#18120E] outline-none transition-colors placeholder:text-[#8A7350] focus:border-[#18120E] focus:ring-2 focus:ring-[#DFFF35]/70"
+                  className="w-full resize-none rounded-lg border border-input bg-background px-3.5 py-3 pr-10 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
                 />
                 <button
                   onClick={() => setShowScanner(true)}
-                  className="absolute bottom-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-md text-[#6B5738] transition-colors hover:bg-[#FFF8E7] hover:text-[#18120E]"
+                  className="absolute bottom-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                   title="Scan barcode or nutrition label"
                 >
                   <Camera className="h-4 w-4" />
@@ -403,7 +403,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
               <button
                 onClick={() => handleParse(0)}
                 disabled={!input.trim() || isLoading || isSubmitting}
-                className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-[#18120E] bg-[#DFFF35] py-2.5 text-sm font-semibold text-[#18120E] shadow-[4px_4px_0_#18120E] transition-all hover:bg-[#00C8FF] hover:shadow-[2px_2px_0_#18120E] disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-primary w-full gap-2 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isLoading ? (
                   <>
@@ -421,22 +421,22 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
           ) : (
             <form onSubmit={handleManualSubmit} className="space-y-3">
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6B5738]">
+                <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                   Meal name
                 </label>
                 <input
                   value={manualMeal.name}
                   onChange={(e) => handleManualChange("name", e.target.value)}
                   placeholder="e.g. Chicken rice bowl"
-                  className="w-full rounded-lg border-2 border-[#18120E]/20 bg-[#FFF0B8] px-3.5 py-2.5 text-sm text-[#18120E] outline-none transition-colors placeholder:text-[#8A7350] focus:border-[#18120E] focus:ring-2 focus:ring-[#DFFF35]/70"
+                  className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 {MANUAL_MACRO_FIELDS.map((field) => (
                   <label key={field.key} className="block">
-                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B5738]">
-                      {field.label}{field.required ? " *" : ""} <span className="normal-case tracking-normal text-[#8A7350]">({field.unit})</span>
+                    <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {field.label}{field.required ? " *" : ""} <span className="normal-case tracking-normal text-muted-foreground/70">({field.unit})</span>
                     </span>
                     <input
                       type="number"
@@ -445,7 +445,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                       inputMode="decimal"
                       value={manualMeal[field.key]}
                       onChange={(e) => handleManualChange(field.key, e.target.value)}
-                      className="h-9 w-full rounded-lg border-2 border-[#18120E]/20 bg-[#FFF8E7] px-2.5 text-sm text-[#18120E] outline-none transition-colors focus:border-[#18120E] focus:ring-2 focus:ring-[#DFFF35]/70"
+                      className="h-9 w-full rounded-lg border border-input bg-background px-2.5 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/30"
                     />
                   </label>
                 ))}
@@ -454,7 +454,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
               <button
                 type="submit"
                 disabled={!manualMeal.name.trim() || !manualMeal.calories.trim() || isSubmitting}
-                className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-[#18120E] bg-[#00C875] py-2.5 text-sm font-semibold text-[#18120E] shadow-[4px_4px_0_#18120E] transition-all hover:bg-[#DFFF35] hover:shadow-[2px_2px_0_#18120E] disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-primary w-full gap-2 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardPenLine className="h-4 w-4" />}
                 Log manual meal
@@ -464,18 +464,18 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
 
           {/* Error */}
           {mode === "ai" && error && (
-            <div className="rounded-lg border border-[#FF5A3D]/30 bg-[#FF5A3D]/10 p-3.5 space-y-2">
+            <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-3.5 space-y-2">
               <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-[#FF5A3D] shrink-0 mt-0.5" />
+                <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm text-[#FF5A3D] font-medium">Failed to parse</p>
-                  <p className="text-xs text-[#FF5A3D]/80 mt-0.5">{error}</p>
+                  <p className="text-sm text-destructive font-medium">Failed to parse</p>
+                  <p className="text-xs text-destructive/80 mt-0.5">{error}</p>
                 </div>
               </div>
               <button
                 onClick={() => handleParse(0)}
                 disabled={isLoading}
-                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-[#FF5A3D]/30 py-1.5 text-xs text-[#FF5A3D] hover:bg-[#FF5A3D]/10 transition-colors"
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-destructive/25 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
               >
                 <RotateCcw className="h-3 w-3" />
                 Try Again
@@ -485,35 +485,35 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
 
           {/* Parsed results */}
           {mode === "ai" && showParsed && parsedFoods.length > 0 && (
-            <div className="overflow-hidden rounded-lg border-2 border-[#18120E]/18 bg-[#FFF0B8]">
-              <div className="flex items-center justify-between border-b border-black/[0.08] px-3.5 py-2.5">
-                <span className="text-xs font-medium text-[#3A2A1B]">Detected items</span>
-                <button onClick={() => setShowParsed(false)} className="text-[#6B5738] transition-colors hover:text-[#18120E]">
+            <div className="overflow-hidden rounded-xl border border-border bg-secondary">
+              <div className="flex items-center justify-between border-b border-border px-3.5 py-2.5">
+                <span className="text-xs font-medium text-foreground">Detected items</span>
+                <button onClick={() => setShowParsed(false)} className="text-muted-foreground transition-colors hover:text-foreground">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <div className="max-h-[140px] divide-y divide-black/[0.06] overflow-y-auto">
+              <div className="max-h-[140px] divide-y divide-border overflow-y-auto">
                 {parsedFoods.map((food, i) => (
                   <div key={i} className="flex items-center justify-between px-3.5 py-2">
                     <div>
-                      <p className="text-sm text-[#2A2017]">{food.name}</p>
-                      <p className="text-[11px] text-[#6B5738]">
+                      <p className="text-sm text-foreground">{food.name}</p>
+                      <p className="text-[11px] text-muted-foreground">
                         P:{food.protein ?? 0}g · C:{food.carbs ?? 0}g · F:{food.fat ?? 0}g
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="num text-sm font-semibold text-[#2A2017]">{food.calories}</p>
-                      <p className="text-[11px] font-semibold text-[#00895A]">{Math.round(food.confidence * 100)}%</p>
+                      <p className="num text-sm font-semibold text-foreground">{food.calories}</p>
+                      <p className="text-[11px] font-semibold text-chart-2">{Math.round(food.confidence * 100)}%</p>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-between border-t border-black/[0.08] px-3.5 py-2.5">
-                <span className="num text-sm font-semibold text-[#2A2017]">Total: {totalCal} kcal</span>
+              <div className="flex items-center justify-between border-t border-border px-3.5 py-2.5">
+                <span className="num text-sm font-semibold text-foreground">Total: {totalCal} kcal</span>
                 <button
                   onClick={handleConfirm}
                   disabled={isSubmitting}
-                  className="flex items-center gap-1.5 rounded-lg border border-[#18120E] bg-[#00C875] px-3 py-1.5 text-xs font-semibold text-[#18120E] transition-colors hover:bg-[#DFFF35] disabled:opacity-40"
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
                 >
                   {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                   Log Meal
@@ -524,21 +524,21 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
 
           {/* Submit error */}
           {submitError && (
-            <div className="flex items-start gap-2 rounded-lg border border-[#FF5A3D]/30 bg-[#FF5A3D]/10 p-3">
-              <AlertCircle className="h-4 w-4 text-[#FF5A3D] shrink-0 mt-0.5" />
-              <p className="text-xs text-[#FF5A3D]">{submitError}</p>
+            <div className="flex items-start gap-2 rounded-xl border border-destructive/25 bg-destructive/5 p-3">
+              <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-xs text-destructive">{submitError}</p>
             </div>
           )}
 
           {/* Popular foods */}
           {mode === "ai" && (isLoadingPopular || popularFoods.length > 0) && (
-            <div className="space-y-2 border-t border-black/[0.08] pt-1">
-              <div className="flex items-center gap-1.5 text-[11px] text-[#6B5738]">
+            <div className="space-y-2 border-t border-border pt-1">
+              <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 <TrendingUp className="h-3 w-3" />
                 Popular
               </div>
               {isLoadingPopular ? (
-                <div className="flex items-center gap-2 text-xs text-gray-300">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" />
                   Loading…
                 </div>
@@ -550,10 +550,10 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                       onClick={() => { setInput(food.originalText); setIsExpanded(false); }}
                       disabled={isSubmitting}
                       title={`${food.calories} kcal · Used ${food.hitCount}×`}
-                      className="rounded-full border border-black/[0.12] bg-[#FFF0B8] px-2.5 py-0.5 text-[11px] text-[#3A2A1B] transition-colors hover:border-black/[0.24] hover:bg-[#DFFF35] hover:text-[#18120E] disabled:opacity-40"
+                      className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] text-foreground transition-colors hover:border-input hover:bg-accent disabled:opacity-40"
                     >
                       {food.name}
-                      <span className="ml-1 text-[#6B5738]">{food.calories}</span>
+                      <span className="ml-1 text-muted-foreground">{food.calories}</span>
                     </button>
                   ))}
                 </div>
@@ -562,7 +562,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
           )}
 
           {/* Quick add */}
-          <div className="space-y-2 border-t border-black/[0.08] pt-1">
+          <div className="space-y-2 border-t border-border pt-1">
             <div className="flex flex-wrap gap-1.5">
               {[
                 { label: "Coffee", cal: 5 },
@@ -574,9 +574,9 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                   key={label}
                   onClick={() => handleQuickAdd(label, cal)}
                   disabled={isSubmitting}
-                  className="rounded-full border border-black/[0.12] bg-[#FFF8E7] px-2.5 py-0.5 text-[11px] text-[#3A2A1B] transition-colors hover:border-black/[0.24] hover:bg-[#FFE8A8] hover:text-[#18120E] disabled:opacity-40"
+                  className="rounded-full border border-border bg-background px-2.5 py-0.5 text-[11px] text-foreground transition-colors hover:border-input hover:bg-secondary disabled:opacity-40"
                 >
-                  {label} <span className="text-[#6B5738]">{cal}</span>
+                  {label} <span className="text-muted-foreground">{cal}</span>
                 </button>
               ))}
             </div>
@@ -584,10 +584,10 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
 
           {/* Suggestions toggle */}
           {mode === "ai" && (
-          <div className="border-t border-black/[0.08] pt-1">
+          <div className="border-t border-border pt-1">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-1 text-[11px] text-[#6B5738] transition-colors hover:text-[#18120E]"
+              className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
             >
               {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               {isExpanded ? "Hide examples" : "Show example phrases"}
@@ -604,7 +604,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                   <button
                     key={i}
                     onClick={() => { setInput(s); setIsExpanded(false); }}
-                    className="block w-full rounded px-2 py-1 text-left text-[11px] text-[#6B5738] transition-colors hover:bg-[#FFE8A8] hover:text-[#18120E]"
+                    className="block w-full rounded-lg px-2 py-1 text-left text-[11px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                   >
                     &ldquo;{s}&rdquo;
                   </button>

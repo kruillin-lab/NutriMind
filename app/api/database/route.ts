@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -392,15 +392,10 @@ async function getCounts() {
 
 async function assertAccess() {
   if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Database editor is disabled in production" }, { status: 404 });
+    throw new ApiError(404, "Database editor is disabled in production");
   }
 
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  return null;
+  await requireUserId();
 }
 
 function getTable(key: string | null) {
@@ -464,10 +459,9 @@ function sanitizeUpdate(table: TableConfig, data: Record<string, unknown>) {
 }
 
 export async function GET(req: NextRequest) {
-  const accessError = await assertAccess();
-  if (accessError) return accessError;
+  return handleRoute("Failed to read database", async () => {
+    await assertAccess();
 
-  try {
     const { searchParams } = new URL(req.url);
     const table = getTable(searchParams.get("table"));
     const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit")) || 50));
@@ -482,7 +476,7 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    return NextResponse.json({
+    return {
       tables: publicTables(counts),
       activeTable: table.key,
       fields: table.fields,
@@ -490,63 +484,59 @@ export async function GET(req: NextRequest) {
       total: counts[table.key] ?? rows.length,
       limit,
       offset,
-    });
-  } catch (error) {
-    console.error("Error reading database:", error);
-    return NextResponse.json({ error: "Failed to read database" }, { status: 500 });
-  }
+    };
+  });
 }
 
 export async function PATCH(req: NextRequest) {
-  const accessError = await assertAccess();
-  if (accessError) return accessError;
+  return handleRoute("Failed to update record", async () => {
+    await assertAccess();
 
-  try {
-    const body = await req.json();
-    const table = getTable(typeof body.table === "string" ? body.table : null);
-    const id = typeof body.id === "string" ? body.id : "";
-    const data =
-      body.data && typeof body.data === "object" && !Array.isArray(body.data)
-        ? body.data as Record<string, unknown>
-        : null;
+    try {
+      const body = await req.json();
+      const table = getTable(typeof body.table === "string" ? body.table : null);
+      const id = typeof body.id === "string" ? body.id : "";
+      const data =
+        body.data && typeof body.data === "object" && !Array.isArray(body.data)
+          ? body.data as Record<string, unknown>
+          : null;
 
-    if (!id || !data) {
-      return NextResponse.json({ error: "Missing table, id, or data" }, { status: 400 });
+      if (!id || !data) {
+        throw new ApiError(400, "Missing table, id, or data");
+      }
+
+      const updated = await table.delegate().update({
+        where: { id },
+        data: sanitizeUpdate(table, data),
+      });
+
+      return { success: true, record: updated };
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      // Surface validation/update failures in the 500 body, as before.
+      console.error("Error updating database record:", error);
+      throw new ApiError(
+        500,
+        error instanceof Error ? error.message : "Failed to update record"
+      );
     }
-
-    const updated = await table.delegate().update({
-      where: { id },
-      data: sanitizeUpdate(table, data),
-    });
-
-    return NextResponse.json({ success: true, record: updated });
-  } catch (error) {
-    console.error("Error updating database record:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to update record" },
-      { status: 500 }
-    );
-  }
+  });
 }
 
 export async function DELETE(req: NextRequest) {
-  const accessError = await assertAccess();
-  if (accessError) return accessError;
+  return handleRoute("Failed to delete record", async () => {
+    await assertAccess();
 
-  try {
     const { searchParams } = new URL(req.url);
     const table = getTable(searchParams.get("table"));
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ error: "Missing record id" }, { status: 400 });
+      throw new ApiError(400, "Missing record id");
     }
 
     await table.delegate().delete({ where: { id } });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting database record:", error);
-    return NextResponse.json({ error: "Failed to delete record" }, { status: 500 });
-  }
+    return { success: true };
+  });
 }

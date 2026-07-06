@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, BarChart3 } from "lucide-react";
 
@@ -35,6 +34,11 @@ interface WeeklyViewProps {
   initialStats?: Stats;
   dailyTarget?: number;
 }
+
+// Approved chart palette: olive = under target, terracotta = over target
+const BAR_OLIVE = "#7D8A63";
+const BAR_TERRACOTTA = "#D97757";
+const BAR_EMPTY = "rgba(20,20,19,0.08)";
 
 export function WeeklyView({
   initialLogs = [],
@@ -80,43 +84,41 @@ export function WeeklyView({
   };
 
   const getBarColor = (log: DailyLog) => {
-    if (log.caloriesConsumed === 0) return "bg-gray-200";
-    return log.isUnderTarget ? "bg-green-500" : "bg-red-500";
+    if (log.caloriesConsumed === 0) return BAR_EMPTY;
+    return log.isUnderTarget ? BAR_OLIVE : BAR_TERRACOTTA;
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            <BarChart3 className="h-5 w-5 text-blue-500" />
-            {range === "week" ? "This Week" : "This Month"}
-          </CardTitle>
-          <div className="flex gap-1">
-            <Button
-              variant={range === "week" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setRange("week")}
-            >
-              Week
-            </Button>
-            <Button
-              variant={range === "month" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setRange("month")}
-            >
-              Month
-            </Button>
-          </div>
+    <section className="surface overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <BarChart3 className="h-4 w-4 text-primary" />
+          {range === "week" ? "This Week" : "This Month"}
+        </h3>
+        <div className="flex gap-1">
+          <Button
+            variant={range === "week" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setRange("week")}
+          >
+            Week
+          </Button>
+          <Button
+            variant={range === "month" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setRange("month")}
+          >
+            Month
+          </Button>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-4">
+      <div className="space-y-4 px-5 py-4">
         {loading ? (
           <div className="text-center py-8 text-muted-foreground">Loading...</div>
         ) : logs.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+            <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
             <p className="text-sm">No data yet. Start logging meals to see trends.</p>
           </div>
         ) : (
@@ -124,25 +126,25 @@ export function WeeklyView({
             {/* Stats Row */}
             {stats && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-xs text-blue-600">Avg Consumed</p>
-                  <p className="text-lg font-bold text-blue-700">{stats.avgConsumed}</p>
-                  <p className="text-xs text-blue-500">cal/day</p>
+                <div className="rounded-xl bg-secondary p-3">
+                  <p className="text-xs text-muted-foreground">Avg Consumed</p>
+                  <p className="num text-lg font-semibold text-foreground">{stats.avgConsumed}</p>
+                  <p className="text-xs text-muted-foreground">cal/day</p>
                 </div>
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <p className="text-xs text-green-600">Compliance</p>
-                  <p className="text-lg font-bold text-green-700">{stats.complianceRate}%</p>
-                  <p className="text-xs text-green-500">days under target</p>
+                <div className="rounded-xl bg-secondary p-3">
+                  <p className="text-xs text-muted-foreground">Compliance</p>
+                  <p className="num text-lg font-semibold text-foreground">{stats.complianceRate}%</p>
+                  <p className="text-xs text-muted-foreground">days under target</p>
                 </div>
-                <div className="p-3 bg-purple-50 rounded-lg">
-                  <p className="text-xs text-purple-600">Avg Protein</p>
-                  <p className="text-lg font-bold text-purple-700">{stats.avgProtein}g</p>
-                  <p className="text-xs text-purple-500">per day</p>
+                <div className="rounded-xl bg-secondary p-3">
+                  <p className="text-xs text-muted-foreground">Avg Protein</p>
+                  <p className="num text-lg font-semibold text-foreground">{stats.avgProtein}g</p>
+                  <p className="text-xs text-muted-foreground">per day</p>
                 </div>
-                <div className="p-3 bg-orange-50 rounded-lg">
-                  <p className="text-xs text-orange-600">Avg Carbs</p>
-                  <p className="text-lg font-bold text-orange-700">{stats.avgCarbs}g</p>
-                  <p className="text-xs text-orange-500">per day</p>
+                <div className="rounded-xl bg-secondary p-3">
+                  <p className="text-xs text-muted-foreground">Avg Carbs</p>
+                  <p className="num text-lg font-semibold text-foreground">{stats.avgCarbs}g</p>
+                  <p className="text-xs text-muted-foreground">per day</p>
                 </div>
               </div>
             )}
@@ -151,14 +153,14 @@ export function WeeklyView({
             <div className="relative">
               {/* Target line label */}
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>{dailyTarget} cal target</span>
-                <span>{maxCalories} cal max</span>
+                <span className="num">{dailyTarget} cal target</span>
+                <span className="num">{maxCalories} cal max</span>
               </div>
 
-              <div className="flex items-end gap-1 h-[160px] border-b border-l border-gray-200 px-1 pb-0">
+              <div className="flex items-end gap-1 h-[160px] border-b border-l border-border px-1 pb-0">
                 {/* Target line */}
                 <div
-                  className="absolute left-0 right-0 border-t-2 border-dashed border-red-300"
+                  className="absolute left-0 right-0 border-t border-dashed border-destructive/40"
                   style={{ bottom: `${(dailyTarget / maxCalories) * 100}%` }}
                 />
 
@@ -174,17 +176,20 @@ export function WeeklyView({
                       style={{ height: "100%" }}
                     >
                       {/* Tooltip */}
-                      <div className="absolute bottom-full mb-2 hidden group-hover:block z-10 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                        <p className="font-semibold">{log.caloriesConsumed} cal</p>
-                        <p>P: {log.proteinG}g C: {log.carbsG}g F: {log.fatG}g</p>
+                      <div className="surface absolute bottom-full mb-2 hidden group-hover:block z-10 px-2 py-1 text-xs text-foreground whitespace-nowrap">
+                        <p className="num font-semibold">{log.caloriesConsumed} cal</p>
+                        <p className="num">P: {log.proteinG}g C: {log.carbsG}g F: {log.fatG}g</p>
                         {log.exerciseMinutes > 0 && (
-                          <p>Exercise: {log.exerciseMinutes}min</p>
+                          <p className="num">Exercise: {log.exerciseMinutes}min</p>
                         )}
                       </div>
 
                       <div
-                        className={`w-full rounded-t ${getBarColor(log)} transition-all hover:opacity-80`}
-                        style={{ height: `${Math.max(heightPct, 2)}%` }}
+                        className="w-full rounded-t transition-all hover:opacity-80"
+                        style={{
+                          height: `${Math.max(heightPct, 2)}%`,
+                          backgroundColor: getBarColor(log),
+                        }}
                       />
                     </div>
                   );
@@ -207,25 +212,25 @@ export function WeeklyView({
             {/* Legend */}
             <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded bg-green-500" />
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: BAR_OLIVE }} />
                 <span>Under target</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded bg-red-500" />
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: BAR_TERRACOTTA }} />
                 <span>Over target</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded bg-gray-200" />
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: BAR_EMPTY }} />
                 <span>No data</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-4 border-t-2 border-dashed border-red-300" />
+                <div className="w-4 border-t border-dashed border-destructive/40" />
                 <span>Target line</span>
               </div>
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,30 +78,28 @@ export function ExerciseLog({
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <Dumbbell className="h-5 w-5 text-[#FFB000]" />
-          Exercise Log
-        </CardTitle>
-      </CardHeader>
+    <section className="surface overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+        <Dumbbell className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">Exercise Log</h3>
+      </div>
 
-      <CardContent className="space-y-4">
+      <div className="space-y-4 px-5 py-4">
         {/* Today's Summary */}
         {(exerciseMinutes > 0 || caloriesBurned > 0) && (
-          <div className="grid grid-cols-2 gap-3 p-3 bg-[#FFB000]/10 rounded-lg border border-[#FFB000]/30">
+          <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-secondary p-3">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-[#FFB000]" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-lg font-bold text-[#B87A00]">{exerciseMinutes} min</p>
-                <p className="text-xs text-[#B87A00]">Total today</p>
+                <p className="num text-lg font-semibold text-foreground">{exerciseMinutes} min</p>
+                <p className="text-xs text-muted-foreground">Total today</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Flame className="h-4 w-4 text-[#FF5A3D]" />
+              <Flame className="h-4 w-4 text-primary" />
               <div>
-                <p className="text-lg font-bold text-[#FF5A3D]">{caloriesBurned} kcal</p>
-                <p className="text-xs text-[#FF5A3D]/80">Burned today</p>
+                <p className="num text-lg font-semibold text-foreground">{caloriesBurned} kcal</p>
+                <p className="text-xs text-muted-foreground">Burned today</p>
               </div>
             </div>
           </div>
@@ -132,7 +129,7 @@ export function ExerciseLog({
         </div>
 
         {/* Custom Entry */}
-        <div className="space-y-3 pt-2 border-t">
+        <div className="space-y-3 border-t border-border pt-4">
           <Label className="text-sm font-medium">Custom Entry</Label>
 
           <div>
@@ -191,7 +188,7 @@ export function ExerciseLog({
             {isLogging ? "Logging..." : "Log Exercise"}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

@@ -1,22 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
 
 // GET /api/push-subscriptions - Check if user has push notifications enabled
 export async function GET(req: NextRequest) {
   void req;
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  return handleRoute("Failed to fetch push subscriptions", async () => {
+    const userId = await requireUserId();
 
-  try {
     const subscriptions = await prisma.pushSubscription.findMany({
       where: { userId, enabled: true },
       select: { id: true, endpoint: true, userAgent: true, createdAt: true },
     });
 
-    return NextResponse.json({
+    return {
       enabled: subscriptions.length > 0,
       subscriptions: subscriptions.map(s => ({
         id: s.id,
@@ -24,32 +21,20 @@ export async function GET(req: NextRequest) {
         userAgent: s.userAgent,
         createdAt: s.createdAt,
       })),
-    });
-  } catch (error) {
-    console.error("Error fetching push subscriptions:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch push subscriptions" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }
 
 // POST /api/push-subscriptions - Subscribe to push notifications
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  return handleRoute("Failed to subscribe", async () => {
+    const userId = await requireUserId();
 
-  try {
     const body = await req.json();
     const { endpoint, keys } = body;
 
     if (!endpoint || !keys || !keys.p256dh || !keys.auth) {
-      return NextResponse.json(
-        { error: "Invalid subscription data" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Invalid subscription data");
     }
 
     // Check if subscription already exists
@@ -70,7 +55,7 @@ export async function POST(req: NextRequest) {
           },
         });
       }
-      return NextResponse.json({ success: true, message: "Subscription updated" });
+      return { success: true, message: "Subscription updated" };
     }
 
     // Create new subscription
@@ -85,24 +70,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, message: "Subscribed successfully" });
-  } catch (error) {
-    console.error("Error subscribing to push notifications:", error);
-    return NextResponse.json(
-      { error: "Failed to subscribe" },
-      { status: 500 }
-    );
-  }
+    return { success: true, message: "Subscribed successfully" };
+  });
 }
 
 // DELETE /api/push-subscriptions - Unsubscribe from push notifications
 export async function DELETE(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  return handleRoute("Failed to unsubscribe", async () => {
+    const userId = await requireUserId();
 
-  try {
     const { searchParams } = new URL(req.url);
     const endpoint = searchParams.get("endpoint");
 
@@ -118,12 +94,6 @@ export async function DELETE(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true, message: "Unsubscribed successfully" });
-  } catch (error) {
-    console.error("Error unsubscribing from push notifications:", error);
-    return NextResponse.json(
-      { error: "Failed to unsubscribe" },
-      { status: 500 }
-    );
-  }
+    return { success: true, message: "Unsubscribed successfully" };
+  });
 }

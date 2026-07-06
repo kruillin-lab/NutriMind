@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
 
 // Helper to normalize text for cache key
 function normalizeText(text: string): string {
@@ -13,11 +13,8 @@ function normalizeText(text: string): string {
 
 // GET /api/cached-foods - Get popular cached foods
 export async function GET(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to fetch cached foods", async () => {
+    await requireUserId();
 
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "20");
@@ -50,26 +47,17 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({
+    return {
       success: true,
       foods,
-    });
-  } catch (error) {
-    console.error("[cached-foods] Error fetching cached foods:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch cached foods" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }
 
 // POST /api/cached-foods - Manually add or update a cached food
 export async function POST(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to create cached food", async () => {
+    await requireUserId();
 
     const body = await req.json();
     const {
@@ -85,24 +73,15 @@ export async function POST(req: NextRequest) {
     } = body;
 
     if (!originalText || typeof originalText !== "string") {
-      return NextResponse.json(
-        { error: "Missing or invalid 'originalText' field" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Missing or invalid 'originalText' field");
     }
 
     if (!name || typeof name !== "string") {
-      return NextResponse.json(
-        { error: "Missing or invalid 'name' field" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Missing or invalid 'name' field");
     }
 
     if (calories === undefined || typeof calories !== "number") {
-      return NextResponse.json(
-        { error: "Missing or invalid 'calories' field" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Missing or invalid 'calories' field");
     }
 
     const normalizedKey = normalizeText(originalText);
@@ -137,35 +116,23 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    return {
       success: true,
       food: cachedFood,
-    });
-  } catch (error) {
-    console.error("Error creating cached food:", error);
-    return NextResponse.json(
-      { error: "Failed to create cached food" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }
 
 // PATCH /api/cached-foods - Update cache hit count
 export async function PATCH(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to update cache", async () => {
+    await requireUserId();
 
     const body = await req.json();
     const { normalizedKey, increment = 1 } = body;
 
     if (!normalizedKey || typeof normalizedKey !== "string") {
-      return NextResponse.json(
-        { error: "Missing or invalid 'normalizedKey' field" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Missing or invalid 'normalizedKey' field");
     }
 
     const updated = await prisma.cachedFood.update({
@@ -178,15 +145,9 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    return {
       success: true,
       food: updated,
-    });
-  } catch (error) {
-    console.error("Error updating cache hit count:", error);
-    return NextResponse.json(
-      { error: "Failed to update cache" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }

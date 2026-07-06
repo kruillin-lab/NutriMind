@@ -14,7 +14,7 @@ export function AuthButtons() {
     <Button
       type="button"
       size="sm"
-      className="border-[#FFF8E7]/20 bg-transparent text-[#FFF8E7]/80 hover:border-[#DFFF35]/40 hover:bg-[#DFFF35]/12 hover:text-[#DFFF35]"
+      variant="outline"
       onClick={() => openSignIn({ forceRedirectUrl: "/dashboard" })}
     >
       Sign In

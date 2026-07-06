@@ -191,15 +191,15 @@ export function SettingsClient({
   ];
 
   const saveMessageClass = saveMessage?.startsWith("Click reset")
-    ? "border border-[#FFB000]/30 bg-[#FFB000]/14 text-[#FFE8A8]"
+    ? "border border-chart-4/50 bg-chart-4/15 text-foreground"
     : saveMessage?.includes("success") || saveMessage?.includes("saved") || saveMessage === "Calorie bank reset to zero."
-      ? "border border-[#DFFF35]/30 bg-[#DFFF35]/18 text-[#DFFF35]"
-      : "border border-[#FF5A3D]/30 bg-[#FF5A3D]/14 text-[#FFB4A4]";
+      ? "border border-chart-2/40 bg-chart-2/10 text-foreground"
+      : "border border-destructive/30 bg-destructive/10 text-destructive";
 
   return (
     <div className="space-y-6">
       {/* Tabs */}
-      <div className="flex flex-wrap gap-1 rounded-lg border-2 border-[#18120E] bg-[#FFF8E7] p-1 shadow-[5px_5px_0_#18120E]">
+      <div className="flex flex-wrap gap-1 rounded-xl border border-border bg-secondary p-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -207,10 +207,10 @@ export function SettingsClient({
               setActiveTab(tab.id);
               setSaveMessage(null);
             }}
-            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
               activeTab === tab.id
-                ? "border-[#18120E] bg-[#DFFF35] text-[#18120E] shadow-[2px_2px_0_#18120E]"
-                : "border-transparent text-[#6B5738] hover:bg-[#FFE8A8] hover:text-[#18120E]"
+                ? "border-border bg-card text-foreground shadow-sm"
+                : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
             }`}
           >
             <tab.icon className="h-4 w-4" />
@@ -228,7 +228,7 @@ export function SettingsClient({
 
       {/* Profile Tab */}
       {activeTab === "profile" && (
-        <Card className="surface border-0 shadow-none">
+        <Card className="surface">
           <CardHeader>
             <CardTitle>Physical Profile</CardTitle>
             <CardDescription>
@@ -321,7 +321,7 @@ export function SettingsClient({
 
       {/* Goals Tab */}
       {activeTab === "goals" && (
-        <Card className="surface border-0 shadow-none">
+        <Card className="surface">
           <CardHeader>
             <CardTitle>Weight Goals</CardTitle>
             <CardDescription>
@@ -372,7 +372,7 @@ export function SettingsClient({
 
       {/* Calorie Bank Tab */}
       {activeTab === "bank" && (
-        <Card className="surface border-0 shadow-none">
+        <Card className="surface">
           <CardHeader>
             <CardTitle>Calorie Bank Settings</CardTitle>
             <CardDescription>
@@ -386,9 +386,9 @@ export function SettingsClient({
                 { label: "Banked", value: calorieBank.totalBanked },
                 { label: "Spent", value: calorieBank.totalSpent },
               ].map((item) => (
-                <div key={item.label} className="rounded-lg border-2 border-[#18120E]/18 bg-[#FFF0B8] p-3 shadow-[2px_2px_0_#18120E]">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B5738]">{item.label}</p>
-                  <p className="num mt-1 text-lg font-semibold text-[#18120E]">{Math.round(item.value)} kcal</p>
+                <div key={item.label} className="rounded-xl border border-border bg-secondary p-3">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{item.label}</p>
+                  <p className="num mt-1 text-lg font-semibold text-foreground">{Math.round(item.value)} kcal</p>
                 </div>
               ))}
             </div>
@@ -441,7 +441,7 @@ export function SettingsClient({
                 onChange={(e) =>
                   setCalorieBank({ ...calorieBank, allowNegative: e.target.checked })
                 }
-                className="h-4 w-4 rounded border-[#18120E]/30 text-[#00C875] focus:ring-[#DFFF35]"
+                className="h-4 w-4 rounded border-input accent-primary focus:ring-ring"
               />
               <Label htmlFor="allowNegative" className="text-sm">
                 Allow negative bank balance (go into debt)
@@ -516,7 +516,7 @@ export function SettingsClient({
 
             <div className="pt-4 border-t space-y-3">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-[#FF5A3D]" />
+                <AlertTriangle className="h-4 w-4 text-destructive" />
                 <p className="text-sm font-medium">Reset Bank</p>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -583,7 +583,7 @@ export function SettingsClient({
 
       {/* Export Tab */}
       {activeTab === "export" && (
-        <Card className="surface border-0 shadow-none">
+        <Card className="surface">
           <CardHeader>
             <CardTitle>Export Data</CardTitle>
             <CardDescription>
@@ -613,23 +613,23 @@ export function SettingsClient({
               <p className="text-sm font-medium">What&apos;s included:</p>
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#DFFF35]" />
+                  <div className="w-2 h-2 rounded-full bg-chart-1" />
                   <span>Meals (name, macros, source, timestamps)</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#00C875]" />
+                  <div className="w-2 h-2 rounded-full bg-chart-2" />
                   <span>Daily logs (calories, macros, water, exercise, notes)</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#FF5A3D]" />
+                  <div className="w-2 h-2 rounded-full bg-chart-5" />
                   <span>Weight entries</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#FFB000]" />
+                  <div className="w-2 h-2 rounded-full bg-chart-4" />
                   <span>Exercise log</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#00C8FF]" />
+                  <div className="w-2 h-2 rounded-full bg-chart-3" />
                   <span>Journal entries</span>
                 </li>
               </ul>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -66,15 +65,13 @@ export function DailyJournal({ initialDate }: DailyJournalProps) {
   const hasChanges = notes !== originalNotes;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <BookOpen className="h-5 w-5 text-[#00C8FF]" />
-          Daily Journal
-        </CardTitle>
-      </CardHeader>
+    <section className="surface overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+        <BookOpen className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">Daily Journal</h3>
+      </div>
 
-      <CardContent className="space-y-3">
+      <div className="space-y-3 px-5 py-4">
         {loading ? (
           <div className="text-center py-4 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
@@ -114,7 +111,7 @@ export function DailyJournal({ initialDate }: DailyJournalProps) {
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

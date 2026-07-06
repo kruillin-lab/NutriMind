@@ -54,21 +54,23 @@ export function QuickWeightLog({ todayEntry, previousEntry }: QuickWeightLogProp
     : trend < 0 ? TrendingDown
     : Minus;
 
-  const trendColor =
+  const trendChip =
     trend === null ? ""
-    : trend > 0 ? "text-[#FF5A3D]"
-    : trend < 0 ? "text-[#00895A]"
-    : "text-[#8A7350]";
+    : trend > 0 ? "chip-rose"
+    : trend < 0 ? "chip-green"
+    : "text-xs font-medium text-muted-foreground";
 
   return (
     <div className="surface overflow-hidden">
-      <div className="flex items-center justify-between border-b border-black/[0.08] px-5 py-4">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div className="flex items-center gap-2">
-          <Scale className="h-4 w-4 text-[#00C8FF]" />
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">Today&apos;s Weight</span>
+          <Scale className="h-4 w-4 text-primary" />
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Today&apos;s Weight
+          </span>
         </div>
         {TrendIcon && trend !== null && (
-          <span className={`flex items-center gap-1 text-xs font-semibold ${trendColor}`}>
+          <span className={`flex items-center gap-1 ${trendChip}`}>
             <TrendIcon className="h-3.5 w-3.5" />
             {Math.abs(trend).toFixed(1)} kg
           </span>
@@ -87,14 +89,16 @@ export function QuickWeightLog({ todayEntry, previousEntry }: QuickWeightLogProp
               value={value}
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSave()}
-              className="w-full rounded-lg border-2 border-[#18120E]/20 bg-[#FFF0B8] px-3 py-2 pr-8 text-sm text-[#18120E] outline-none transition-colors placeholder:text-[#8A7350] focus:border-[#18120E] focus:ring-2 focus:ring-[#DFFF35]/70"
+              className="num w-full rounded-lg border border-input bg-card px-3 py-2 pr-8 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
             />
-            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#6B5738]">kg</span>
+            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+              kg
+            </span>
           </div>
           <button
             onClick={handleSave}
             disabled={loading || !value || saved}
-            className="shrink-0 rounded-lg border-2 border-[#18120E] bg-[#DFFF35] px-4 py-2 text-sm font-semibold text-[#18120E] shadow-[3px_3px_0_#18120E] transition-all hover:bg-[#00C8FF] hover:shadow-[1px_1px_0_#18120E] disabled:cursor-not-allowed disabled:opacity-40"
+            className="btn-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -109,13 +113,16 @@ export function QuickWeightLog({ todayEntry, previousEntry }: QuickWeightLogProp
         </div>
 
         {currentEntry && !saved && (
-          <p className="text-[11px] text-[#6B5738]">
-            Last logged: <span className="text-[#2A2017]">{currentEntry.weightKg} kg</span>
+          <p className="text-[11px] text-muted-foreground">
+            Last logged:{" "}
+            <span className="num font-serif font-medium text-foreground">
+              {currentEntry.weightKg} kg
+            </span>
           </p>
         )}
 
         {previousEntry && (
-          <p className="text-[11px] text-[#8A7350]">
+          <p className="text-[11px] text-muted-foreground">
             Previous: {previousEntry.weightKg} kg
           </p>
         )}

@@ -214,7 +214,7 @@ export default function MealPlanner() {
             {todayPlans.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                className="flex items-center justify-between p-3 rounded-xl border border-border bg-card"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -225,13 +225,13 @@ export default function MealPlanner() {
                       {item.mealType.toLowerCase()}
                     </span>
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="num text-xs text-muted-foreground mt-1">
                     {item.calories} cal · P: {item.proteinG}g · C: {item.carbsG}g
                     · F: {item.fatG}g
                   </div>
                 </div>
                 {item.isLogged ? (
-                  <div className="flex items-center gap-1 text-green-600 text-sm">
+                  <div className="flex items-center gap-1 text-chart-2 text-sm">
                     <Check className="h-4 w-4" />
                     <span className="text-xs">Logged</span>
                   </div>
@@ -262,7 +262,7 @@ export default function MealPlanner() {
               {plans.slice(0, 3).map((plan) => (
                 <div
                   key={plan.id}
-                  className="p-3 rounded-lg border bg-card/50 flex items-center justify-between"
+                  className="p-3 rounded-xl border border-border bg-card/50 flex items-center justify-between"
                 >
                   <div>
                     <div className="font-medium text-sm">{plan.name}</div>

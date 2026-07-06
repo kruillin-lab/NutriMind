@@ -1,23 +1,17 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { formatLocalDateKey } from "@/lib/date-utils";
+import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
 
 export async function POST(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to log planned meal", async () => {
+    const userId = await requireUserId();
 
     const body = await req.json();
     const { itemId, date } = body;
 
     if (!itemId) {
-      return NextResponse.json(
-        { error: "Missing required field: itemId" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Missing required field: itemId");
     }
 
     const planItem = await prisma.mealPlanItem.findUnique({
@@ -26,17 +20,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!planItem || planItem.mealPlan.userId !== userId) {
-      return NextResponse.json(
-        { error: "Meal plan item not found" },
-        { status: 404 }
-      );
+      throw new ApiError(404, "Meal plan item not found");
     }
 
     if (planItem.isLogged) {
-      return NextResponse.json(
-        { error: "This meal has already been logged" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "This meal has already been logged");
     }
 
     const logDate = date
@@ -103,12 +91,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, meal });
-  } catch (error) {
-    console.error("Error logging planned meal:", error);
-    return NextResponse.json(
-      { error: "Failed to log planned meal" },
-      { status: 500 }
-    );
-  }
+    return { success: true, meal };
+  });
 }

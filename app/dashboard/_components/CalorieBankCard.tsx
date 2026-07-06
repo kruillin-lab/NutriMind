@@ -43,7 +43,7 @@ function ArcGauge({ percent, positive }: { percent: number; positive: boolean })
       <path
         d={trackPath}
         fill="none"
-        stroke="rgba(0,0,0,0.08)"
+        stroke="rgba(20,20,19,0.08)"
         strokeWidth="6"
         strokeLinecap="round"
       />
@@ -52,10 +52,9 @@ function ArcGauge({ percent, positive }: { percent: number; positive: boolean })
         <path
           d={fillPath}
           fill="none"
-          stroke={positive ? "#00C875" : "#FF5A3D"}
+          stroke={positive ? "#7D8A63" : "#B3402F"}
           strokeWidth="6"
           strokeLinecap="round"
-          style={{ filter: positive ? "drop-shadow(0 0 8px rgba(223,255,53,0.46))" : "drop-shadow(0 0 8px rgba(255,90,61,0.38))" }}
         />
       )}
       {/* Center text */}
@@ -64,11 +63,11 @@ function ArcGauge({ percent, positive }: { percent: number; positive: boolean })
         y={cy - 6}
         textAnchor="middle"
         dominantBaseline="middle"
-        fill={positive ? "#00C875" : "#FF5A3D"}
+        fill={positive ? "#7D8A63" : "#B3402F"}
         fontSize="20"
-        fontWeight="700"
+        fontWeight="600"
         fontFamily="Inter, system-ui, sans-serif"
-        letterSpacing="-1"
+        letterSpacing="-0.5"
       >
         {positive ? "+" : ""}{Math.abs(Math.round(percent))}%
       </text>
@@ -77,7 +76,7 @@ function ArcGauge({ percent, positive }: { percent: number; positive: boolean })
         y={cy + 14}
         textAnchor="middle"
         dominantBaseline="middle"
-        fill="rgba(24,18,14,0.52)"
+        fill="#73726C"
         fontSize="9"
         fontWeight="500"
         fontFamily="Inter, system-ui, sans-serif"
@@ -99,13 +98,9 @@ export function CalorieBankCard({ data }: CalorieBankCardProps) {
   return (
     <div className="card-surface overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-black/[0.08] px-5 py-4">
-        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">Calorie Bank</span>
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums ${
-          isPositive
-            ? "border border-[#18120E]/15 bg-[#DFFF35]/60 text-[#18120E]"
-            : "border border-[#FF5A3D]/25 bg-[#FF5A3D]/12 text-[#E13D26]"
-        }`}>
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Calorie Bank</span>
+        <span className={isPositive ? "chip-green" : "chip-rose"}>
           {isPositive ? "+" : ""}{balance} kcal
         </span>
       </div>
@@ -116,38 +111,38 @@ export function CalorieBankCard({ data }: CalorieBankCardProps) {
 
         {/* Balance hero */}
         <div className="text-center -mt-2">
-          <p className={`num-display text-4xl ${isPositive ? "text-[#00C875]" : "text-[#FF5A3D]"}`}>
+          <p className={`num-display font-serif text-4xl ${isPositive ? "text-chart-2" : "text-destructive"}`}>
             {isPositive ? "+" : ""}{balance}
-            <span className="ml-1 text-base font-normal text-[#6B5738]">kcal</span>
+            <span className="ml-1 text-base font-normal text-muted-foreground">kcal</span>
           </p>
-          <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-[#6B5738]">
+          <p className="mt-0.5 text-xs uppercase tracking-wide text-muted-foreground">
             {isPositive ? "available" : "overdraft"}
           </p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg border-2 border-[#18120E]/18 bg-[#DFFF35]/45 p-3 shadow-[2px_2px_0_#18120E]">
-            <div className="mb-1 flex items-center gap-1 text-[#00895A]">
+          <div className="rounded-xl border border-border bg-secondary p-3">
+            <div className="mb-1 flex items-center gap-1 text-chart-2">
               <TrendingUp className="h-3 w-3" />
-              <span className="text-[10px] uppercase tracking-wider">Banked</span>
+              <span className="text-[10px] uppercase tracking-wide">Banked</span>
             </div>
-            <p className="num-display text-lg text-[#00895A]">+{totalBanked}<span className="ml-0.5 text-xs text-[#6B5738]">kcal</span></p>
+            <p className="num-display text-lg text-chart-2">+{totalBanked}<span className="ml-0.5 text-xs text-muted-foreground">kcal</span></p>
           </div>
-          <div className="rounded-lg border-2 border-[#18120E]/18 bg-[#FF5A3D]/[0.13] p-3 shadow-[2px_2px_0_#18120E]">
-            <div className="mb-1 flex items-center gap-1 text-[#FF5A3D]">
+          <div className="rounded-xl border border-border bg-secondary p-3">
+            <div className="mb-1 flex items-center gap-1 text-destructive">
               <TrendingDown className="h-3 w-3" />
-              <span className="text-[10px] uppercase tracking-wider">Spent</span>
+              <span className="text-[10px] uppercase tracking-wide">Spent</span>
             </div>
-            <p className="num-display text-lg text-[#FF5A3D]">-{totalSpent}<span className="ml-0.5 text-xs text-[#6B5738]">kcal</span></p>
+            <p className="num-display text-lg text-destructive">-{totalSpent}<span className="ml-0.5 text-xs text-muted-foreground">kcal</span></p>
           </div>
         </div>
 
         {/* Daily target */}
         <div>
           <div className="flex justify-between text-[11px] mb-1.5">
-            <span className="uppercase tracking-wider text-[#6B5738]">Daily target</span>
-            <span className="tabular-nums text-[#6B5738]">{dailyTarget} kcal</span>
+            <span className="uppercase tracking-wide text-muted-foreground">Daily target</span>
+            <span className="tabular-nums text-muted-foreground">{dailyTarget} kcal</span>
           </div>
           <div className="track">
             <div
@@ -159,14 +154,14 @@ export function CalorieBankCard({ data }: CalorieBankCardProps) {
 
         {/* Streak */}
         {currentStreak !== undefined && (
-          <div className="rounded-lg border-2 border-[#18120E]/18 bg-[#FFF0B8] p-3 shadow-[2px_2px_0_#18120E]">
+          <div className="rounded-xl border border-border bg-secondary p-3">
             <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-[#6B5738]">
-                <Flame className="h-3 w-3 text-[#FFB000]" />
+              <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+                <Flame className="h-3 w-3" style={{ color: "#C7913B" }} />
                 Streak
               </div>
-              <span className="num-display text-sm text-[#18120E]">
-                {currentStreak}<span className="ml-0.5 text-[10px] text-[#6B5738]">/ {maxStreak || 0} days</span>
+              <span className="num-display text-sm text-foreground">
+                {currentStreak}<span className="ml-0.5 text-[10px] text-muted-foreground">/ {maxStreak || 0} days</span>
               </span>
             </div>
             <div className="track">
@@ -176,8 +171,8 @@ export function CalorieBankCard({ data }: CalorieBankCardProps) {
         )}
 
         {/* Tip */}
-        <p className="border-t border-black/[0.12] pt-4 text-[11px] leading-relaxed text-[#6B5738]">
-          <span className="font-semibold text-[#18120E]">AI · </span>
+        <p className="border-t border-border pt-4 text-[11px] leading-relaxed text-muted-foreground">
+          <span className="font-semibold text-foreground">AI · </span>
           {isPositive
             ? `${balance} kcal saved. Consider a treat meal or keep building your reserve.`
             : `Drawing from bank. Aim to stay within target tomorrow to rebuild.`}

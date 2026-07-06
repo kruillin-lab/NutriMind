@@ -96,7 +96,7 @@ export function DashboardTabs({
 }: DashboardTabsProps) {
   return (
     <Tabs defaultValue="today" className="w-full">
-      <TabsList className="mb-6 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg border-2 border-[#18120E] bg-[#FFF8E7] p-1 shadow-[5px_5px_0_#18120E] backdrop-blur sm:w-auto">
+      <TabsList className="mb-6 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-full border border-border bg-secondary p-1 sm:w-auto">
         {[
           { value: "today", label: "Today", icon: Gauge },
           { value: "trends", label: "Trends", icon: TrendingUp },
@@ -106,7 +106,7 @@ export function DashboardTabs({
           <TabsTrigger
             key={tab.value}
             value={tab.value}
-            className="relative flex shrink-0 items-center gap-1.5 rounded-md border border-transparent bg-transparent px-4 py-2 text-sm font-semibold text-[#6B5738] transition-colors hover:bg-[#FFF0B8] hover:text-[#18120E] data-[state=active]:border-[#18120E] data-[state=active]:bg-[#DFFF35] data-[state=active]:text-[#18120E] data-[state=active]:shadow-[2px_2px_0_#18120E]"
+            className="relative flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             <tab.icon className="h-3.5 w-3.5" />
             {tab.label}

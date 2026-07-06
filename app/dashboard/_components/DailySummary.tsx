@@ -54,8 +54,8 @@ function MicroBar({ label, value, target, unit, isLimit }: MicroBarProps) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-[11px]">
-        <span className="text-[#6B5738]">{label}</span>
-        <span className="text-[#8A7350] tabular-nums">{Math.round(value)}/{target}{unit}</span>
+        <span className="text-muted-foreground">{label}</span>
+        <span className="tabular-nums text-muted-foreground">{Math.round(value)}/{target}{unit}</span>
       </div>
       <div className="track">
         <div className={fill} style={{ width: `${Math.min(pct, 100)}%` }} />
@@ -122,23 +122,23 @@ export function DailySummary({
   return (
     <div className="surface overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-black/[0.08] px-5 py-4">
-        <Flame className="h-4 w-4 text-[#FF5A3D]" />
-        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">Today&apos;s Summary</span>
+      <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+        <Flame className="h-4 w-4 text-primary" />
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Today&apos;s Summary</span>
       </div>
 
       <div className="p-5 space-y-5">
         {/* Calorie hero numbers */}
         <div className="flex items-end justify-between">
           <div>
-            <p className="num text-4xl font-semibold text-[#18120E]">{consumedCalories}</p>
-            <p className="mt-0.5 text-[11px] uppercase tracking-[0.18em] text-[#6B5738]">consumed</p>
+            <p className="num-display font-serif text-4xl text-foreground">{consumedCalories}</p>
+            <p className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">consumed</p>
           </div>
           <div className="text-right">
-            <p className={`num text-4xl font-semibold ${isOver ? "text-[#FF5A3D]" : "text-[#00C875]"}`}>
+            <p className={`num-display font-serif text-4xl ${isOver ? "text-destructive" : "text-chart-2"}`}>
               {isOver ? "" : "+"}{remaining}
             </p>
-            <p className="mt-0.5 text-[11px] uppercase tracking-[0.18em] text-[#6B5738]">
+            <p className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
               {isOver ? "over budget" : "remaining"}
             </p>
           </div>
@@ -152,23 +152,23 @@ export function DailySummary({
               style={{ width: `${calPct}%` }}
             />
           </div>
-          <div className="mt-1.5 flex justify-between text-[11px] text-[#6B5738]">
+          <div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground">
             <span>Target: {targetCalories} kcal</span>
             <span>{Math.round(calPct)}%</span>
           </div>
         </div>
 
         {/* Bank balance row */}
-        <div className="flex items-center justify-between rounded-lg border-2 border-[#18120E]/18 bg-[#FFF0B8] px-3.5 py-2.5 shadow-[2px_2px_0_#18120E]">
-          <span className="text-[11px] uppercase tracking-wider text-[#6B5738]">Bank Balance</span>
-          <span className={`num text-sm font-semibold ${bankBalance >= 0 ? "text-[#00895A]" : "text-[#FF5A3D]"}`}>
+        <div className="flex items-center justify-between rounded-xl border border-border bg-secondary px-3.5 py-2.5">
+          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Bank Balance</span>
+          <span className={`num text-sm font-semibold ${bankBalance >= 0 ? "text-chart-2" : "text-destructive"}`}>
             {bankBalance >= 0 ? "+" : ""}{Math.round(bankBalance)} kcal
           </span>
         </div>
 
         {/* Macros */}
-        <div className="space-y-3 border-t border-black/[0.08] pt-1">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6B5738]">Macros</span>
+        <div className="space-y-3 border-t border-border pt-1">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Macros</span>
 
           {hasMacroTargets ? (
             <div className="space-y-2.5">
@@ -179,8 +179,8 @@ export function DailySummary({
               ].map(({ label, value, target, color }) => (
                 <div key={label} className="space-y-1">
                   <div className="flex justify-between text-[11px]">
-                    <span className="text-[#3A2A1B]">{label}</span>
-                    <span className="tabular-nums text-[#6B5738]">{Math.round(value)}/{target}g</span>
+                    <span className="text-foreground">{label}</span>
+                    <span className="tabular-nums text-muted-foreground">{Math.round(value)}/{target}g</span>
                   </div>
                   <div className="track">
                     <div className={color} style={{ width: `${target > 0 ? Math.min((value / target) * 100, 100) : 0}%` }} />
@@ -191,13 +191,13 @@ export function DailySummary({
           ) : (
             <div className="grid grid-cols-3 gap-2">
               {[
-                { label: "Protein", value: totalProtein, color: "text-[#00C875]" },
-                { label: "Carbs",   value: totalCarbs,   color: "text-[#FFB000]" },
-                { label: "Fat",     value: totalFat,     color: "text-[#FF5A3D]" },
+                { label: "Protein", value: totalProtein, color: "text-chart-2" },
+                { label: "Carbs",   value: totalCarbs,   color: "text-chart-4" },
+                { label: "Fat",     value: totalFat,     color: "text-destructive" },
               ].map(({ label, value, color }) => (
-                <div key={label} className="rounded-lg border-2 border-[#18120E]/18 bg-[#FFF0B8] p-3 text-center shadow-[2px_2px_0_#18120E]">
-                  <p className={`num text-lg font-semibold ${color}`}>{Math.round(value)}<span className="ml-0.5 text-xs text-[#6B5738]">g</span></p>
-                  <p className="mt-0.5 text-[10px] uppercase tracking-wider text-[#6B5738]">{label}</p>
+                <div key={label} className="rounded-xl border border-border bg-secondary p-3 text-center">
+                  <p className={`num text-lg font-semibold ${color}`}>{Math.round(value)}<span className="ml-0.5 text-xs text-muted-foreground">g</span></p>
+                  <p className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
                 </div>
               ))}
             </div>
@@ -206,13 +206,13 @@ export function DailySummary({
 
         {/* Micronutrients */}
         {hasMicro && (
-          <div className="space-y-3 border-t border-black/[0.08] pt-1">
+          <div className="space-y-3 border-t border-border pt-1">
             <button
               onClick={() => setShowMicro(!showMicro)}
-              className="flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6B5738] transition-colors hover:text-[#18120E]"
+              className="flex w-full items-center justify-between text-[11px] font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
             >
               <div className="flex items-center gap-1.5">
-                <Leaf className="h-3 w-3 text-[#00C875]" />
+                <Leaf className="h-3 w-3 text-chart-2" />
                 Micronutrients
               </div>
               {showMicro ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -232,20 +232,20 @@ export function DailySummary({
         )}
 
         {/* Water */}
-        <div className="space-y-2.5 border-t border-black/[0.08] pt-1">
+        <div className="space-y-2.5 border-t border-border pt-1">
           <div className="flex items-center justify-between text-[11px]">
-            <div className="flex items-center gap-1.5 font-semibold uppercase tracking-[0.18em] text-[#6B5738]">
-              <Droplets className="h-3 w-3 text-blue-400" />
+            <div className="flex items-center gap-1.5 font-medium uppercase tracking-wide text-muted-foreground">
+              <Droplets className="h-3 w-3 text-chart-3" />
               Water
             </div>
-            <span className="tabular-nums text-[#6B5738]">{waterIntake}/{waterTarget} ml</span>
+            <span className="tabular-nums text-muted-foreground">{waterIntake}/{waterTarget} ml</span>
           </div>
           <div className="track">
-            <div className="fill-indigo" style={{ width: `${waterPct}%`, background: "#00C8FF" }} />
+            <div className="fill-indigo" style={{ width: `${waterPct}%`, background: "var(--chart-3)" }} />
           </div>
           <button
             onClick={onAddWater}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-black/[0.16] bg-[#FFF8E7] py-2 text-xs text-[#6B5738] transition-colors hover:bg-[#FFE8A8] hover:text-[#18120E]"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-input py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             <Plus className="h-3 w-3" />
             Add 250ml
@@ -253,23 +253,23 @@ export function DailySummary({
         </div>
 
         {/* Recent Meals */}
-        <div className="space-y-2 border-t border-black/[0.08] pt-1">
+        <div className="space-y-2 border-t border-border pt-1">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6B5738]">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               <Utensils className="h-3 w-3" />
               Today&apos;s Meals
             </div>
-            <button onClick={onAddMeal} className="flex h-6 w-6 items-center justify-center rounded-md text-[#6B5738] transition-colors hover:bg-[#FFE8A8] hover:text-[#18120E]">
+            <button onClick={onAddMeal} className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
               <Plus className="h-3.5 w-3.5" />
             </button>
           </div>
 
           {meals.length === 0 ? (
             <div className="text-center py-6">
-              <p className="text-sm text-[#6B5738]">No meals logged today</p>
+              <p className="text-sm text-muted-foreground">No meals logged today</p>
               <button
                 onClick={onAddMeal}
-                className="mt-2 text-xs font-semibold text-[#00895A] transition-colors hover:text-[#18120E]"
+                className="mt-2 text-xs font-medium text-primary transition-colors hover:text-foreground"
               >
                 Log your first meal →
               </button>
@@ -277,32 +277,32 @@ export function DailySummary({
           ) : (
             <div className="space-y-1">
               {meals.slice(0, 5).map((meal) => (
-                <div key={meal.id} className="group flex items-center gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-[#FFE8A8]">
+                <div key={meal.id} className="group flex items-center gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-secondary">
                   <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm text-[#2A2017]">{meal.name}</p>
-                    <p className="text-[11px] text-[#6B5738]">
+                    <p className="truncate text-sm text-foreground">{meal.name}</p>
+                    <p className="text-[11px] text-muted-foreground">
                       {new Date(meal.loggedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
-                  <span className="num shrink-0 text-xs tabular-nums text-[#3A2A1B]">{meal.calories} kcal</span>
+                  <span className="num shrink-0 text-xs tabular-nums text-foreground">{meal.calories} kcal</span>
                   <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <CopyMealDialog meal={{ id: meal.id, name: meal.name, calories: meal.calories, proteinG: meal.protein, carbsG: meal.carbs, fatG: meal.fat, fiberG: meal.fiberG, sugarG: meal.sugarG, sodiumMg: meal.sodiumMg, vitaminCMg: meal.vitaminCMg, calciumMg: meal.calciumMg, ironMg: meal.ironMg, potassiumMg: meal.potassiumMg, servingSizeG: meal.servingSizeG, mealType: meal.mealType }}>
-                      <button className="flex h-6 w-6 items-center justify-center rounded text-[#6B5738] transition-colors hover:text-[#18120E]">
+                      <button className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground">
                         <Copy className="h-3 w-3" />
                       </button>
                     </CopyMealDialog>
                     <SaveAsTemplateDialog meal={{ id: meal.id, name: meal.name, calories: meal.calories, proteinG: meal.protein, carbsG: meal.carbs, fatG: meal.fat, fiberG: meal.fiberG, sugarG: meal.sugarG, sodiumMg: meal.sodiumMg, vitaminCMg: meal.vitaminCMg, calciumMg: meal.calciumMg, ironMg: meal.ironMg, potassiumMg: meal.potassiumMg, servingSizeG: meal.servingSizeG, mealType: meal.mealType }}>
-                      <button className="flex h-6 w-6 items-center justify-center rounded text-[#6B5738] transition-colors hover:text-[#18120E]">
+                      <button className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground">
                         <Save className="h-3 w-3" />
                       </button>
                     </SaveAsTemplateDialog>
                     {onEditMeal && (
-                      <button onClick={() => onEditMeal(meal)} className="flex h-6 w-6 items-center justify-center rounded text-[#6B5738] transition-colors hover:text-[#18120E]">
+                      <button onClick={() => onEditMeal(meal)} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground">
                         <Pencil className="h-3 w-3" />
                       </button>
                     )}
                     {onDeleteMeal && (
-                      <button onClick={() => onDeleteMeal(meal.id)} className="flex h-6 w-6 items-center justify-center rounded text-[#6B5738] transition-colors hover:text-[#FF5A3D]">
+                      <button onClick={() => onDeleteMeal(meal.id)} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-destructive">
                         <Trash2 className="h-3 w-3" />
                       </button>
                     )}
@@ -312,7 +312,7 @@ export function DailySummary({
             </div>
           )}
           {meals.length > 0 && (
-            <Link href="/meals" className="block pt-1 text-center text-[11px] text-[#6B5738] transition-colors hover:text-[#18120E]">
+            <Link href="/meals" className="block pt-1 text-center text-[11px] text-muted-foreground transition-colors hover:text-foreground">
               View meal history
             </Link>
           )}

@@ -1,27 +1,27 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/src/lib/prisma";
-import { NextResponse } from "next/server";
 import { getSystemTimezone } from "@/lib/date-utils";
+import { ApiError, handleRoute } from "@/src/lib/api-helpers";
 
 export async function POST(req: Request) {
-  let userId: string | null = null;
+  return handleRoute("Failed to initialize user", async () => {
+    let userId: string | null = null;
 
-  // Check for test mode bypass header (E2E testing)
-  const testUserId = req.headers.get("X-Test-User-Id");
+    // Check for test mode bypass header (E2E testing)
+    const testUserId = req.headers.get("X-Test-User-Id");
 
-  if (testUserId && process.env.NODE_ENV !== "production") {
-    userId = testUserId;
-  } else {
-    // Normal Clerk auth
-    const authResult = await auth();
-    userId = authResult.userId;
-  }
+    if (testUserId && process.env.NODE_ENV !== "production") {
+      userId = testUserId;
+    } else {
+      // Normal Clerk auth
+      const authResult = await auth();
+      userId = authResult.userId;
+    }
 
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    if (!userId) {
+      throw new ApiError(401, "Unauthorized");
+    }
 
-  try {
     const body = await req.json();
     const {
       profile,
@@ -149,12 +149,6 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error initializing user:", error);
-    return NextResponse.json(
-      { error: "Failed to initialize user" },
-      { status: 500 }
-    );
-  }
+    return { success: true };
+  });
 }

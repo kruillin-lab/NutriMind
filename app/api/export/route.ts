@@ -1,7 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { formatLocalDateKey } from "@/lib/date-utils";
+import { ApiError, jsonError, requireUserId } from "@/src/lib/api-helpers";
 
 function escapeCsv(value: string | number | null): string {
   if (value === null || value === undefined) return "";
@@ -13,11 +13,10 @@ function escapeCsv(value: string | number | null): string {
 }
 
 export async function GET(req: NextRequest) {
+  // Not wrapped in handleRoute: the success response is a raw CSV body with
+  // download headers, not JSON.
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = await requireUserId();
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type") || "all";
@@ -164,10 +163,10 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return jsonError(error.status, error.message);
+    }
     console.error("Error exporting data:", error);
-    return NextResponse.json(
-      { error: "Failed to export data" },
-      { status: 500 }
-    );
+    return jsonError(500, "Failed to export data");
   }
 }

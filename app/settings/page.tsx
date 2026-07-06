@@ -45,10 +45,9 @@ export default async function SettingsPage() {
   return (
     <div className="min-h-screen app-field">
       <div className="mx-auto max-w-4xl px-4 py-8">
-        <header className="mb-8 border-b border-[#FFF8E7]/15 pb-6">
-          <div className="mb-3 h-2 w-32 rounded-full border border-[#FFF8E7]/20 bg-[linear-gradient(90deg,#DFFF35,#00C875,#00C8FF,#FF5A3D)] shadow-[0_14px_34px_rgba(223,255,53,0.18)]" />
-          <h1 className="text-4xl font-semibold tracking-[-0.02em] text-[#FFF8E7]">Settings</h1>
-          <p className="mt-2 text-[#FFF8E7]/72">
+        <header className="mb-8 border-b border-border pb-6">
+          <h1 className="font-serif text-4xl font-medium text-foreground">Settings</h1>
+          <p className="mt-2 text-muted-foreground">
             Manage your profile, goals, and calorie bank settings.
           </p>
         </header>

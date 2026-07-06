@@ -1,13 +1,15 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import {
+  ApiError,
+  dayRange,
+  handleRoute,
+  requireUserId,
+} from "@/src/lib/api-helpers";
 
 export async function POST(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to log weight", async () => {
+    const userId = await requireUserId();
 
     const body = await req.json();
     const { weightKg, date } = body;
@@ -18,14 +20,10 @@ export async function POST(req: NextRequest) {
       weightKg < 20 ||
       weightKg > 500
     ) {
-      return NextResponse.json(
-        { error: "Invalid weight value" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Invalid weight value");
     }
 
-    const entryDate = date ? new Date(date) : new Date();
-    entryDate.setHours(0, 0, 0, 0);
+    const { start: entryDate } = dayRange(date);
 
     const existingEntry = await prisma.weightEntry.findUnique({
       where: {
@@ -61,29 +59,20 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({
+    return {
       success: true,
       weightEntry: {
         id: weightEntry.id,
         weightKg: weightEntry.weightKg,
         date: weightEntry.date,
       },
-    });
-  } catch (error) {
-    console.error("Error logging weight:", error);
-    return NextResponse.json(
-      { error: "Failed to log weight" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }
 
 export async function GET(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to fetch weight data", async () => {
+    const userId = await requireUserId();
 
     const { searchParams } = new URL(req.url);
     const days = parseInt(searchParams.get("days") || "30", 10);
@@ -95,37 +84,25 @@ export async function GET(req: NextRequest) {
       take: limit,
     });
 
-    return NextResponse.json({
+    return {
       entries: entries.map((e) => ({
         id: e.id,
         weightKg: e.weightKg,
         date: e.date,
       })),
-    });
-  } catch (error) {
-    console.error("Error fetching weight data:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch weight data" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }
 
 export async function DELETE(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to delete weight entry", async () => {
+    const userId = await requireUserId();
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Missing weight entry ID" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Missing weight entry ID");
     }
 
     const entry = await prisma.weightEntry.findUnique({
@@ -133,22 +110,13 @@ export async function DELETE(req: NextRequest) {
     });
 
     if (!entry || entry.userId !== userId) {
-      return NextResponse.json(
-        { error: "Weight entry not found" },
-        { status: 404 }
-      );
+      throw new ApiError(404, "Weight entry not found");
     }
 
     await prisma.weightEntry.delete({
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting weight entry:", error);
-    return NextResponse.json(
-      { error: "Failed to delete weight entry" },
-      { status: 500 }
-    );
-  }
+    return { success: true };
+  });
 }

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import { DailyLog } from '@prisma/client';
 import { formatLocalDateKey } from '@/lib/date-utils';
+import { ApiError, handleRoute, requireUserId } from '@/src/lib/api-helpers';
 
 const MICRONUTRIENTS = [
   { key: 'fiberG', label: 'Fiber', unit: 'g', target: 30 },
@@ -15,20 +15,17 @@ const MICRONUTRIENTS = [
 ];
 
 export async function GET(request: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  return handleRoute('Failed to fetch nutrition history', async () => {
+    const userId = await requireUserId();
 
-  const searchParams = request.nextUrl.searchParams;
-  const daysParam = searchParams.get('days') || '7';
-  const days = parseInt(daysParam, 10);
+    const searchParams = request.nextUrl.searchParams;
+    const daysParam = searchParams.get('days') || '7';
+    const days = parseInt(daysParam, 10);
 
-  if (isNaN(days) || days < 1 || days > 365) {
-    return NextResponse.json({ error: 'Invalid days parameter' }, { status: 400 });
-  }
+    if (isNaN(days) || days < 1 || days > 365) {
+      throw new ApiError(400, 'Invalid days parameter');
+    }
 
-  try {
     const endDate = new Date();
     endDate.setHours(23, 59, 59, 999);
     const startDate = new Date(endDate);
@@ -84,16 +81,10 @@ export async function GET(request: NextRequest) {
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    return NextResponse.json({
+    return {
       days,
       nutrients: MICRONUTRIENTS,
       data,
-    });
-  } catch (error) {
-    console.error('Error fetching nutrition history:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch nutrition history' },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }

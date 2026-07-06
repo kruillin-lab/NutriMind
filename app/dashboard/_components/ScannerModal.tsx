@@ -147,15 +147,15 @@ export function ScannerModal({ onResult, onClose }: ScannerModalProps) {
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-background border-b">
-        <h2 className="font-semibold text-lg">Scan Food</h2>
+      <div className="flex items-center justify-between px-4 py-3 bg-background border-b border-border">
+        <h2 className="font-serif text-lg font-medium">Scan Food</h2>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-5 w-5" />
         </Button>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-background border-b">
+      <div className="flex bg-background border-b border-border">
         {(["barcode", "label"] as Tab[]).map((t) => (
           <button
             key={t}
@@ -209,8 +209,8 @@ function ResultCard({
   };
 
   return (
-    <div className="w-full max-w-sm bg-background rounded-xl p-6 space-y-5 shadow-xl">
-      <div className="flex items-center gap-2 text-green-600">
+    <div className="surface w-full max-w-sm p-6 space-y-5">
+      <div className="flex items-center gap-2 text-chart-2">
         <CheckCircle className="h-5 w-5" />
         <span className="font-medium">Found!</span>
       </div>
@@ -226,9 +226,9 @@ function ResultCard({
         )}
       </div>
       <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="bg-muted rounded-lg p-3 text-center col-span-2">
-          <p className="text-3xl font-bold">{result.calories}</p>
-          <p className="text-muted-foreground text-xs mt-0.5">Calories</p>
+        <div className="bg-secondary rounded-xl border border-border p-3 text-center col-span-2">
+          <p className="num-display font-serif text-3xl text-foreground">{result.calories}</p>
+          <p className="text-muted-foreground text-xs mt-0.5 uppercase tracking-wide">Calories</p>
         </div>
         {[
           ["Protein", `${result.proteinG}g`],
@@ -298,9 +298,9 @@ function BarcodeView({
       </div>
 
       {error ? (
-        <div className="flex flex-col items-center gap-3 text-center">
-          <AlertCircle className="h-6 w-6 text-red-400" />
-          <p className="text-white text-sm">{error}</p>
+        <div className="flex flex-col items-center gap-3 rounded-xl bg-card/95 px-4 py-3 text-center">
+          <AlertCircle className="h-6 w-6 text-destructive" />
+          <p className="text-sm text-foreground">{error}</p>
           <Button variant="secondary" size="sm" onClick={onRetry}>
             Try Again
           </Button>
@@ -343,7 +343,7 @@ function LabelView({
         </p>
       </div>
       {error && (
-        <div className="flex items-center gap-2 text-red-400 text-sm">
+        <div className="flex items-center gap-2 rounded-lg bg-card/95 px-3 py-2 text-destructive text-sm">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           <span>{error}</span>
         </div>

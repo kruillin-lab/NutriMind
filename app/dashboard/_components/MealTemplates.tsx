@@ -34,11 +34,11 @@ interface MealTemplatesProps {
 }
 
 const mealTypeColors: Record<string, string> = {
-  BREAKFAST: "bg-orange-100 text-orange-800",
-  LUNCH: "bg-green-100 text-green-800",
-  DINNER: "bg-blue-100 text-blue-800",
-  SNACK: "bg-purple-100 text-purple-800",
-  OTHER: "bg-gray-100 text-gray-800",
+  BREAKFAST: "border-chart-4/30 bg-chart-4/10 text-foreground",
+  LUNCH: "border-chart-2/30 bg-chart-2/10 text-foreground",
+  DINNER: "border-chart-3/30 bg-chart-3/10 text-foreground",
+  SNACK: "border-chart-5/30 bg-chart-5/10 text-foreground",
+  OTHER: "border-border bg-muted text-muted-foreground",
 };
 
 const DEFAULT_TEMPLATE_QUANTITY = 1;
@@ -189,7 +189,7 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            <Star className="h-5 w-5 text-yellow-500" />
+            <Star className="h-5 w-5 text-primary" />
             My Templates
           </CardTitle>
           <Button
@@ -205,7 +205,7 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
 
       <CardContent className="space-y-3">
         {isCreating && (
-          <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+          <div className="space-y-3 rounded-xl border border-border bg-secondary/60 p-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="tmpl-name" className="text-xs text-muted-foreground">
@@ -302,7 +302,7 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
 
         {templates.length === 0 && !isCreating ? (
           <div className="text-center py-6 text-muted-foreground">
-            <Utensils className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+            <Utensils className="h-8 w-8 mx-auto mb-2 opacity-40" />
             <p className="text-sm">No templates yet</p>
             <p className="text-xs mt-1">Save your go-to meals for quick logging</p>
           </div>
@@ -317,7 +317,7 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
               return (
               <div
                 key={tmpl.id}
-                className="flex flex-col gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:bg-secondary/60 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -329,7 +329,7 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
                     </Badge>
                     <p className="font-medium text-sm truncate">{tmpl.name}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="num text-xs text-muted-foreground mt-1">
                     {tmpl.calories} cal · P: {tmpl.proteinG}g · C: {tmpl.carbsG}g · F: {tmpl.fatG}g
                     {isMultiplied && (
                       <span className="ml-2 font-medium text-foreground">
@@ -342,11 +342,11 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-1 sm:flex-nowrap">
-                  <div className="flex h-8 items-center overflow-hidden rounded-md border-2 border-[#18120E]/25 bg-[#FFF8E7] shadow-[2px_2px_0_#18120E]">
+                  <div className="flex h-8 items-center overflow-hidden rounded-lg border border-input bg-card">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-none text-[#6B5738] hover:bg-[#FFE8A8] hover:text-[#18120E] disabled:opacity-35"
+                      className="h-7 w-7 rounded-none text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-35"
                       onClick={() => handleQuantityStep(tmpl.id, -1)}
                       disabled={quantity != null && quantity <= MIN_TEMPLATE_QUANTITY}
                     >
@@ -366,12 +366,12 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
                         const nextQuantity = parseQuantity(getQuantityInput(tmpl.id)) ?? DEFAULT_TEMPLATE_QUANTITY;
                         handleQuantityChange(tmpl.id, formatQuantity(nextQuantity));
                       }}
-                      className="h-7 w-14 rounded-none border-x-2 border-y-0 border-[#18120E]/15 bg-[#FFF0B8] px-1 text-center text-xs font-semibold text-[#18120E] shadow-none focus-visible:ring-0"
+                      className="num h-7 w-14 rounded-none border-x border-y-0 border-border bg-secondary px-1 text-center text-xs font-semibold text-foreground shadow-none focus-visible:ring-0"
                     />
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-none text-[#6B5738] hover:bg-[#FFE8A8] hover:text-[#18120E] disabled:opacity-35"
+                      className="h-7 w-7 rounded-none text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-35"
                       onClick={() => handleQuantityStep(tmpl.id, 1)}
                       disabled={quantity != null && quantity >= MAX_TEMPLATE_QUANTITY}
                     >
@@ -391,7 +391,7 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-red-600"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
                     onClick={() => handleDelete(tmpl.id)}
                   >
                     <Trash2 className="h-4 w-4" />

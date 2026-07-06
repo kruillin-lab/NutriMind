@@ -2,7 +2,6 @@
 
 import NextImage from "next/image";
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -167,32 +166,28 @@ export function ProgressPhotos() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center h-32">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        </CardContent>
-      </Card>
+      <section className="surface p-6">
+        <div className="flex items-center justify-center h-32">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </section>
     );
   }
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Camera className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-lg">Progress Photos</CardTitle>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Photo
-            </Button>
+      <section className="surface overflow-hidden">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <div className="flex items-center gap-2">
+            <Camera className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Progress Photos</h3>
           </div>
-        </CardHeader>
-        <CardContent>
+          <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add Photo
+          </Button>
+        </div>
+        <div className="px-5 py-4">
           {photos.length === 0 ? (
             <div className="text-center py-8">
               <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
@@ -217,7 +212,7 @@ export function ProgressPhotos() {
               {photos.map((photo) => (
                 <div
                   key={photo.id}
-                  className="relative group aspect-square rounded-lg overflow-hidden bg-muted"
+                  className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-muted"
                 >
                   <NextImage
                     src={photo.imageData}
@@ -232,7 +227,7 @@ export function ProgressPhotos() {
                       {formatDate(photo.photoDate)}
                     </p>
                     {photo.weightKg && (
-                      <p className="text-white/80 text-xs">
+                      <p className="text-white/80 text-xs num">
                         {photo.weightKg.toFixed(1)} kg
                       </p>
                     )}
@@ -255,8 +250,8 @@ export function ProgressPhotos() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
@@ -275,7 +270,7 @@ export function ProgressPhotos() {
             </div>
 
             {previewUrl && (
-              <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+              <div className="relative aspect-video rounded-xl overflow-hidden border border-border bg-muted">
                 <NextImage
                   src={previewUrl}
                   alt="Preview"

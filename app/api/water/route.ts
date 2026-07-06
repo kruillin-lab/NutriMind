@@ -1,26 +1,26 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { clampInt } from "@/src/lib/validation";
+import {
+  ApiError,
+  dayRange,
+  handleRoute,
+  requireUser,
+  requireUserId,
+} from "@/src/lib/api-helpers";
 
 // POST /api/water - Add water intake
 export async function POST(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to log water", async () => {
+    const userId = await requireUserId();
 
     const body = await req.json();
     const { amountMl } = body;
 
     const safeAmountMl = clampInt(amountMl, 0, 10000);
     if (safeAmountMl === null || safeAmountMl <= 0) {
-      return NextResponse.json(
-        { error: "Invalid water amount" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Invalid water amount");
     }
 
     // Get user
@@ -29,13 +29,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      throw new ApiError(404, "User not found");
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { start: today, end: tomorrow } = dayRange();
 
     // Update water intake in transaction
     const result = await prisma.$transaction(
@@ -80,43 +77,23 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    return NextResponse.json({
+    return {
       success: true,
       waterMl: result.dailyLog.waterMl,
       amountAdded: safeAmountMl,
       message: `Added ${safeAmountMl}ml of water`,
-    });
-  } catch (error) {
-    console.error("Error logging water:", error);
-    return NextResponse.json(
-      { error: "Failed to log water" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }
 
 // GET /api/water - Get today's water intake
 export async function GET(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to fetch water intake", async () => {
+    const user = await requireUser();
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
-    const date = dateParam ? new Date(dateParam) : new Date();
-    date.setHours(0, 0, 0, 0);
-    const nextDay = new Date(date);
-    nextDay.setDate(nextDay.getDate() + 1);
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
+    const { start: date, end: nextDay } = dayRange(dateParam);
 
     const dailyLog = await prisma.dailyLog.findFirst({
       where: {
@@ -128,15 +105,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    return {
       waterMl: dailyLog?.waterMl || 0,
       date: date.toISOString(),
-    });
-  } catch (error) {
-    console.error("Error fetching water:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch water intake" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }

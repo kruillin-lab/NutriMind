@@ -213,10 +213,10 @@ export function DatabaseClient() {
   return (
     <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
       <aside className="surface overflow-hidden">
-        <div className="border-b border-black/[0.08] px-4 py-3">
+        <div className="border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
-            <Database className="h-4 w-4 text-[#00C875]" />
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">
+            <Database className="h-4 w-4 text-primary" />
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Tables
             </span>
           </div>
@@ -228,12 +228,12 @@ export function DatabaseClient() {
               onClick={() => selectTable(table.key)}
               className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                 table.key === activeTable
-                  ? "border-2 border-[#18120E] bg-[#DFFF35] font-semibold text-[#18120E] shadow-[2px_2px_0_#18120E]"
-                  : "border-2 border-transparent text-[#3A2A1B] hover:border-[#18120E]/15 hover:bg-[#FFF0B8]"
+                  ? "border border-border bg-secondary font-medium text-foreground"
+                  : "border border-transparent text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
               }`}
             >
               <span>{table.label}</span>
-              <span className="rounded-full border border-black/[0.12] bg-[#FFF8E7] px-2 py-0.5 text-xs text-[#6B5738]">
+              <span className="num rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                 {table.count}
               </span>
             </button>
@@ -243,12 +243,12 @@ export function DatabaseClient() {
 
       <section className="space-y-4">
         <div className="surface overflow-hidden">
-          <div className="flex flex-col gap-3 border-b border-black/[0.08] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {activeLabel}
               </p>
-              <p className="mt-1 text-sm text-[#8A7350]">
+              <p className="num mt-1 text-sm text-muted-foreground">
                 Showing {rows.length} of {total} records
               </p>
             </div>
@@ -256,7 +256,7 @@ export function DatabaseClient() {
               <button
                 onClick={() => loadTable(activeTable, offset)}
                 disabled={isLoading}
-                className="flex items-center gap-2 rounded-lg border-2 border-[#18120E] bg-[#FFF8E7] px-3 py-2 text-sm font-semibold text-[#18120E] shadow-[2px_2px_0_#18120E] transition-colors hover:bg-[#FFE8A8] disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg border border-input px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
               >
                 <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
                 Refresh
@@ -264,14 +264,14 @@ export function DatabaseClient() {
               <button
                 onClick={previousPage}
                 disabled={offset === 0 || isLoading}
-                className="rounded-lg border-2 border-[#18120E]/30 bg-[#FFF8E7] px-3 py-2 text-sm font-semibold text-[#18120E] disabled:opacity-40"
+                className="rounded-lg border border-input px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-40"
               >
                 Previous
               </button>
               <button
                 onClick={nextPage}
                 disabled={offset + PAGE_SIZE >= total || isLoading}
-                className="rounded-lg border-2 border-[#18120E]/30 bg-[#FFF8E7] px-3 py-2 text-sm font-semibold text-[#18120E] disabled:opacity-40"
+                className="rounded-lg border border-input px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-40"
               >
                 Next
               </button>
@@ -279,13 +279,13 @@ export function DatabaseClient() {
           </div>
 
           {error && (
-            <div className="mx-5 mt-4 flex items-start gap-2 rounded-lg border border-[#FF5A3D]/30 bg-[#FF5A3D]/10 p-3 text-sm text-[#8A2418]">
+            <div className="mx-5 mt-4 flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
           {message && (
-            <div className="mx-5 mt-4 rounded-lg border border-[#00C875]/30 bg-[#00C875]/10 p-3 text-sm font-medium text-[#006B45]">
+            <div className="mx-5 mt-4 rounded-lg border border-chart-2/30 bg-chart-2/10 p-3 text-sm font-medium text-foreground">
               {message}
             </div>
           )}
@@ -295,7 +295,7 @@ export function DatabaseClient() {
               <thead>
                 <tr>
                   {visibleFields.map((field) => (
-                    <th key={field.name} className="px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#6B5738]">
+                    <th key={field.name} className="px-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       {field.label}
                     </th>
                   ))}
@@ -304,13 +304,13 @@ export function DatabaseClient() {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td className="px-3 py-8 text-center text-[#6B5738]" colSpan={visibleFields.length}>
+                    <td className="px-3 py-8 text-center text-muted-foreground" colSpan={visibleFields.length}>
                       Loading records...
                     </td>
                   </tr>
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td className="px-3 py-8 text-center text-[#6B5738]" colSpan={visibleFields.length}>
+                    <td className="px-3 py-8 text-center text-muted-foreground" colSpan={visibleFields.length}>
                       No records in this table.
                     </td>
                   </tr>
@@ -320,13 +320,13 @@ export function DatabaseClient() {
                       key={row.id}
                       onClick={() => selectRecord(row)}
                       className={`cursor-pointer ${
-                        selectedRecord?.id === row.id ? "outline outline-2 outline-[#00C8FF]" : ""
+                        selectedRecord?.id === row.id ? "outline outline-2 outline-ring" : ""
                       }`}
                     >
                       {visibleFields.map((field) => (
                         <td
                           key={field.name}
-                          className="max-w-[240px] truncate border-y border-black/[0.06] bg-[#FFF0B8] px-3 py-3 first:rounded-l-lg first:border-l last:rounded-r-lg last:border-r"
+                          className="max-w-[240px] truncate border-y border-border bg-secondary/50 px-3 py-3 text-foreground transition-colors first:rounded-l-lg first:border-l last:rounded-r-lg last:border-r"
                           title={formatCell(row[field.name])}
                         >
                           {formatCell(row[field.name])}
@@ -341,11 +341,11 @@ export function DatabaseClient() {
         </div>
 
         <div className="surface overflow-hidden">
-          <div className="border-b border-black/[0.08] px-5 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">
+          <div className="border-b border-border px-5 py-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Record Editor
             </p>
-            <p className="mt-1 text-sm text-[#8A7350]">
+            <p className="mt-1 text-sm text-muted-foreground">
               Edit JSON, then save. Read-only fields like id and timestamps are ignored on save.
             </p>
           </div>
@@ -355,14 +355,14 @@ export function DatabaseClient() {
               onChange={(event) => setDraft(event.target.value)}
               disabled={!selectedRecord}
               spellCheck={false}
-              className="min-h-[320px] w-full resize-y rounded-lg border-2 border-[#18120E]/20 bg-[#FFF8E7] p-4 font-mono text-xs leading-relaxed text-[#18120E] outline-none transition-colors placeholder:text-[#8A7350] focus:border-[#18120E] focus:ring-2 focus:ring-[#DFFF35]/70 disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-[320px] w-full resize-y rounded-lg border border-input bg-background p-4 font-mono text-xs leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50"
               placeholder="Select a row to edit its JSON."
             />
             <div className="flex flex-wrap justify-end gap-2">
               <button
                 onClick={deleteRecord}
                 disabled={!selectedRecord || isSaving}
-                className="flex items-center gap-2 rounded-lg border-2 border-[#FF5A3D] bg-[#FFF8E7] px-3 py-2 text-sm font-semibold text-[#8A2418] transition-colors hover:bg-[#FF5A3D]/12 disabled:opacity-40"
+                className="flex items-center gap-2 rounded-lg border border-destructive/40 px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-40"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete
@@ -370,7 +370,7 @@ export function DatabaseClient() {
               <button
                 onClick={saveRecord}
                 disabled={!selectedRecord || isSaving}
-                className="flex items-center gap-2 rounded-lg border-2 border-[#18120E] bg-[#DFFF35] px-3 py-2 text-sm font-semibold text-[#18120E] shadow-[3px_3px_0_#18120E] transition-colors hover:bg-[#00C8FF] disabled:opacity-40"
+                className="btn-primary gap-2 disabled:opacity-40"
               >
                 <Save className="h-4 w-4" />
                 {isSaving ? "Saving..." : "Save record"}

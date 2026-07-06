@@ -1,14 +1,11 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
 
 export async function POST(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to add meal plan items", async () => {
+    const userId = await requireUserId();
 
     interface MealPlanItemInput {
       plannedDate: string;
@@ -30,10 +27,7 @@ export async function POST(req: NextRequest) {
     const items = body.items as MealPlanItemInput[];
 
     if (!mealPlanId || !items || !Array.isArray(items)) {
-      return NextResponse.json(
-        { error: "Missing required fields: mealPlanId, items" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Missing required fields: mealPlanId, items");
     }
 
     const plan = await prisma.mealPlan.findUnique({
@@ -41,7 +35,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!plan || plan.userId !== userId) {
-      return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+      throw new ApiError(404, "Plan not found");
     }
 
     const createdItems = await prisma.mealPlanItem.createMany({
@@ -62,31 +56,19 @@ export async function POST(req: NextRequest) {
       })) as Prisma.MealPlanItemCreateManyInput[],
     });
 
-    return NextResponse.json({ success: true, count: createdItems.count });
-  } catch (error) {
-    console.error("Error adding meal plan items:", error);
-    return NextResponse.json(
-      { error: "Failed to add meal plan items" },
-      { status: 500 }
-    );
-  }
+    return { success: true, count: createdItems.count };
+  });
 }
 
 export async function DELETE(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to delete meal plan item", async () => {
+    const userId = await requireUserId();
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Missing item ID" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Missing item ID");
     }
 
     const item = await prisma.mealPlanItem.findUnique({
@@ -95,17 +77,11 @@ export async function DELETE(req: NextRequest) {
     });
 
     if (!item || item.mealPlan.userId !== userId) {
-      return NextResponse.json({ error: "Item not found" }, { status: 404 });
+      throw new ApiError(404, "Item not found");
     }
 
     await prisma.mealPlanItem.delete({ where: { id } });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting meal plan item:", error);
-    return NextResponse.json(
-      { error: "Failed to delete meal plan item" },
-      { status: 500 }
-    );
-  }
+    return { success: true };
+  });
 }

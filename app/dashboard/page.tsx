@@ -130,14 +130,13 @@ export default async function DashboardPage({
 
   return (
     <div className="min-h-screen app-field">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
-        <div className="mb-7 flex flex-col gap-4 border-b border-[#FFF8E7]/15 pb-6 md:flex-row md:items-end md:justify-between">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
+        <div className="mb-8 flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#DFFF35]">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
             </p>
-            <div className="mb-3 h-2 w-32 rounded-full border border-[#FFF8E7]/20 bg-[linear-gradient(90deg,#DFFF35,#00C875,#00C8FF,#FF5A3D)] shadow-[0_14px_34px_rgba(223,255,53,0.18)]" />
-            <h1 className="text-4xl font-semibold tracking-[-0.02em] text-[#FFF8E7] sm:text-5xl">Dashboard</h1>
+            <h1 className="font-serif text-4xl font-medium text-foreground sm:text-5xl">Dashboard</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {data.currentStreak > 0 && (

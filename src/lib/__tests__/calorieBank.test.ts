@@ -1,9 +1,34 @@
-import { describe, expect, it } from "vitest";
+import type { CalorieBank, Prisma } from "@prisma/client";
+import { describe, expect, it, vi } from "vitest";
 import {
+  applyCalorieBankOverageAdjustment,
   calculateCompletedDaySurplus,
   calculateOverageAdjustment,
   createCalorieBankResetData,
 } from "../calorieBank";
+
+function createBank(overrides: Partial<CalorieBank> = {}): CalorieBank {
+  return {
+    id: "bank-1",
+    userId: "user-1",
+    currentBalance: 0,
+    totalBanked: 0,
+    totalSpent: 0,
+    dailyTarget: 2000,
+    weeklyAverage: 0,
+    recommendedSpend: null,
+    spendByDate: null,
+    allowNegative: false,
+    expireAfterDays: 30,
+    expiredAmount: 0,
+    proteinTargetG: 0,
+    carbsTargetG: 0,
+    fatTargetG: 0,
+    createdAt: new Date("2026-05-12T00:00:00.000Z"),
+    updatedAt: new Date("2026-05-12T00:00:00.000Z"),
+    ...overrides,
+  };
+}
 
 describe("calculateOverageAdjustment", () => {
   it("spends only the amount that crosses over target", () => {
@@ -80,6 +105,97 @@ describe("calculateCompletedDaySurplus", () => {
       calorieTarget: 2000,
       bankedAmount: 400,
     }, today)).toBeNull();
+  });
+
+  it("does not bank a full target for a past day with no food logged", () => {
+    const today = new Date("2026-05-12T00:00:00.000Z");
+
+    expect(calculateCompletedDaySurplus({
+      date: new Date("2026-05-11T00:00:00.000Z"),
+      caloriesConsumed: 0,
+      calorieTarget: 2000,
+      bankedAmount: 0,
+    }, today)).toBeNull();
+  });
+});
+
+describe("applyCalorieBankOverageAdjustment", () => {
+  it("does not refund overage that was never spent from the bank", async () => {
+    const bank = createBank({ currentBalance: 0, totalSpent: 0, allowNegative: false });
+    const tx = {
+      calorieBank: {
+        findUnique: vi.fn().mockResolvedValue(bank),
+        update: vi.fn(),
+      },
+      bankTransaction: {
+        create: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    } as unknown as Prisma.TransactionClient;
+
+    const blockedSpend = await applyCalorieBankOverageAdjustment({
+      bank,
+      tx,
+      previousConsumed: 2000,
+      nextConsumed: 2500,
+      calorieTarget: 2000,
+      sourceId: "log-1",
+      spendReason: "Overspend",
+      refundReason: "Refund",
+    });
+
+    expect(blockedSpend.adjustment).toEqual({ type: "spend", amount: 500 });
+    expect(tx.calorieBank.update).not.toHaveBeenCalled();
+    expect(tx.bankTransaction.create).not.toHaveBeenCalled();
+
+    const refund = await applyCalorieBankOverageAdjustment({
+      bank,
+      tx,
+      previousConsumed: 2500,
+      nextConsumed: 2000,
+      calorieTarget: 2000,
+      sourceId: "log-1",
+      spendReason: "Overspend",
+      refundReason: "Refund",
+    });
+
+    expect(refund.adjustment).toEqual({ type: "refund", amount: 500 });
+    expect(refund.bankUpdate).toBeNull();
+    expect(refund.bankTransaction).toBeNull();
+    expect(tx.calorieBank.update).not.toHaveBeenCalled();
+    expect(tx.bankTransaction.create).not.toHaveBeenCalled();
+  });
+
+  it("spends with an atomic decrement instead of an absolute balance write", async () => {
+    const bank = createBank({ currentBalance: 1000, totalSpent: 0, allowNegative: false });
+    const tx = {
+      calorieBank: {
+        findUnique: vi.fn().mockResolvedValue(bank),
+        update: vi.fn().mockResolvedValue(createBank({ currentBalance: 600, totalSpent: 400 })),
+      },
+      bankTransaction: {
+        create: vi.fn().mockResolvedValue({ id: "tx-1" }),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    } as unknown as Prisma.TransactionClient;
+
+    await applyCalorieBankOverageAdjustment({
+      bank,
+      tx,
+      previousConsumed: 2000,
+      nextConsumed: 2400,
+      calorieTarget: 2000,
+      sourceId: "log-1",
+      spendReason: "Overspend",
+      refundReason: "Refund",
+    });
+
+    expect(tx.calorieBank.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        currentBalance: { decrement: 400 },
+        totalSpent: { increment: 400 },
+      }),
+    }));
   });
 });
 

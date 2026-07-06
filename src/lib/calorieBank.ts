@@ -71,7 +71,11 @@ export function calculateCompletedDaySurplus(
   log: CompletedDayLog,
   today: Date = getLocalMidnight()
 ): number | null {
-  if (log.bankedAmount !== 0 || log.date.getTime() >= today.getTime()) {
+  if (
+    log.bankedAmount !== 0 ||
+    log.date.getTime() >= today.getTime() ||
+    log.caloriesConsumed <= 0
+  ) {
     return null;
   }
 
@@ -99,24 +103,32 @@ export async function applyCalorieBankOverageAdjustment({
     return { adjustment, bankUpdate: null, bankTransaction: null };
   }
 
-  if (adjustment.type === "spend") {
-    const newBalance = bank.currentBalance - adjustment.amount;
+  const freshBank = await tx.calorieBank.findUnique({
+    where: { id: bank.id },
+  });
 
-    if (newBalance < 0 && !bank.allowNegative) {
+  if (!freshBank) {
+    return { adjustment, bankUpdate: null, bankTransaction: null };
+  }
+
+  if (adjustment.type === "spend") {
+    const newBalance = freshBank.currentBalance - adjustment.amount;
+
+    if (newBalance < 0 && !freshBank.allowNegative) {
       return { adjustment, bankUpdate: null, bankTransaction: null };
     }
 
     const bankUpdate = await tx.calorieBank.update({
-      where: { id: bank.id },
+      where: { id: freshBank.id },
       data: {
-        currentBalance: newBalance,
+        currentBalance: { decrement: adjustment.amount },
         totalSpent: { increment: adjustment.amount },
       },
     });
 
     const bankTransaction = await tx.bankTransaction.create({
       data: {
-        bankId: bank.id,
+        bankId: freshBank.id,
         type: "SPEND",
         amount: adjustment.amount,
         reason: spendReason,
@@ -130,19 +142,48 @@ export async function applyCalorieBankOverageAdjustment({
     return { adjustment, bankUpdate, bankTransaction };
   }
 
+  const transactions = await tx.bankTransaction.findMany({
+    where: {
+      bankId: freshBank.id,
+      sourceId,
+      sourceType: "daily_log",
+      type: { in: ["SPEND", "ADJUST"] },
+    },
+    select: {
+      type: true,
+      amount: true,
+    },
+  });
+  const netAppliedSpend = transactions.reduce((total, transaction) => {
+    if (transaction.type === "SPEND") {
+      return total + transaction.amount;
+    }
+
+    return total - transaction.amount;
+  }, 0);
+  const refundAmount = Math.min(
+    adjustment.amount,
+    Math.max(0, netAppliedSpend),
+    Math.max(0, freshBank.totalSpent)
+  );
+
+  if (refundAmount === 0) {
+    return { adjustment, bankUpdate: null, bankTransaction: null };
+  }
+
   const bankUpdate = await tx.calorieBank.update({
-    where: { id: bank.id },
+    where: { id: freshBank.id },
     data: {
-      currentBalance: { increment: adjustment.amount },
-      totalSpent: Math.max(0, bank.totalSpent - adjustment.amount),
+      currentBalance: { increment: refundAmount },
+      totalSpent: { decrement: refundAmount },
     },
   });
 
   const bankTransaction = await tx.bankTransaction.create({
     data: {
-      bankId: bank.id,
+      bankId: freshBank.id,
       type: "ADJUST",
-      amount: adjustment.amount,
+      amount: refundAmount,
       reason: refundReason,
       caloriesConsumed: nextConsumed,
       caloriesTarget: calorieTarget,
@@ -163,6 +204,7 @@ export async function bankPendingCompletedDays(
       ...(userId ? { userId } : {}),
       date: { lt: today },
       bankedAmount: 0,
+      caloriesConsumed: { gt: 0 },
     },
     include: {
       user: {

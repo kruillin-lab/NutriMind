@@ -3,6 +3,7 @@ import { prisma } from '@/src/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { applyCalorieBankOverageAdjustment } from '@/src/lib/calorieBank';
 import { ApiError, handleRoute, requireUserId } from '@/src/lib/api-helpers';
+import { clampInt, clampNumber, truncate } from '@/src/lib/validation';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -16,7 +17,10 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     const body = await req.json();
     const { name, calories, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg, vitaminCMg, calciumMg, ironMg, potassiumMg, servingSizeG, mealType } = body;
 
-    if (!name || !calories || calories < 0) {
+    const safeName = truncate(name, 200);
+    const safeCalories = clampInt(calories, 0, 10000);
+
+    if (!safeName || safeCalories === null) {
       throw new ApiError(400, 'Invalid meal data');
     }
 
@@ -44,7 +48,22 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       throw new ApiError(403, 'Forbidden');
     }
 
-    const calorieDifference = calories - existingMeal.calories;
+    const nutrients = {
+      proteinG: proteinG !== undefined ? clampNumber(proteinG, 0, 1000) ?? 0 : existingMeal.proteinG,
+      carbsG: carbsG !== undefined ? clampNumber(carbsG, 0, 1000) ?? 0 : existingMeal.carbsG,
+      fatG: fatG !== undefined ? clampNumber(fatG, 0, 1000) ?? 0 : existingMeal.fatG,
+      fiberG: fiberG !== undefined ? clampNumber(fiberG, 0, 1000) ?? 0 : existingMeal.fiberG,
+      sugarG: sugarG !== undefined ? clampNumber(sugarG, 0, 1000) ?? 0 : existingMeal.sugarG,
+      sodiumMg: sodiumMg !== undefined ? clampNumber(sodiumMg, 0, 10000) ?? 0 : existingMeal.sodiumMg,
+      vitaminCMg: vitaminCMg !== undefined ? clampNumber(vitaminCMg, 0, 10000) ?? 0 : existingMeal.vitaminCMg,
+      calciumMg: calciumMg !== undefined ? clampNumber(calciumMg, 0, 10000) ?? 0 : existingMeal.calciumMg,
+      ironMg: ironMg !== undefined ? clampNumber(ironMg, 0, 10000) ?? 0 : existingMeal.ironMg,
+      potassiumMg: potassiumMg !== undefined ? clampNumber(potassiumMg, 0, 10000) ?? 0 : existingMeal.potassiumMg,
+    };
+    const safeServingSizeG = servingSizeG !== undefined
+      ? (servingSizeG !== null ? clampNumber(servingSizeG, 0, 10000) : null)
+      : existingMeal.servingSizeG;
+    const calorieDifference = safeCalories - existingMeal.calories;
     const user = existingMeal.dailyLog.user;
 
     // Update meal and daily log in transaction
@@ -54,19 +73,19 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         const updatedMeal = await tx.meal.update({
           where: { id },
           data: {
-            name,
-            calories,
-            proteinG: proteinG ?? existingMeal.proteinG,
-            carbsG: carbsG ?? existingMeal.carbsG,
-            fatG: fatG ?? existingMeal.fatG,
-            fiberG: fiberG ?? existingMeal.fiberG,
-            sugarG: sugarG ?? existingMeal.sugarG,
-            sodiumMg: sodiumMg ?? existingMeal.sodiumMg,
-            vitaminCMg: vitaminCMg ?? existingMeal.vitaminCMg,
-            calciumMg: calciumMg ?? existingMeal.calciumMg,
-            ironMg: ironMg ?? existingMeal.ironMg,
-            potassiumMg: potassiumMg ?? existingMeal.potassiumMg,
-            servingSizeG: servingSizeG !== undefined ? servingSizeG : existingMeal.servingSizeG,
+            name: safeName,
+            calories: safeCalories,
+            proteinG: nutrients.proteinG,
+            carbsG: nutrients.carbsG,
+            fatG: nutrients.fatG,
+            fiberG: nutrients.fiberG,
+            sugarG: nutrients.sugarG,
+            sodiumMg: nutrients.sodiumMg,
+            vitaminCMg: nutrients.vitaminCMg,
+            calciumMg: nutrients.calciumMg,
+            ironMg: nutrients.ironMg,
+            potassiumMg: nutrients.potassiumMg,
+            servingSizeG: safeServingSizeG,
             mealType: mealType || existingMeal.mealType,
           },
         });
@@ -97,8 +116,8 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           nextConsumed: newConsumed,
           calorieTarget: existingMeal.dailyLog.calorieTarget,
           sourceId: existingMeal.dailyLog.id,
-          spendReason: `Overspend from edited meal: ${name}`,
-          refundReason: `Refund from edited meal: ${name}`,
+          spendReason: `Overspend from edited meal: ${safeName}`,
+          refundReason: `Refund from edited meal: ${safeName}`,
         });
 
         return { meal: updatedMeal, dailyLog: updatedLog, bankUpdate: bankAdjustment.bankUpdate };

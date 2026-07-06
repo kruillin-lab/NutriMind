@@ -95,7 +95,6 @@ function parseManualNumber(value: string) {
 }
 
 export function QuickLogClient({ userId }: QuickLogClientProps) {
-  void userId;
   const router = useRouter();
   const [mode, setMode] = useState<LogMode>("ai");
   const [input, setInput] = useState("");
@@ -112,6 +111,14 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
   const [popularFoods, setPopularFoods] = useState<CachedFood[]>([]);
   const [isLoadingPopular, setIsLoadingPopular] = useState(false);
   const [mealType, setMealType] = useState("OTHER");
+
+  const jsonHeaders = () => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (process.env.NODE_ENV !== "production") {
+      headers["X-Test-User-Id"] = userId;
+    }
+    return headers;
+  };
 
   useEffect(() => {
     const fetch_ = async () => {
@@ -152,7 +159,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
     try {
       const res = await fetch("/api/parse-meal", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({ text: input.trim() }),
       });
       if (!res.ok) {
@@ -186,7 +193,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
     try {
       const res = await fetch("/api/meals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({
           name: parsedFoods.map(f => f.name).join(", "),
           calories: sum(f => f.calories),
@@ -272,7 +279,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
     try {
       const res = await fetch("/api/meals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({
           name,
           calories: parsedNumbers.calories,
@@ -307,7 +314,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
     try {
       const res = await fetch("/api/meals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({ name, calories, proteinG: 0, carbsG: 0, fatG: 0, mealType: "SNACK" }),
       });
       if (!res.ok) {

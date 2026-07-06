@@ -1,9 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/src/lib/prisma";
 import { PUT } from "./route";
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: vi.fn() }));
+vi.mock("next/headers", () => ({ headers: vi.fn(async () => new Headers()) }));
 vi.mock("@/src/lib/prisma", () => ({
   prisma: {
     meal: {
@@ -66,6 +67,10 @@ function putRequest(body: unknown) {
 }
 
 describe("PUT /api/meals/[id]", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("rejects non-numeric calories before corrupting totals", async () => {
     vi.mocked(auth).mockResolvedValue({ userId: "user-1" });
 

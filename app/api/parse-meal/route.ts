@@ -37,7 +37,11 @@ function normalizeText(text: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    const testUserId = req.headers.get("X-Test-User-Id");
+    const { userId: clerkUserId } = testUserId && process.env.NODE_ENV !== "production"
+      ? { userId: testUserId }
+      : await auth();
+    const userId = clerkUserId;
     if (!userId) {
       return jsonError(401, "Unauthorized");
     }

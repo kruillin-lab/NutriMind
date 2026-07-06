@@ -1,12 +1,15 @@
 import { describe, it, expect, vi } from "vitest";
+import { auth } from "@clerk/nextjs/server";
+import { headers } from "next/headers";
 
 // api-helpers imports Clerk and the Prisma client at module scope; mock both
 // so these unit tests stay dependency-free (dayRange and handleRoute never
 // touch them).
 vi.mock("@clerk/nextjs/server", () => ({ auth: vi.fn() }));
+vi.mock("next/headers", () => ({ headers: vi.fn(async () => new Headers()) }));
 vi.mock("@/src/lib/prisma", () => ({ prisma: {} }));
 
-import { ApiError, dayRange, handleRoute } from "../api-helpers";
+import { ApiError, dayRange, handleRoute, requireUserId } from "../api-helpers";
 
 describe("dayRange", () => {
   it("defaults to today at local midnight and spans exactly one day", () => {
@@ -66,6 +69,15 @@ describe("ApiError", () => {
     expect(err).toBeInstanceOf(Error);
     expect(err.status).toBe(404);
     expect(err.message).toBe("User not found");
+  });
+});
+
+describe("requireUserId", () => {
+  it("uses the non-production test auth header before Clerk auth", async () => {
+    vi.mocked(headers).mockResolvedValue(new Headers({ "X-Test-User-Id": "test-user-1" }));
+
+    await expect(requireUserId()).resolves.toBe("test-user-1");
+    expect(auth).not.toHaveBeenCalled();
   });
 });
 

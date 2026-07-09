@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -79,30 +77,29 @@ export function ExerciseLog({
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <Dumbbell className="h-5 w-5 text-purple-500" />
-          Exercise Log
-        </CardTitle>
-      </CardHeader>
+    <section className="surface overflow-hidden">
+      <div className="foil" />
+      <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+        <Dumbbell className="h-4 w-4" style={{ color: "var(--brass)" }} />
+        <h3 className="smallcaps">Exercise Log</h3>
+      </div>
 
-      <CardContent className="space-y-4">
+      <div className="space-y-4 px-5 py-4">
         {/* Today's Summary */}
         {(exerciseMinutes > 0 || caloriesBurned > 0) && (
-          <div className="grid grid-cols-2 gap-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+          <div className="grid grid-cols-2 gap-3 rounded-sm border border-border bg-secondary p-3">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-purple-500" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
               <div>
-                <p className="text-lg font-bold text-purple-700">{exerciseMinutes} min</p>
-                <p className="text-xs text-purple-600">Total today</p>
+                <p className="num-display text-lg text-foreground">{exerciseMinutes} min</p>
+                <p className="smallcaps">Total today</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Flame className="h-4 w-4 text-orange-500" />
+              <Flame className="h-4 w-4" style={{ color: "var(--brass)" }} />
               <div>
-                <p className="text-lg font-bold text-orange-600">{caloriesBurned} kcal</p>
-                <p className="text-xs text-orange-500">Burned today</p>
+                <p className="num-display text-lg text-foreground">{caloriesBurned} kcal</p>
+                <p className="smallcaps">Burned today</p>
               </div>
             </div>
           </div>
@@ -110,37 +107,35 @@ export function ExerciseLog({
 
         {/* Quick Presets */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Quick Add</Label>
+          <Label className="smallcaps">Quick Add</Label>
           <div className="grid grid-cols-2 gap-2">
             {EXERCISE_PRESETS.slice(0, 4).map((preset) => (
-              <Button
+              <button
                 key={preset.name}
-                variant="outline"
-                size="sm"
-                className="justify-start text-xs h-auto py-2 px-3"
                 onClick={() => handlePresetSelect(preset.name)}
+                className="btn-ghost h-auto justify-start px-3 py-2 text-left normal-case tracking-normal"
               >
-                <div className="text-left">
-                  <p className="font-medium">{preset.name.split(" (")[0]}</p>
-                  <p className="text-muted-foreground">
-                    {preset.minutes}min · {preset.calories}kcal
+                <div>
+                  <p className="text-xs font-semibold text-foreground">{preset.name.split(" (")[0]}</p>
+                  <p className="num text-xs text-muted-foreground">
+                    {preset.minutes}min &middot; {preset.calories}kcal
                   </p>
                 </div>
-              </Button>
+              </button>
             ))}
           </div>
         </div>
 
         {/* Custom Entry */}
-        <div className="space-y-3 pt-2 border-t">
-          <Label className="text-sm font-medium">Custom Entry</Label>
+        <div className="space-y-3 border-t border-border pt-4">
+          <Label className="smallcaps">Custom Entry</Label>
 
           <div>
-            <Label htmlFor="exercise-type" className="text-xs text-muted-foreground">
+            <Label htmlFor="exercise-type" className="smallcaps">
               Exercise Type
             </Label>
             <Select value={selectedPreset} onValueChange={handlePresetSelect}>
-              <SelectTrigger id="exercise-type">
+              <SelectTrigger id="exercise-type" className="rounded-sm">
                 <SelectValue placeholder="Select exercise type" />
               </SelectTrigger>
               <SelectContent>
@@ -155,7 +150,7 @@ export function ExerciseLog({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="minutes" className="text-xs text-muted-foreground">
+              <Label htmlFor="minutes" className="smallcaps">
                 Duration (minutes)
               </Label>
               <Input
@@ -165,10 +160,11 @@ export function ExerciseLog({
                 value={customMinutes}
                 onChange={(e) => setCustomMinutes(e.target.value)}
                 min="1"
+                className="num rounded-sm"
               />
             </div>
             <div>
-              <Label htmlFor="calories" className="text-xs text-muted-foreground">
+              <Label htmlFor="calories" className="smallcaps">
                 Calories burned
               </Label>
               <Input
@@ -178,20 +174,21 @@ export function ExerciseLog({
                 value={customCalories}
                 onChange={(e) => setCustomCalories(e.target.value)}
                 min="0"
+                className="num rounded-sm"
               />
             </div>
           </div>
 
-          <Button
+          <button
             onClick={handleLogExercise}
             disabled={isLogging || !customMinutes}
-            className="w-full"
+            className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Plus className="h-4 w-4 mr-2" />
             {isLogging ? "Logging..." : "Log Exercise"}
-          </Button>
+          </button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

@@ -1,64 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/src/lib/prisma";
+import {
+  ApiError,
+  handleRoute,
+  jsonError,
+  requireUserId,
+} from "@/src/lib/api-helpers";
 
 // GET /api/progress-photos - List all progress photos for the user
 export async function GET(req: NextRequest) {
   void req;
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  return handleRoute("Failed to fetch progress photos", async () => {
+    const userId = await requireUserId();
 
-  try {
     const photos = await prisma.progressPhoto.findMany({
       where: { userId },
       orderBy: { photoDate: "desc" },
     });
 
-    return NextResponse.json({ photos });
-  } catch (error) {
-    console.error("Error fetching progress photos:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch progress photos" },
-      { status: 500 }
-    );
-  }
+    return { photos };
+  });
 }
 
 // POST /api/progress-photos - Upload a new progress photo
+// Not wrapped in handleRoute: the success response uses a 201 status.
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const userId = await requireUserId();
+
     const body = await req.json();
     const { imageData, mimeType, photoDate, caption, weightKg } = body;
 
     if (!imageData || !mimeType) {
-      return NextResponse.json(
-        { error: "Image data and mime type are required" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Image data and mime type are required");
     }
 
     // Validate base64 image data
     if (!imageData.startsWith("data:")) {
-      return NextResponse.json(
-        { error: "Invalid image data format" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Invalid image data format");
     }
 
     // Enforce 3MB limit (base64 is ~33% larger than binary, so 3MB base64 ≈ 2.25MB image)
     const MAX_BASE64_BYTES = 3 * 1024 * 1024;
     if (imageData.length > MAX_BASE64_BYTES) {
-      return NextResponse.json(
-        { error: "Image too large. Please use an image under 2MB." },
-        { status: 413 }
-      );
+      throw new ApiError(413, "Image too large. Please use an image under 2MB.");
     }
 
     const photo = await prisma.progressPhoto.create({
@@ -74,54 +59,39 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ photo }, { status: 201 });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return jsonError(error.status, error.message);
+    }
     console.error("Error uploading progress photo:", error);
-    return NextResponse.json(
-      { error: "Failed to upload progress photo" },
-      { status: 500 }
-    );
+    return jsonError(500, "Failed to upload progress photo");
   }
 }
 
 // DELETE /api/progress-photos?id={id} - Delete a progress photo
 export async function DELETE(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  return handleRoute("Failed to delete progress photo", async () => {
+    const userId = await requireUserId();
 
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
 
-  if (!id) {
-    return NextResponse.json(
-      { error: "Photo ID is required" },
-      { status: 400 }
-    );
-  }
+    if (!id) {
+      throw new ApiError(400, "Photo ID is required");
+    }
 
-  try {
     // Verify the photo belongs to the user
     const photo = await prisma.progressPhoto.findFirst({
       where: { id, userId },
     });
 
     if (!photo) {
-      return NextResponse.json(
-        { error: "Photo not found" },
-        { status: 404 }
-      );
+      throw new ApiError(404, "Photo not found");
     }
 
     await prisma.progressPhoto.delete({
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting progress photo:", error);
-    return NextResponse.json(
-      { error: "Failed to delete progress photo" },
-      { status: 500 }
-    );
-  }
+    return { success: true };
+  });
 }

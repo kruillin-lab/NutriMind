@@ -5,7 +5,7 @@ import { prisma } from "@/src/lib/prisma";
 const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function POST(req: NextRequest) {
-  const isVercelCron = req.headers.get("x-vercel-cron") === "1";
+  const isVercelCron = process.env.VERCEL === "1" && req.headers.get("x-vercel-cron") === "1";
   const authHeader = req.headers.get("authorization");
   const hasValidSecret = CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`;
 

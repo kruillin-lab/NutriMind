@@ -44,13 +44,24 @@ interface SaveAsTemplateDialogProps {
   meal: MealToSave;
   children?: React.ReactElement;
   onSaved?: () => void;
+  userId: string;
 }
 
-export function SaveAsTemplateDialog({ meal, children, onSaved }: SaveAsTemplateDialogProps) {
+export function SaveAsTemplateDialog({ meal, children, onSaved, userId }: SaveAsTemplateDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(meal.name);
   const [mealType, setMealType] = useState(meal.mealType || "OTHER");
   const [isSaving, setIsSaving] = useState(false);
+
+  const jsonHeaders = () => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (process.env.NODE_ENV !== "production") {
+      headers["X-Test-User-Id"] = userId;
+    }
+    return headers;
+  };
 
   const handleSave = async () => {
     if (!name) return;
@@ -58,7 +69,7 @@ export function SaveAsTemplateDialog({ meal, children, onSaved }: SaveAsTemplate
     try {
       const response = await fetch("/api/meal-templates", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({
           name,
           mealType,

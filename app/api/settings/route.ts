@@ -1,13 +1,10 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { handleRoute, requireUserId } from "@/src/lib/api-helpers";
 
 export async function PUT(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to update settings", async () => {
+    const userId = await requireUserId();
 
     const body = await req.json();
 
@@ -56,12 +53,6 @@ export async function PUT(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error updating settings:", error);
-    return NextResponse.json(
-      { error: "Failed to update settings" },
-      { status: 500 }
-    );
-  }
+    return { success: true };
+  });
 }

@@ -3,16 +3,17 @@
  * Creates a mock authenticated session for testing
  * ONLY available in development/test environments
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { ApiError, handleRoute } from "@/src/lib/api-helpers";
 
 export async function POST(req: NextRequest) {
-  // Safety check - only allow in development
-  if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Not available in production" }, { status: 403 });
-  }
+  return handleRoute("Failed to create test user", async () => {
+    // Safety check - only allow in development
+    if (process.env.NODE_ENV === "production") {
+      throw new ApiError(403, "Not available in production");
+    }
 
-  try {
     const { email = "test@example.com" } = await req.json();
 
     // Create or update test user
@@ -62,18 +63,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    return {
       success: true,
       user: {
         id: user.id,
         email: user.email,
       },
-    });
-  } catch (error) {
-    console.error("Test auth error:", error);
-    return NextResponse.json(
-      { error: "Failed to create test user" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }

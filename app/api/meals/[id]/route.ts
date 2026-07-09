@@ -1,29 +1,27 @@
-import { auth } from '@clerk/nextjs/server';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { applyCalorieBankOverageAdjustment } from '@/src/lib/calorieBank';
+import { ApiError, handleRoute, requireUserId } from '@/src/lib/api-helpers';
+import { clampInt, clampNumber, truncate } from '@/src/lib/validation';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
 export async function PUT(req: NextRequest, { params }: RouteParams) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  return handleRoute('Failed to update meal', async () => {
+    const userId = await requireUserId();
 
     const { id } = await params;
     const body = await req.json();
     const { name, calories, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg, vitaminCMg, calciumMg, ironMg, potassiumMg, servingSizeG, mealType } = body;
 
-    if (!name || !calories || calories < 0) {
-      return NextResponse.json(
-        { error: 'Invalid meal data' },
-        { status: 400 }
-      );
+    const safeName = truncate(name, 200);
+    const safeCalories = clampInt(calories, 0, 10000);
+
+    if (!safeName || safeCalories === null) {
+      throw new ApiError(400, 'Invalid meal data');
     }
 
     // Find the meal and verify ownership
@@ -43,14 +41,29 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     });
 
     if (!existingMeal) {
-      return NextResponse.json({ error: 'Meal not found' }, { status: 404 });
+      throw new ApiError(404, 'Meal not found');
     }
 
     if (existingMeal.dailyLog.user.id !== userId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw new ApiError(403, 'Forbidden');
     }
 
-    const calorieDifference = calories - existingMeal.calories;
+    const nutrients = {
+      proteinG: proteinG !== undefined ? clampNumber(proteinG, 0, 1000) ?? 0 : existingMeal.proteinG,
+      carbsG: carbsG !== undefined ? clampNumber(carbsG, 0, 1000) ?? 0 : existingMeal.carbsG,
+      fatG: fatG !== undefined ? clampNumber(fatG, 0, 1000) ?? 0 : existingMeal.fatG,
+      fiberG: fiberG !== undefined ? clampNumber(fiberG, 0, 1000) ?? 0 : existingMeal.fiberG,
+      sugarG: sugarG !== undefined ? clampNumber(sugarG, 0, 1000) ?? 0 : existingMeal.sugarG,
+      sodiumMg: sodiumMg !== undefined ? clampNumber(sodiumMg, 0, 10000) ?? 0 : existingMeal.sodiumMg,
+      vitaminCMg: vitaminCMg !== undefined ? clampNumber(vitaminCMg, 0, 10000) ?? 0 : existingMeal.vitaminCMg,
+      calciumMg: calciumMg !== undefined ? clampNumber(calciumMg, 0, 10000) ?? 0 : existingMeal.calciumMg,
+      ironMg: ironMg !== undefined ? clampNumber(ironMg, 0, 10000) ?? 0 : existingMeal.ironMg,
+      potassiumMg: potassiumMg !== undefined ? clampNumber(potassiumMg, 0, 10000) ?? 0 : existingMeal.potassiumMg,
+    };
+    const safeServingSizeG = servingSizeG !== undefined
+      ? (servingSizeG !== null ? clampNumber(servingSizeG, 0, 10000) : null)
+      : existingMeal.servingSizeG;
+    const calorieDifference = safeCalories - existingMeal.calories;
     const user = existingMeal.dailyLog.user;
 
     // Update meal and daily log in transaction
@@ -60,19 +73,19 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         const updatedMeal = await tx.meal.update({
           where: { id },
           data: {
-            name,
-            calories,
-            proteinG: proteinG ?? existingMeal.proteinG,
-            carbsG: carbsG ?? existingMeal.carbsG,
-            fatG: fatG ?? existingMeal.fatG,
-            fiberG: fiberG ?? existingMeal.fiberG,
-            sugarG: sugarG ?? existingMeal.sugarG,
-            sodiumMg: sodiumMg ?? existingMeal.sodiumMg,
-            vitaminCMg: vitaminCMg ?? existingMeal.vitaminCMg,
-            calciumMg: calciumMg ?? existingMeal.calciumMg,
-            ironMg: ironMg ?? existingMeal.ironMg,
-            potassiumMg: potassiumMg ?? existingMeal.potassiumMg,
-            servingSizeG: servingSizeG !== undefined ? servingSizeG : existingMeal.servingSizeG,
+            name: safeName,
+            calories: safeCalories,
+            proteinG: nutrients.proteinG,
+            carbsG: nutrients.carbsG,
+            fatG: nutrients.fatG,
+            fiberG: nutrients.fiberG,
+            sugarG: nutrients.sugarG,
+            sodiumMg: nutrients.sodiumMg,
+            vitaminCMg: nutrients.vitaminCMg,
+            calciumMg: nutrients.calciumMg,
+            ironMg: nutrients.ironMg,
+            potassiumMg: nutrients.potassiumMg,
+            servingSizeG: safeServingSizeG,
             mealType: mealType || existingMeal.mealType,
           },
         });
@@ -103,35 +116,26 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           nextConsumed: newConsumed,
           calorieTarget: existingMeal.dailyLog.calorieTarget,
           sourceId: existingMeal.dailyLog.id,
-          spendReason: `Overspend from edited meal: ${name}`,
-          refundReason: `Refund from edited meal: ${name}`,
+          spendReason: `Overspend from edited meal: ${safeName}`,
+          refundReason: `Refund from edited meal: ${safeName}`,
         });
 
         return { meal: updatedMeal, dailyLog: updatedLog, bankUpdate: bankAdjustment.bankUpdate };
       }
     );
 
-    return NextResponse.json({
+    return {
       success: true,
       meal: result.meal,
       remainingCalories: result.dailyLog.calorieTarget - result.dailyLog.caloriesConsumed,
       bankBalance: result.bankUpdate?.currentBalance ?? user.calorieBank?.currentBalance,
-    });
-  } catch (error) {
-    console.error('Error updating meal:', error);
-    return NextResponse.json(
-      { error: 'Failed to update meal' },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }
 
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  return handleRoute('Failed to delete meal', async () => {
+    const userId = await requireUserId();
 
     const { id } = await params;
 
@@ -152,11 +156,11 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     });
 
     if (!existingMeal) {
-      return NextResponse.json({ error: 'Meal not found' }, { status: 404 });
+      throw new ApiError(404, 'Meal not found');
     }
 
     if (existingMeal.dailyLog.user.id !== userId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw new ApiError(403, 'Forbidden');
     }
 
     const user = existingMeal.dailyLog.user;
@@ -202,16 +206,10 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       }
     );
 
-    return NextResponse.json({
+    return {
       success: true,
       remainingCalories: result.dailyLog.calorieTarget - result.dailyLog.caloriesConsumed,
       bankBalance: result.bankUpdate?.currentBalance ?? user.calorieBank?.currentBalance,
-    });
-  } catch (error) {
-    console.error('Error deleting meal:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete meal' },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }

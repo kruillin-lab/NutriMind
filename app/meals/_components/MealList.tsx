@@ -1,71 +1,34 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
-  Utensils,
-  Clock,
-  Edit,
-  Trash2,
-  Plus,
-  Flame,
-  Droplets,
-  Dumbbell,
   ChevronDown,
   ChevronUp,
-  Leaf,
-  Candy,
-  Droplet,
-  Pill,
-  Bone,
-  Cross,
-  Zap,
+  Clock3,
   Copy,
+  Edit3,
+  Loader2,
+  ReceiptText,
   Save,
+  Trash2,
 } from 'lucide-react';
 import { EditMealModal } from './EditMealModal';
 import { CopyMealDialog } from '@/app/dashboard/_components/CopyMealDialog';
 import { SaveAsTemplateDialog } from '@/app/dashboard/_components/SaveAsTemplateDialog';
+import type { MealActivityItem } from '@/src/lib/meal-activity';
 
-interface Meal {
-  id: string;
-  name: string;
-  mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK' | 'OTHER';
-  calories: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-  fiberG?: number;
-  sugarG?: number;
-  sodiumMg?: number;
-  vitaminCMg?: number;
-  calciumMg?: number;
-  ironMg?: number;
-  potassiumMg?: number;
-  servingSizeG?: number | null;
-  source: 'AI_PARSED' | 'MANUAL_ENTRY';
-  aiConfidence: number | null;
-  createdAt: string;
-}
+type Meal = MealActivityItem;
 
 interface MealListProps {
   meals: Meal[];
   isLoading: boolean;
   onMealUpdated: () => void;
   onMealDeleted: () => void;
+  userId: string;
 }
 
-const mealTypeColors: Record<string, string> = {
-  BREAKFAST: 'bg-orange-100 text-orange-800 border-orange-200',
-  LUNCH: 'bg-green-100 text-green-800 border-green-200',
-  DINNER: 'bg-blue-100 text-blue-800 border-blue-200',
-  SNACK: 'bg-purple-100 text-purple-800 border-purple-200',
-  OTHER: 'bg-gray-100 text-gray-800 border-gray-200',
-};
-
-const mealTypeLabels: Record<string, string> = {
+const MEAL_TYPE_LABELS: Record<Meal['mealType'], string> = {
   BREAKFAST: 'Breakfast',
   LUNCH: 'Lunch',
   DINNER: 'Dinner',
@@ -73,216 +36,191 @@ const mealTypeLabels: Record<string, string> = {
   OTHER: 'Other',
 };
 
+const MICRO_FIELDS: Array<{ key: keyof Meal; label: string; unit: string }> = [
+  { key: 'fiberG', label: 'Fiber', unit: 'g' },
+  { key: 'sugarG', label: 'Sugar', unit: 'g' },
+  { key: 'sodiumMg', label: 'Sodium', unit: 'mg' },
+  { key: 'vitaminCMg', label: 'Vitamin C', unit: 'mg' },
+  { key: 'calciumMg', label: 'Calcium', unit: 'mg' },
+  { key: 'ironMg', label: 'Iron', unit: 'mg' },
+  { key: 'potassiumMg', label: 'Potassium', unit: 'mg' },
+];
+
 function formatTime(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(dateString).toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
-function MicronutrientBadge({
-  icon: Icon,
-  label,
-  value,
-  unit,
-  colorClass,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: number | undefined;
-  unit: string;
-  colorClass: string;
-}) {
-  const displayValue = value ?? 0;
-  return (
-    <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
-      <Icon className={`h-4 w-4 ${colorClass}`} />
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-500">{label}</p>
-        <p className="text-sm font-semibold text-gray-900">
-          {displayValue.toFixed(1)}
-          <span className="text-xs font-normal text-gray-500 ml-0.5">{unit}</span>
-        </p>
-      </div>
-    </div>
-  );
+function formatNutrient(value: number): string {
+  return value.toFixed(1).replace(/\.0$/, '');
 }
 
-function MealCard({
+function MealRow({
   meal,
+  entryNumber,
   onEdit,
   onDelete,
   isDeleting,
+  userId,
 }: {
   meal: Meal;
+  entryNumber: number;
   onEdit: (meal: Meal) => void;
   onDelete: (id: string) => void;
   isDeleting: string | null;
+  userId: string;
 }) {
   const [showDetails, setShowDetails] = useState(false);
+  const hasMicros = MICRO_FIELDS.some((field) => Number(meal[field.key] ?? 0) > 0);
+  const detailsId = `meal-details-${meal.id}`;
 
   return (
-    <div className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <Badge
-              variant="outline"
-              className={mealTypeColors[meal.mealType]}
-            >
-              {mealTypeLabels[meal.mealType]}
-            </Badge>
-            <span className="text-xs text-gray-500 flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {formatTime(meal.createdAt)}
+    <article className="border-t border-border px-4 py-5 first:border-t-0 sm:px-5">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="pill min-h-6 py-0">{MEAL_TYPE_LABELS[meal.mealType]}</span>
+            <span className="num text-[11px] text-muted-foreground">ENTRY {String(entryNumber).padStart(2, '0')}</span>
+            {meal.source === 'AI_PARSED' && <span className="chip-indigo">AI parsed</span>}
+          </div>
+          <h3 className="mt-3 text-lg leading-snug text-foreground">{meal.name}</h3>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <Clock3 aria-hidden="true" className="size-3.5" />
+              Posted {formatTime(meal.createdAt)}
             </span>
-            {meal.source === 'AI_PARSED' && (
-              <Badge variant="secondary" className="text-xs">
-                AI
-              </Badge>
+            {meal.servingSizeG != null && meal.servingSizeG > 0 && (
+              <span className="num">Serving {formatNutrient(meal.servingSizeG)} g</span>
             )}
           </div>
-          <h3 className="font-semibold text-gray-900 truncate">{meal.name}</h3>
-          {meal.servingSizeG != null && meal.servingSizeG > 0 && (
-            <p className="mt-1 text-xs text-gray-500">
-              Serving: {meal.servingSizeG.toFixed(1).replace(/\.0$/, '')}g
-            </p>
-          )}
         </div>
-        <div className="text-right">
-          <p className="font-bold text-gray-900">{meal.calories} cal</p>
-          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-            <span>P: {meal.proteinG}g</span>
-            <span>C: {meal.carbsG}g</span>
-            <span>F: {meal.fatG}g</span>
-          </div>
+
+        <div className="md:text-right">
+          <p className="num-display text-2xl text-foreground">−{meal.calories.toLocaleString()} kcal</p>
+          <p className="mt-1 text-xs text-muted-foreground">Applied to daily allocation</p>
         </div>
       </div>
 
-      {/* Expandable Micronutrient Details */}
-      {showDetails && (
-        <div className="mt-4 pt-4 border-t">
-          <p className="text-sm font-medium text-gray-700 mb-3">Micronutrients</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            <MicronutrientBadge
-              icon={Leaf}
-              label="Fiber"
-              value={meal.fiberG}
-              unit="g"
-              colorClass="text-green-500"
-            />
-            <MicronutrientBadge
-              icon={Candy}
-              label="Sugar"
-              value={meal.sugarG}
-              unit="g"
-              colorClass="text-pink-500"
-            />
-            <MicronutrientBadge
-              icon={Droplet}
-              label="Sodium"
-              value={meal.sodiumMg}
-              unit="mg"
-              colorClass="text-gray-500"
-            />
-            <MicronutrientBadge
-              icon={Pill}
-              label="Vitamin C"
-              value={meal.vitaminCMg}
-              unit="mg"
-              colorClass="text-orange-500"
-            />
-            <MicronutrientBadge
-              icon={Bone}
-              label="Calcium"
-              value={meal.calciumMg}
-              unit="mg"
-              colorClass="text-blue-500"
-            />
-            <MicronutrientBadge
-              icon={Cross}
-              label="Iron"
-              value={meal.ironMg}
-              unit="mg"
-              colorClass="text-red-500"
-            />
-            <MicronutrientBadge
-              icon={Zap}
-              label="Potassium"
-              value={meal.potassiumMg}
-              unit="mg"
-              colorClass="text-yellow-500"
-            />
-          </div>
+      <dl className="mt-4 grid grid-cols-3 overflow-hidden border border-border bg-border [gap:1px]">
+        <div className="bg-secondary/60 px-3 py-2.5">
+          <dt className="smallcaps">Protein</dt>
+          <dd className="num mt-1 text-sm font-semibold text-foreground">{formatNutrient(meal.proteinG)} g</dd>
         </div>
-      )}
+        <div className="bg-secondary/60 px-3 py-2.5">
+          <dt className="smallcaps">Carbohydrates</dt>
+          <dd className="num mt-1 text-sm font-semibold text-foreground">{formatNutrient(meal.carbsG)} g</dd>
+        </div>
+        <div className="bg-secondary/60 px-3 py-2.5">
+          <dt className="smallcaps">Fat</dt>
+          <dd className="num mt-1 text-sm font-semibold text-foreground">{formatNutrient(meal.fatG)} g</dd>
+        </div>
+      </dl>
 
-      {/* Action Buttons */}
-      <div className="flex items-center justify-between mt-3 pt-3 border-t">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowDetails(!showDetails)}
-          className="text-gray-600"
-        >
-          {showDetails ? (
-            <>
-              <ChevronUp className="h-4 w-4 mr-1" />
-              Hide Details
-            </>
-          ) : (
-            <>
-              <ChevronDown className="h-4 w-4 mr-1" />
-              Show Details
-            </>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          {hasMicros && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDetails((visible) => !visible)}
+              aria-expanded={showDetails}
+              aria-controls={detailsId}
+              aria-label={`${showDetails ? 'Hide' : 'Show'} nutrient details for ${meal.name}`}
+            >
+              {showDetails ? <ChevronUp aria-hidden="true" /> : <ChevronDown aria-hidden="true" />}
+              Nutrient details
+            </Button>
           )}
-        </Button>
-        <div className="flex items-center gap-1">
-          <CopyMealDialog meal={meal}>
-            <Button variant="ghost" size="sm" title="Copy to another day">
-              <Copy className="h-4 w-4 mr-1" />
-              Copy
+        </div>
+
+        <div className="flex items-center gap-1" aria-label={`Actions for ${meal.name}`} role="group">
+          <CopyMealDialog meal={meal} userId={userId}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={`Copy ${meal.name} to another day`}
+              title="Copy to another day"
+            >
+              <Copy aria-hidden="true" />
             </Button>
           </CopyMealDialog>
-          <SaveAsTemplateDialog meal={meal}>
-            <Button variant="ghost" size="sm" title="Save as template">
-              <Save className="h-4 w-4 mr-1" />
-              Template
+          <SaveAsTemplateDialog meal={meal} userId={userId}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={`Save ${meal.name} as a template`}
+              title="Save as template"
+            >
+              <Save aria-hidden="true" />
             </Button>
           </SaveAsTemplateDialog>
           <Button
+            type="button"
             variant="ghost"
-            size="sm"
+            size="icon"
+            aria-label={`Edit ${meal.name}`}
+            title="Edit meal"
             onClick={() => onEdit(meal)}
             disabled={isDeleting === meal.id}
           >
-            <Edit className="h-4 w-4 mr-1" />
-            Edit
+            <Edit3 aria-hidden="true" />
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            type="button"
+            variant="destructive"
+            size="icon"
+            aria-label={isDeleting === meal.id ? `Deleting ${meal.name}` : `Delete ${meal.name}`}
+            title="Delete meal"
             onClick={() => onDelete(meal.id)}
             disabled={isDeleting === meal.id}
           >
             {isDeleting === meal.id ? (
-              <span className="text-xs">Deleting...</span>
+              <Loader2 aria-hidden="true" className="animate-spin" />
             ) : (
-              <>
-                <Trash2 className="h-4 w-4 mr-1" />
-                Delete
-              </>
+              <Trash2 aria-hidden="true" />
             )}
           </Button>
         </div>
       </div>
-    </div>
+
+      {showDetails && hasMicros && (
+        <dl id={detailsId} className="mt-4 grid grid-cols-2 gap-px border border-border bg-border sm:grid-cols-4">
+          {MICRO_FIELDS.map((field) => {
+            const value = Number(meal[field.key] ?? 0);
+            if (value <= 0) return null;
+
+            return (
+              <div className="bg-card px-3 py-3" key={field.key}>
+                <dt className="smallcaps">{field.label}</dt>
+                <dd className="num mt-1 text-sm font-semibold text-foreground">
+                  {formatNutrient(value)}{field.unit}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+      )}
+    </article>
   );
 }
 
-export function MealList({ meals, isLoading, onMealUpdated, onMealDeleted }: MealListProps) {
+export function MealList({ meals, isLoading, onMealUpdated, onMealDeleted, userId }: MealListProps) {
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  const jsonHeaders = () => {
+    const headers: Record<string, string> = {};
+    if (process.env.NODE_ENV !== 'production') {
+      headers['X-Test-User-Id'] = userId;
+    }
+    return headers;
+  };
 
   const handleEdit = (meal: Meal) => {
     setEditingMeal(meal);
@@ -298,6 +236,7 @@ export function MealList({ meals, isLoading, onMealUpdated, onMealDeleted }: Mea
     try {
       const response = await fetch(`/api/meals/${mealId}`, {
         method: 'DELETE',
+        headers: jsonHeaders(),
       });
 
       if (response.ok) {
@@ -320,89 +259,72 @@ export function MealList({ meals, isLoading, onMealUpdated, onMealDeleted }: Mea
     onMealUpdated();
   };
 
-  const totalProtein = meals.reduce((sum, meal) => sum + (meal.proteinG || 0), 0);
-  const totalCarbs = meals.reduce((sum, meal) => sum + (meal.carbsG || 0), 0);
-  const totalFat = meals.reduce((sum, meal) => sum + (meal.fatG || 0), 0);
+  const macros = [
+    { label: 'Protein', value: meals.reduce((sum, meal) => sum + (meal.proteinG || 0), 0) },
+    { label: 'Carbohydrates', value: meals.reduce((sum, meal) => sum + (meal.carbsG || 0), 0) },
+    { label: 'Fat', value: meals.reduce((sum, meal) => sum + (meal.fatG || 0), 0) },
+  ];
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Utensils className="h-5 w-5" />
-                Meals
-              </CardTitle>
-              <p className="text-sm text-gray-500 mt-1">
-                {meals.length} meal{meals.length !== 1 ? 's' : ''} logged
-              </p>
-            </div>
-            <a href="/dashboard">
-              <Button variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Meal
-              </Button>
-            </a>
+      <section className="surface overflow-hidden" aria-labelledby="meal-activity-heading" aria-busy={isLoading}>
+        <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="page-kicker">Posted transactions</p>
+            <h2 id="meal-activity-heading" className="mt-2 text-2xl text-foreground">Meal activity</h2>
           </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-gray-500">Loading meals...</div>
-          ) : meals.length === 0 ? (
-            <div className="text-center py-8">
-              <Utensils className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4">No meals logged for this day</p>
-              <a href="/dashboard">
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Log Your First Meal
-                </Button>
-              </a>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Macro Summary */}
-              <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg mb-6">
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-1">Protein</p>
-                  <div className="flex items-center justify-center gap-1">
-                    <Dumbbell className="h-4 w-4 text-blue-500" />
-                    <span className="font-semibold text-gray-900">{totalProtein.toFixed(1)}g</span>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-1">Carbs</p>
-                  <div className="flex items-center justify-center gap-1">
-                    <Flame className="h-4 w-4 text-orange-500" />
-                    <span className="font-semibold text-gray-900">{totalCarbs.toFixed(1)}g</span>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-1">Fat</p>
-                  <div className="flex items-center justify-center gap-1">
-                    <Droplets className="h-4 w-4 text-yellow-500" />
-                    <span className="font-semibold text-gray-900">{totalFat.toFixed(1)}g</span>
-                  </div>
-                </div>
-              </div>
+          <p className="smallcaps"><span className="num text-foreground">{meals.length}</span> entries posted</p>
+        </div>
 
-              {/* Meal Items */}
-              <div className="space-y-3">
-                {meals.map((meal) => (
-                  <MealCard
-                    key={meal.id}
-                    meal={meal}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    isDeleting={isDeleting}
-                  />
-                ))}
+        {isLoading ? (
+          <div className="space-y-0" aria-live="polite">
+            <p className="sr-only">Loading meal activity</p>
+            {[0, 1, 2].map((item) => (
+              <div className="animate-pulse border-t border-border px-5 py-6 first:border-t-0" key={item}>
+                <div className="h-3 w-28 bg-foreground/10" />
+                <div className="mt-4 h-5 w-2/3 bg-foreground/10" />
+                <div className="mt-5 h-12 w-full bg-foreground/5" />
               </div>
+            ))}
+          </div>
+        ) : meals.length === 0 ? (
+          <div className="flex flex-col items-center px-5 py-14 text-center">
+            <div className="seal size-14" aria-hidden="true">
+              <ReceiptText className="size-6" />
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <h3 className="mt-5 text-xl text-foreground">No activity posted</h3>
+            <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+              This daily statement has no meal entries yet. Log a meal from the account overview to begin the ledger.
+            </p>
+            <a href="/dashboard" className="btn-primary mt-6">Log a meal</a>
+          </div>
+        ) : (
+          <>
+            <dl className="grid grid-cols-3 border-b border-border bg-border [gap:1px]">
+              {macros.map((macro) => (
+                <div className="bg-card px-3 py-3 sm:px-5" key={macro.label}>
+                  <dt className="smallcaps break-words">{macro.label}</dt>
+                  <dd className="num-display mt-1 text-base text-foreground sm:text-lg">{formatNutrient(macro.value)} g</dd>
+                </div>
+              ))}
+            </dl>
+
+            <div>
+              {meals.map((meal, index) => (
+                <MealRow
+                  key={meal.id}
+                  meal={meal}
+                  entryNumber={meals.length - index}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  isDeleting={isDeleting}
+                  userId={userId}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </section>
 
       {editingMeal && (
         <EditMealModal
@@ -413,6 +335,7 @@ export function MealList({ meals, isLoading, onMealUpdated, onMealDeleted }: Mea
             setEditingMeal(null);
           }}
           onSuccess={handleEditSuccess}
+          userId={userId}
         />
       )}
     </>

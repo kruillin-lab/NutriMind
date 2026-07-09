@@ -2,19 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  Utensils,
-  Flame,
-  Droplets,
-  Plus,
-  ChevronDown,
-  ChevronUp,
-  Leaf,
-  Pencil,
-  Trash2,
-  Copy,
-  Save,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Trash2, Copy, Save } from "lucide-react";
 import { CopyMealDialog } from "./CopyMealDialog";
 import { SaveAsTemplateDialog } from "./SaveAsTemplateDialog";
 
@@ -47,18 +35,29 @@ interface MicroBarProps {
 
 function MicroBar({ label, value, target, unit, isLimit }: MicroBarProps) {
   const pct = target > 0 ? (value / target) * 100 : 0;
-  const fill = isLimit
-    ? pct >= 100 ? "fill-rose" : pct >= 80 ? "fill-amber" : "fill-green"
-    : pct >= 80 ? "fill-green" : pct >= 50 ? "fill-amber" : "fill-rose";
+  // Ledger green strictly for positive outcomes, ledger red for negative; quiet ink otherwise.
+  const overLimit = isLimit && pct >= 100;
+  const onTrack = !isLimit && pct >= 80;
+  const fillColor = overLimit
+    ? "var(--destructive)"
+    : onTrack
+      ? "var(--ledger-green)"
+      : "color-mix(in srgb, var(--foreground) 35%, transparent)";
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between text-[11px]">
-        <span className="text-[#6B5738]">{label}</span>
-        <span className="text-[#8A7350] tabular-nums">{Math.round(value)}/{target}{unit}</span>
+      <div className="flex items-baseline justify-between">
+        <span className="smallcaps">{label}</span>
+        <span className="num text-xs text-muted-foreground">
+          {Math.round(value)}/{target}
+          {unit}
+        </span>
       </div>
       <div className="track">
-        <div className={fill} style={{ width: `${Math.min(pct, 100)}%` }} />
+        <div
+          className="h-full transition-all"
+          style={{ width: `${Math.min(pct, 100)}%`, background: fillColor }}
+        />
       </div>
     </div>
   );
@@ -80,6 +79,9 @@ interface DailySummaryProps {
     fatG: number;
   };
   bankBalance?: number;
+  currentStreak?: number;
+  maxStreak?: number;
+  userId: string;
 }
 
 export function DailySummary({
@@ -94,6 +96,9 @@ export function DailySummary({
   onDeleteMeal,
   macroTargets,
   bankBalance = 0,
+  currentStreak,
+  maxStreak,
+  userId,
 }: DailySummaryProps) {
   const remaining = targetCalories - consumedCalories;
   const calPct = Math.min((consumedCalories / targetCalories) * 100, 100);
@@ -119,205 +124,249 @@ export function DailySummary({
   const hasMacroTargets = macroTargets &&
     (macroTargets.proteinG > 0 || macroTargets.carbsG > 0 || macroTargets.fatG > 0);
 
+  const statementLines: {
+    label: string;
+    value: string;
+    tone: string;
+    style?: { color: string };
+  }[] = [
+    { label: "Target", value: targetCalories.toLocaleString(), tone: "text-foreground" },
+    { label: "Consumed", value: consumedCalories.toLocaleString(), tone: "text-foreground" },
+    {
+      label: isOver ? "Over target" : "Remaining",
+      value: `${isOver ? "−" : "+"}${Math.abs(remaining).toLocaleString()}`,
+      tone: isOver ? "text-destructive" : "",
+      style: isOver ? undefined : { color: "var(--ledger-green)" },
+    },
+    { label: "Water", value: `${waterIntake.toLocaleString()} ml`, tone: "text-foreground" },
+  ];
+
   return (
-    <div className="surface overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-2 border-b border-black/[0.08] px-5 py-4">
-        <Flame className="h-4 w-4 text-[#FF5A3D]" />
-        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">Today&apos;s Summary</span>
+    <section aria-labelledby="daily-statement-heading" className="surface overflow-hidden">
+      <div className="foil" />
+      <div className="flex items-baseline justify-between px-6 pt-5">
+        <div>
+          <h3 id="daily-statement-heading" className="text-sm font-bold tracking-tight text-foreground">
+            Today&apos;s nutrition statement
+          </h3>
+          <p className="smallcaps mt-0.5">
+            <span className="num">{Math.round(calPct)}%</span> of {targetCalories.toLocaleString()} kcal
+          </p>
+        </div>
+        {maxStreak !== undefined && (
+          <span className="pill">Streak {currentStreak ?? 0} &middot; best {maxStreak}</span>
+        )}
       </div>
 
-      <div className="p-5 space-y-5">
-        {/* Calorie hero numbers */}
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="num text-4xl font-semibold text-[#18120E]">{consumedCalories}</p>
-            <p className="mt-0.5 text-[11px] uppercase tracking-[0.18em] text-[#6B5738]">consumed</p>
+      {/* Statement lines — ruled rows, mono figures */}
+      <div className="mt-4 px-6">
+        {statementLines.map((line) => (
+          <div key={line.label} className="ledger-row">
+            <span className="smallcaps">{line.label}</span>
+            <span className={`num text-sm ${line.tone}`} style={line.style}>
+              {line.value}
+            </span>
           </div>
-          <div className="text-right">
-            <p className={`num text-4xl font-semibold ${isOver ? "text-[#FF5A3D]" : "text-[#00C875]"}`}>
-              {isOver ? "" : "+"}{remaining}
-            </p>
-            <p className="mt-0.5 text-[11px] uppercase tracking-[0.18em] text-[#6B5738]">
-              {isOver ? "over budget" : "remaining"}
-            </p>
-          </div>
+        ))}
+      </div>
+
+      {/* Double rule — day total */}
+      <div className="mt-1 flex items-baseline justify-between border-t-2 border-foreground bg-secondary px-6 py-3">
+        <span className="smallcaps">Balance carried</span>
+        <span className={`num-display text-xl ${isOver ? "text-destructive" : "text-foreground"}`}>
+          {isOver ? "−" : "+"}
+          {Math.abs(remaining).toLocaleString()} kcal
+        </span>
+      </div>
+
+      {/* Day progress — hairline track, quiet ink */}
+      <div className="px-6 pt-5">
+        <div className="track-lg">
+          <div
+            className="h-full transition-all"
+            style={{
+              width: `${calPct}%`,
+              background: isOver
+                ? "var(--destructive)"
+                : "var(--brass)",
+            }}
+          />
         </div>
+      </div>
 
-        {/* Calorie progress bar */}
-        <div>
-          <div className="track-lg">
-            <div
-              className={isOver ? "fill-rose" : "fill-indigo"}
-              style={{ width: `${calPct}%` }}
-            />
-          </div>
-          <div className="mt-1.5 flex justify-between text-[11px] text-[#6B5738]">
-            <span>Target: {targetCalories} kcal</span>
-            <span>{Math.round(calPct)}%</span>
-          </div>
-        </div>
+      {/* Macros — ruled rows with track bars */}
+      <div className="rule mx-6 mt-8 pt-5">
+        <p className="smallcaps">Macros</p>
 
-        {/* Bank balance row */}
-        <div className="flex items-center justify-between rounded-lg border-2 border-[#18120E]/18 bg-[#FFF0B8] px-3.5 py-2.5 shadow-[2px_2px_0_#18120E]">
-          <span className="text-[11px] uppercase tracking-wider text-[#6B5738]">Bank Balance</span>
-          <span className={`num text-sm font-semibold ${bankBalance >= 0 ? "text-[#00895A]" : "text-[#FF5A3D]"}`}>
-            {bankBalance >= 0 ? "+" : ""}{Math.round(bankBalance)} kcal
-          </span>
-        </div>
-
-        {/* Macros */}
-        <div className="space-y-3 border-t border-black/[0.08] pt-1">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6B5738]">Macros</span>
-
-          {hasMacroTargets ? (
-            <div className="space-y-2.5">
-              {[
-                { label: "Protein", value: totalProtein, target: macroTargets!.proteinG, color: "fill-green" },
-                { label: "Carbs",   value: totalCarbs,   target: macroTargets!.carbsG,   color: "fill-amber" },
-                { label: "Fat",     value: totalFat,     target: macroTargets!.fatG,     color: "fill-rose" },
-              ].map(({ label, value, target, color }) => (
-                <div key={label} className="space-y-1">
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-[#3A2A1B]">{label}</span>
-                    <span className="tabular-nums text-[#6B5738]">{Math.round(value)}/{target}g</span>
-                  </div>
-                  <div className="track">
-                    <div className={color} style={{ width: `${target > 0 ? Math.min((value / target) * 100, 100) : 0}%` }} />
-                  </div>
+        {hasMacroTargets ? (
+          <div className="mt-4 space-y-3.5">
+            {[
+              { label: "Protein", value: totalProtein, target: macroTargets!.proteinG },
+              { label: "Carbs",   value: totalCarbs,   target: macroTargets!.carbsG },
+              { label: "Fat",     value: totalFat,     target: macroTargets!.fatG },
+            ].map(({ label, value, target }) => (
+              <div key={label} className="space-y-1">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[13px] text-foreground">{label}</span>
+                  <span className="num text-xs text-muted-foreground">
+                    {Math.round(value)}/{target}g
+                  </span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: "Protein", value: totalProtein, color: "text-[#00C875]" },
-                { label: "Carbs",   value: totalCarbs,   color: "text-[#FFB000]" },
-                { label: "Fat",     value: totalFat,     color: "text-[#FF5A3D]" },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="rounded-lg border-2 border-[#18120E]/18 bg-[#FFF0B8] p-3 text-center shadow-[2px_2px_0_#18120E]">
-                  <p className={`num text-lg font-semibold ${color}`}>{Math.round(value)}<span className="ml-0.5 text-xs text-[#6B5738]">g</span></p>
-                  <p className="mt-0.5 text-[10px] uppercase tracking-wider text-[#6B5738]">{label}</p>
+                <div className="track">
+                  <div
+                    className="h-full transition-all"
+                    style={{
+                      width: `${target > 0 ? Math.min((value / target) * 100, 100) : 0}%`,
+                      background: "var(--brass)",
+                    }}
+                  />
                 </div>
-              ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="num mt-3 text-sm text-foreground">
+            P {Math.round(totalProtein)}g
+            <span className="mx-2 text-muted-foreground">·</span>
+            C {Math.round(totalCarbs)}g
+            <span className="mx-2 text-muted-foreground">·</span>
+            F {Math.round(totalFat)}g
+          </p>
+        )}
+      </div>
+
+      {/* Micronutrients */}
+      {hasMicro && (
+        <div className="rule mx-6 mt-8 pt-5">
+          <button
+            type="button"
+            onClick={() => setShowMicro(!showMicro)}
+            aria-expanded={showMicro}
+            aria-controls="daily-micronutrient-details"
+            className="smallcaps flex w-full items-center justify-between transition-colors hover:text-foreground"
+          >
+            Micronutrients
+            {showMicro ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          </button>
+          {showMicro && (
+            <div id="daily-micronutrient-details" className="mt-4 space-y-3.5">
+              <MicroBar label="Fiber"     value={totalFiber}     target={30}   unit="g"  isLimit={false} />
+              <MicroBar label="Sugar"     value={totalSugar}     target={50}   unit="g"  isLimit={true}  />
+              <MicroBar label="Sodium"    value={totalSodium}    target={2300} unit="mg" isLimit={true}  />
+              <MicroBar label="Vitamin C" value={totalVitC}      target={90}   unit="mg" isLimit={false} />
+              <MicroBar label="Calcium"   value={totalCalcium}   target={1300} unit="mg" isLimit={false} />
+              <MicroBar label="Iron"      value={totalIron}      target={18}   unit="mg" isLimit={false} />
+              <MicroBar label="Potassium" value={totalPotassium} target={4700} unit="mg" isLimit={false} />
             </div>
           )}
         </div>
+      )}
 
-        {/* Micronutrients */}
-        {hasMicro && (
-          <div className="space-y-3 border-t border-black/[0.08] pt-1">
-            <button
-              onClick={() => setShowMicro(!showMicro)}
-              className="flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6B5738] transition-colors hover:text-[#18120E]"
-            >
-              <div className="flex items-center gap-1.5">
-                <Leaf className="h-3 w-3 text-[#00C875]" />
-                Micronutrients
-              </div>
-              {showMicro ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            </button>
-            {showMicro && (
-              <div className="space-y-2.5">
-                <MicroBar label="Fiber"     value={totalFiber}    target={30}   unit="g"  isLimit={false} />
-                <MicroBar label="Sugar"     value={totalSugar}    target={50}   unit="g"  isLimit={true}  />
-                <MicroBar label="Sodium"    value={totalSodium}   target={2300} unit="mg" isLimit={true}  />
-                <MicroBar label="Vitamin C" value={totalVitC}     target={90}   unit="mg" isLimit={false} />
-                <MicroBar label="Calcium"   value={totalCalcium}  target={1300} unit="mg" isLimit={false} />
-                <MicroBar label="Iron"      value={totalIron}     target={18}   unit="mg" isLimit={false} />
-                <MicroBar label="Potassium" value={totalPotassium} target={4700} unit="mg" isLimit={false} />
-              </div>
-            )}
-          </div>
-        )}
+      {/* Water */}
+      <div className="rule mx-6 mt-8 pt-5">
+        <div className="flex items-baseline justify-between">
+          <span className="smallcaps">Water</span>
+          <span className="num text-xs text-muted-foreground">
+            {waterIntake.toLocaleString()}/{waterTarget.toLocaleString()} ml
+          </span>
+        </div>
+        <div className="track mt-2">
+          <div
+            className="h-full transition-all"
+            style={{
+              width: `${waterPct}%`,
+              background: "var(--brass)",
+            }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={onAddWater}
+          className="smallcaps accent-text mt-3 transition-colors hover:text-foreground"
+        >
+          + Add 250 ml
+        </button>
+      </div>
 
-        {/* Water */}
-        <div className="space-y-2.5 border-t border-black/[0.08] pt-1">
-          <div className="flex items-center justify-between text-[11px]">
-            <div className="flex items-center gap-1.5 font-semibold uppercase tracking-[0.18em] text-[#6B5738]">
-              <Droplets className="h-3 w-3 text-blue-400" />
-              Water
-            </div>
-            <span className="tabular-nums text-[#6B5738]">{waterIntake}/{waterTarget} ml</span>
-          </div>
-          <div className="track">
-            <div className="fill-indigo" style={{ width: `${waterPct}%`, background: "#00C8FF" }} />
-          </div>
+      {/* Meals — a dated ledger closing on the bank balance */}
+      <div className="rule mx-6 mt-8 pb-5 pt-5">
+        <div className="flex items-baseline justify-between">
+          <span className="smallcaps">Today&apos;s meals</span>
           <button
-            onClick={onAddWater}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-black/[0.16] bg-[#FFF8E7] py-2 text-xs text-[#6B5738] transition-colors hover:bg-[#FFE8A8] hover:text-[#18120E]"
+            type="button"
+            onClick={onAddMeal}
+            className="smallcaps accent-text transition-colors hover:text-foreground"
           >
-            <Plus className="h-3 w-3" />
-            Add 250ml
+            + Add
           </button>
         </div>
 
-        {/* Recent Meals */}
-        <div className="space-y-2 border-t border-black/[0.08] pt-1">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6B5738]">
-              <Utensils className="h-3 w-3" />
-              Today&apos;s Meals
-            </div>
-            <button onClick={onAddMeal} className="flex h-6 w-6 items-center justify-center rounded-md text-[#6B5738] transition-colors hover:bg-[#FFE8A8] hover:text-[#18120E]">
-              <Plus className="h-3.5 w-3.5" />
+        {meals.length === 0 ? (
+          <div className="py-6 text-center">
+            <p className="text-sm text-muted-foreground">No meals logged today.</p>
+            <button
+              onClick={onAddMeal}
+              className="btn-ghost mt-3"
+            >
+              Log your first meal &rarr;
             </button>
           </div>
+        ) : (
+          <div className="mt-4">
+            {meals.slice(0, 5).map((meal) => (
+              <div key={meal.id} className="ledger-row group">
+                <span className="num w-16 shrink-0 text-xs text-muted-foreground">
+                  {new Date(meal.loggedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm text-foreground">{meal.name}</span>
+                <span className="flex shrink-0 gap-0.5 self-center transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                  <CopyMealDialog userId={userId} meal={{ id: meal.id, name: meal.name, calories: meal.calories, proteinG: meal.protein, carbsG: meal.carbs, fatG: meal.fat, fiberG: meal.fiberG, sugarG: meal.sugarG, sodiumMg: meal.sodiumMg, vitaminCMg: meal.vitaminCMg, calciumMg: meal.calciumMg, ironMg: meal.ironMg, potassiumMg: meal.potassiumMg, servingSizeG: meal.servingSizeG, mealType: meal.mealType }}>
+                    <button className="flex h-6 w-6 items-center justify-center text-muted-foreground transition-colors hover:text-foreground" aria-label={`Copy ${meal.name}`}>
+                      <Copy className="h-3 w-3" />
+                    </button>
+                  </CopyMealDialog>
+                  <SaveAsTemplateDialog userId={userId} meal={{ id: meal.id, name: meal.name, calories: meal.calories, proteinG: meal.protein, carbsG: meal.carbs, fatG: meal.fat, fiberG: meal.fiberG, sugarG: meal.sugarG, sodiumMg: meal.sodiumMg, vitaminCMg: meal.vitaminCMg, calciumMg: meal.calciumMg, ironMg: meal.ironMg, potassiumMg: meal.potassiumMg, servingSizeG: meal.servingSizeG, mealType: meal.mealType }}>
+                    <button className="flex h-6 w-6 items-center justify-center text-muted-foreground transition-colors hover:text-foreground" aria-label={`Save ${meal.name} as template`}>
+                      <Save className="h-3 w-3" />
+                    </button>
+                  </SaveAsTemplateDialog>
+                  {onEditMeal && (
+                    <button onClick={() => onEditMeal(meal)} className="flex h-6 w-6 items-center justify-center text-muted-foreground transition-colors hover:text-foreground" aria-label={`Edit ${meal.name}`}>
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                  )}
+                  {onDeleteMeal && (
+                    <button onClick={() => onDeleteMeal(meal.id)} className="flex h-6 w-6 items-center justify-center text-muted-foreground transition-colors hover:text-destructive" aria-label={`Delete ${meal.name}`}>
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  )}
+                </span>
+                <span className="num shrink-0 text-sm text-foreground">{meal.calories} kcal</span>
+              </div>
+            ))}
 
-          {meals.length === 0 ? (
-            <div className="text-center py-6">
-              <p className="text-sm text-[#6B5738]">No meals logged today</p>
-              <button
-                onClick={onAddMeal}
-                className="mt-2 text-xs font-semibold text-[#00895A] transition-colors hover:text-[#18120E]"
+            <div className="flex items-baseline justify-between border-t-2 border-foreground bg-secondary px-3 py-3">
+              <span className="smallcaps">Bank balance</span>
+              <span
+                className="num-display text-sm"
+                style={{ color: bankBalance >= 0 ? "var(--ledger-green)" : "var(--ledger-red)" }}
               >
-                Log your first meal →
-              </button>
+                {bankBalance >= 0 ? "+" : "−"}
+                {Math.abs(Math.round(bankBalance)).toLocaleString()} kcal
+              </span>
             </div>
-          ) : (
-            <div className="space-y-1">
-              {meals.slice(0, 5).map((meal) => (
-                <div key={meal.id} className="group flex items-center gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-[#FFE8A8]">
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm text-[#2A2017]">{meal.name}</p>
-                    <p className="text-[11px] text-[#6B5738]">
-                      {new Date(meal.loggedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-                  <span className="num shrink-0 text-xs tabular-nums text-[#3A2A1B]">{meal.calories} kcal</span>
-                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <CopyMealDialog meal={{ id: meal.id, name: meal.name, calories: meal.calories, proteinG: meal.protein, carbsG: meal.carbs, fatG: meal.fat, fiberG: meal.fiberG, sugarG: meal.sugarG, sodiumMg: meal.sodiumMg, vitaminCMg: meal.vitaminCMg, calciumMg: meal.calciumMg, ironMg: meal.ironMg, potassiumMg: meal.potassiumMg, servingSizeG: meal.servingSizeG, mealType: meal.mealType }}>
-                      <button className="flex h-6 w-6 items-center justify-center rounded text-[#6B5738] transition-colors hover:text-[#18120E]">
-                        <Copy className="h-3 w-3" />
-                      </button>
-                    </CopyMealDialog>
-                    <SaveAsTemplateDialog meal={{ id: meal.id, name: meal.name, calories: meal.calories, proteinG: meal.protein, carbsG: meal.carbs, fatG: meal.fat, fiberG: meal.fiberG, sugarG: meal.sugarG, sodiumMg: meal.sodiumMg, vitaminCMg: meal.vitaminCMg, calciumMg: meal.calciumMg, ironMg: meal.ironMg, potassiumMg: meal.potassiumMg, servingSizeG: meal.servingSizeG, mealType: meal.mealType }}>
-                      <button className="flex h-6 w-6 items-center justify-center rounded text-[#6B5738] transition-colors hover:text-[#18120E]">
-                        <Save className="h-3 w-3" />
-                      </button>
-                    </SaveAsTemplateDialog>
-                    {onEditMeal && (
-                      <button onClick={() => onEditMeal(meal)} className="flex h-6 w-6 items-center justify-center rounded text-[#6B5738] transition-colors hover:text-[#18120E]">
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                    )}
-                    {onDeleteMeal && (
-                      <button onClick={() => onDeleteMeal(meal.id)} className="flex h-6 w-6 items-center justify-center rounded text-[#6B5738] transition-colors hover:text-[#FF5A3D]">
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {meals.length > 0 && (
-            <Link href="/meals" className="block pt-1 text-center text-[11px] text-[#6B5738] transition-colors hover:text-[#18120E]">
-              View meal history
-            </Link>
-          )}
-        </div>
+          </div>
+        )}
+
+        {meals.length > 0 && (
+          <Link
+            href="/meals"
+            className="smallcaps mt-4 inline-block underline decoration-border underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground"
+          >
+            View meal history
+          </Link>
+        )}
       </div>
-    </div>
+    </section>
   );
 }

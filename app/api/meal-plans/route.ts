@@ -1,13 +1,10 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
 
 export async function GET(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to fetch meal plans", async () => {
+    const userId = await requireUserId();
 
     const { searchParams } = new URL(req.url);
     const date = searchParams.get("date");
@@ -36,31 +33,19 @@ export async function GET(req: NextRequest) {
       orderBy: { startDate: "desc" },
     });
 
-    return NextResponse.json({ success: true, plans });
-  } catch (error) {
-    console.error("Error fetching meal plans:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch meal plans" },
-      { status: 500 }
-    );
-  }
+    return { success: true, plans };
+  });
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to create meal plan", async () => {
+    const userId = await requireUserId();
 
     const body = await req.json();
     const { name, description, startDate, endDate, items, isTemplate } = body;
 
     if (!name || !startDate || !endDate) {
-      return NextResponse.json(
-        { error: "Missing required fields: name, startDate, endDate" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Missing required fields: name, startDate, endDate");
     }
 
     const plan = await prisma.mealPlan.create({
@@ -96,31 +81,19 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, plan });
-  } catch (error) {
-    console.error("Error creating meal plan:", error);
-    return NextResponse.json(
-      { error: "Failed to create meal plan" },
-      { status: 500 }
-    );
-  }
+    return { success: true, plan };
+  });
 }
 
 export async function PUT(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to update meal plan", async () => {
+    const userId = await requireUserId();
 
     const body = await req.json();
     const { id, ...data } = body;
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Missing plan ID" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Missing plan ID");
     }
 
     const existing = await prisma.mealPlan.findUnique({
@@ -129,7 +102,7 @@ export async function PUT(req: NextRequest) {
     });
 
     if (!existing || existing.userId !== userId) {
-      return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+      throw new ApiError(404, "Plan not found");
     }
 
     const { items, ...planData } = data;
@@ -151,46 +124,28 @@ export async function PUT(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, plan });
-  } catch (error) {
-    console.error("Error updating meal plan:", error);
-    return NextResponse.json(
-      { error: "Failed to update meal plan" },
-      { status: 500 }
-    );
-  }
+    return { success: true, plan };
+  });
 }
 
 export async function DELETE(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to delete meal plan", async () => {
+    const userId = await requireUserId();
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Missing plan ID" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Missing plan ID");
     }
 
     const existing = await prisma.mealPlan.findUnique({ where: { id } });
     if (!existing || existing.userId !== userId) {
-      return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+      throw new ApiError(404, "Plan not found");
     }
 
     await prisma.mealPlan.delete({ where: { id } });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting meal plan:", error);
-    return NextResponse.json(
-      { error: "Failed to delete meal plan" },
-      { status: 500 }
-    );
-  }
+    return { success: true };
+  });
 }

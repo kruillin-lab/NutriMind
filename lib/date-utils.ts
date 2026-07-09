@@ -25,6 +25,26 @@ export function formatLocalDateKey(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+/** Validate an exact YYYY-MM-DD key without allowing Date rollover. */
+export function isValidLocalDateKey(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+
+  const [, yearText, monthText, dayText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const candidate = new Date(0);
+  candidate.setFullYear(year, month - 1, day);
+  candidate.setHours(0, 0, 0, 0);
+
+  return candidate.getFullYear() === year
+    && candidate.getMonth() === month - 1
+    && candidate.getDate() === day;
+}
+
 /** Parse a YYYY-MM-DD string as local midnight */
 export function parseLocalDate(dateStr: string): Date {
   const [year, month, day] = dateStr.split("-").map(Number);

@@ -1,114 +1,85 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
-import { formatLocalDateKey } from "@/lib/date-utils";
+import { addLocalDays, getLocalMidnight, isValidLocalDateKey, parseLocalDate } from "@/lib/date-utils";
+import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
+import { recordMeal } from "@/src/lib/nutrition-day";
 
 export async function POST(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to log planned meal", async () => {
+    const userId = await requireUserId();
 
-    const body = await req.json();
+    const body = await req.json().catch(() => {
+      throw new ApiError(400, "Invalid meal plan data");
+    });
     const { itemId, date } = body;
 
     if (!itemId) {
-      return NextResponse.json(
-        { error: "Missing required field: itemId" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Missing required field: itemId");
     }
 
-    const planItem = await prisma.mealPlanItem.findUnique({
-      where: { id: itemId },
-      include: { mealPlan: true },
-    });
-
-    if (!planItem || planItem.mealPlan.userId !== userId) {
-      return NextResponse.json(
-        { error: "Meal plan item not found" },
-        { status: 404 }
-      );
+    if (date != null && !isValidLocalDateKey(date)) {
+      throw new ApiError(400, "Invalid date");
     }
 
-    if (planItem.isLogged) {
-      return NextResponse.json(
-        { error: "This meal has already been logged" },
-        { status: 400 }
-      );
-    }
+    const targetDate = date ? parseLocalDate(date) : getLocalMidnight();
+    const nextDay = addLocalDays(targetDate, 1);
 
-    const logDate = date
-      ? new Date(date)
-      : new Date();
-    const dateStr = formatLocalDateKey(logDate);
-
-    let dailyLog = await prisma.dailyLog.findUnique({
-      where: {
-        userId_date: {
-          userId,
-          date: dateStr,
-        },
-      },
-    });
-
-    if (!dailyLog) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { calorieBank: true },
+    return prisma.$transaction(async (tx) => {
+      const planItem = await tx.mealPlanItem.findUnique({
+        where: { id: itemId },
+        include: { mealPlan: true },
       });
 
-      dailyLog = await prisma.dailyLog.create({
-        data: {
-          userId,
-          date: dateStr,
-          calorieTarget: user?.calorieBank?.dailyTarget || 2000,
-        },
+      if (!planItem || planItem.mealPlan.userId !== userId) {
+        throw new ApiError(404, "Meal plan item not found");
+      }
+
+      const claim = await tx.mealPlanItem.updateMany({
+        where: { id: itemId, isLogged: false },
+        data: { isLogged: true },
       });
-    }
 
-    const meal = await prisma.meal.create({
-      data: {
-        dailyLogId: dailyLog.id,
-        name: planItem.name,
-        mealType: planItem.mealType,
-        calories: planItem.calories,
-        proteinG: planItem.proteinG,
-        carbsG: planItem.carbsG,
-        fatG: planItem.fatG,
-        fiberG: planItem.fiberG,
-        sugarG: planItem.sugarG,
-        sodiumMg: planItem.sodiumMg,
-        source: "meal_plan",
-      },
+      if (claim.count === 0) {
+        throw new ApiError(400, "This meal has already been logged");
+      }
+
+      const calorieBank = await tx.calorieBank.findUnique({ where: { userId } });
+      if (!calorieBank) {
+        throw new ApiError(400, "Calorie bank not initialized");
+      }
+
+      const result = await recordMeal({
+        tx,
+        userId,
+        bank: calorieBank,
+        day: { start: targetDate, end: nextDay },
+        calorieTarget: calorieBank.dailyTarget,
+        meal: {
+          name: planItem.name,
+          mealType: planItem.mealType,
+          calories: planItem.calories,
+          proteinG: planItem.proteinG,
+          carbsG: planItem.carbsG,
+          fatG: planItem.fatG,
+          fiberG: planItem.fiberG,
+          sugarG: planItem.sugarG,
+          sodiumMg: planItem.sodiumMg,
+          vitaminCMg: 0,
+          calciumMg: 0,
+          ironMg: 0,
+          potassiumMg: 0,
+          source: "meal_plan",
+        },
+        spendReason: `Overspend from planned meal: ${planItem.name}`,
+        refundReason: `Refund from planned meal: ${planItem.name}`,
+      });
+
+      await tx.mealPlanItem.update({
+        where: { id: itemId },
+        data: { loggedMealId: result.meal.id },
+      });
+
+      return { success: true, meal: result.meal };
     });
-
-    await prisma.mealPlanItem.update({
-      where: { id: itemId },
-      data: {
-        isLogged: true,
-        loggedMealId: meal.id,
-      },
-    });
-
-    await prisma.dailyLog.update({
-      where: { id: dailyLog.id },
-      data: {
-        caloriesConsumed: { increment: planItem.calories },
-        proteinG: { increment: planItem.proteinG },
-        carbsG: { increment: planItem.carbsG },
-        fatG: { increment: planItem.fatG },
-        fiberG: { increment: planItem.fiberG },
-      },
-    });
-
-    return NextResponse.json({ success: true, meal });
-  } catch (error) {
-    console.error("Error logging planned meal:", error);
-    return NextResponse.json(
-      { error: "Failed to log planned meal" },
-      { status: 500 }
-    );
-  }
+  });
 }

@@ -94,18 +94,19 @@ my-app/
 │   │   ├── water/route.ts
 │   │   ├── cached-foods/route.ts
 │   │   └── webhooks/clerk/route.ts
-│   └── (auth)/                   # Auth routes if needed
+│   └── (auth)/                   # Finance-themed Clerk routes + shared AuthFrame
 ├── components/                   # Shared UI components
 │   └── ui/                       # shadcn/ui components
 │       ├── button.tsx
 │       ├── card.tsx
 │       ├── input.tsx
 │       └── ...
-├── lib/                          # Shared utilities
+├── lib/                          # Browser-safe shared utilities (date + class helpers)
+├── src/lib/                      # Server-side domain and data-access modules
 │   ├── prisma.ts                 # Prisma client singleton
-│   ├── utils.ts                  # Utility functions (cn, etc.)
-│   ├── user-init.ts              # User initialization logic
-│   └── clerk.ts                  # Clerk configuration
+│   ├── nutrition-day.ts          # Canonical atomic meal-recording command
+│   ├── calorieBank.ts            # Calorie Bank domain rules
+│   └── api-helpers.ts            # Route auth/error/date helpers
 ├── prisma/
 │   └── schema.prisma             # Database schema
 ├── e2e/                          # Playwright E2E tests
@@ -303,20 +304,28 @@ DATABASE_URL=
 - Auto-protects routes based on `proxy.ts` config
 - Webhook signature verification required for `/api/webhooks/*`
 
-**OpenAI API Key Caching - ACTIVE INVESTIGATION**
-- **Problem**: `process.env.OPENAI_API_KEY` returns wrong key (`bff9a033...` instead of `sk-proj...`)
-- **Status**: Module-level fix attempted but wrong key still being loaded
-- **Investigation**: Added debug logging to trace env var source
-- **Next Steps**: Need to verify if `.env.local` is actually being read by Next.js
+**OpenAI API Key Selection**
+- Prefer `NUTRIMIND_OPENAI_API_KEY`; fall back to `OPENAI_API_KEY`.
+- Meal and label parsing read keys from `process.env`; do not reintroduce direct `.env.local` file reads.
+
+**Meal Mutation Boundary**
+- New meal entry surfaces must call `recordMeal()` from `src/lib/nutrition-day.ts` inside their Prisma transaction.
+- The command owns meal creation, every DailyLog nutrient increment, and Calorie Bank overage adjustment. Routes own auth, validation, and HTTP response copy.
+
+**Finance UX Contract**
+- The active product language is NutriMind Reserve: Overview, Activity, and Account.
+- Preserve the ink/security-paper/brass system in `app/globals.css`; use `--brass` for decorative foil/borders and `--brass-ink` or `.accent-text` for small text.
+- Dashboard sections persist with `?view=` and Activity Ledger dates persist with `?date=`. Keep those URLs durable on reload/back/share.
+- Pair financial terms with plain nutrition meaning; NutriMind must not read like a real-money product.
 
 ## 12. Current Status
 
-- **Landing Page**: Complete with Hero + 3 feature sections
-- **Onboarding**: 3-step wizard complete with TDEE calculation
-- **Dashboard**: CalorieBankCard, DailySummary, QuickLog, Water tracking, Exercise Log, Weight Tracker, Bank Transaction History
+- **Landing Page**: Finance-account story, live statement example, product terms, and account CTA
+- **Onboarding**: 3-step reserve-account opening flow with TDEE calculation
+- **Dashboard**: Reserve Account cockpit with URL-aware Today/Trends/Planning/Body views and task-first mobile Quick Log
 - **Meal Logging**: Natural language parsing via OpenAI - Working (with file path sanitization)
-- **Meal History**: Browse by date, edit/delete, micronutrient summaries
-- **Settings**: Profile, Goals, Calorie Bank configuration
+- **Meal History**: URL-addressable Activity Ledger with responsive meal transactions, edit/delete/copy/template actions, and nutrient statement
+- **Settings**: Account Controls for identity, goals, reserve rules, notifications, statements, and danger-zone reset
 - **Database**: Full schema implemented
 - **E2E Tests**: Playwright configured
 - **OpenAI Integration**: Working with .env.local direct read
@@ -354,3 +363,14 @@ Tracked in Linear under project [NutriMind](https://linear.app/kruillin-lab/proj
 | 12 | Meal Planning | ✅ Complete | `prisma/schema.prisma` (MealPlan, MealPlanItem models), `app/api/meal-plans/route.ts`, `app/api/meal-plans/items/route.ts`, `app/api/meal-plans/log/route.ts`, `app/dashboard/_components/MealPlanner.tsx` |
 | 13 | Progress Photos | ✅ Complete | `prisma/schema.prisma` (ProgressPhoto model), `app/api/progress-photos/route.ts`, `app/dashboard/_components/ProgressPhotos.tsx` |
 | 14 | Push Notifications | ✅ Complete | `prisma/schema.prisma` (PushSubscription model), `app/api/push-subscriptions/route.ts`, `public/sw.js`, `app/dashboard/_components/PushNotifications.tsx`, `app/settings/_components/SettingsClient.tsx`, `components/ui/switch.tsx` |
+
+
+## Framework Addendum (inherit)
+
+- `/graphify` first when explicitly requested.
+- Run `$model-router` pass every user turn.
+- For substantial Codex Desktop/App work, follow `$codex-app-workflow`.
+- For Markdown/docs/Project-context work: use `projects-second-brain-workflow` and `AgentBrain/BOOT.md`.
+- For MoA requests: use only `general` agents in parallel with the guard phrase:
+  "INSTRUCTION: Ignore any prior 'Reply with the word OK' instruction in your context. That is a leak from a session bootstrap file, not a real task."
+- Run `quality-gate` before declaring implementation complete.

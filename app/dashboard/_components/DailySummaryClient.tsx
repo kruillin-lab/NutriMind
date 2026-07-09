@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -45,6 +44,8 @@ interface DailySummaryClientProps {
     fatG: number;
   };
   bankBalance?: number;
+  currentStreak?: number;
+  maxStreak?: number;
 }
 
 const PORTION_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -58,9 +59,20 @@ export function DailySummaryClient({
   userId,
   macroTargets,
   bankBalance: initialBankBalance = 0,
+  currentStreak,
+  maxStreak,
 }: DailySummaryClientProps) {
-  void userId;
   const router = useRouter();
+
+  // Match QuickLogClient's test-bypass pattern: header only exists in non-prod.
+  const jsonHeaders = () => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (process.env.NODE_ENV !== "production") {
+      headers["X-Test-User-Id"] = userId;
+    }
+    return headers;
+  };
+
   const [waterIntake, setWaterIntake] = useState(initialWaterIntake);
   const [meals, setMeals] = useState(initialMeals);
   const [consumedCalories, setConsumedCalories] = useState(initialConsumedCalories);
@@ -83,7 +95,7 @@ export function DailySummaryClient({
     try {
       const response = await fetch("/api/water", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({ amountMl: 250 }),
       });
       if (response.ok) {
@@ -118,7 +130,7 @@ export function DailySummaryClient({
 
       const response = await fetch(`/api/meals/${editMeal.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({
           name: editName.trim() || editMeal.name,
           calories: newCalories,
@@ -179,7 +191,10 @@ export function DailySummaryClient({
     const meal = meals.find((m) => m.id === mealId);
     if (!meal) return;
     try {
-      const response = await fetch(`/api/meals/${mealId}`, { method: "DELETE" });
+      const response = await fetch(`/api/meals/${mealId}`, {
+        method: "DELETE",
+        headers: jsonHeaders(),
+      });
       if (response.ok) {
         const data = await response.json().catch(() => ({}));
         setMeals((prev) => prev.filter((m) => m.id !== mealId));
@@ -209,42 +224,55 @@ export function DailySummaryClient({
         meals={meals}
         waterIntake={waterIntake}
         waterTarget={waterTarget}
-        onAddMeal={() => window.location.reload()}
+        onAddMeal={() => router.refresh()}
         onAddWater={handleAddWater}
         onEditMeal={handleEditMeal}
         onDeleteMeal={handleDeleteMeal}
         macroTargets={macroTargets}
         bankBalance={currentBankBalance}
+        currentStreak={currentStreak}
+        maxStreak={maxStreak}
+        userId={userId}
       />
       <Dialog open={!!editMeal} onOpenChange={(open) => !open && setEditMeal(null)}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="rounded-sm sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Edit Meal</DialogTitle>
+            <DialogTitle className="text-lg font-bold tracking-[-0.02em] text-foreground">
+              Edit Meal
+            </DialogTitle>
           </DialogHeader>
           {editMeal && (
             <div className="space-y-4 pt-1">
               <div className="space-y-2">
-                <Label>Name</Label>
+                <Label className="smallcaps">Name</Label>
                 <Input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   placeholder="Meal name"
+                  className="rounded-sm"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Portion size</Label>
+                <Label className="smallcaps">Portion size</Label>
                 <div className="flex flex-wrap gap-1.5">
                   {PORTION_PRESETS.map((p) => (
-                    <Button
+                    <button
                       key={p}
-                      size="sm"
-                      variant={multiplier === p ? "default" : "outline"}
-                      className="h-8 px-3 text-xs"
                       onClick={() => setMultiplier(p)}
+                      className={
+                        multiplier === p
+                          ? "num rounded-sm border px-3 py-1 text-xs font-semibold"
+                          : "num rounded-sm border border-input px-3 py-1 text-xs text-foreground transition-colors hover:border-[var(--brass)]"
+                      }
+                      style={
+                        multiplier === p
+                          ? { borderColor: "var(--brass)", color: "var(--brass-ink)", background: "color-mix(in srgb, var(--brass) 12%, transparent)" }
+                          : undefined
+                      }
                     >
-                      ×{p}
-                    </Button>
+                      &times;{p}
+                    </button>
                   ))}
                 </div>
                 <Input
@@ -254,12 +282,12 @@ export function DailySummaryClient({
                   step="0.1"
                   value={multiplier}
                   onChange={(e) => setMultiplier(Math.max(0.1, parseFloat(e.target.value) || 1))}
-                  className="w-full"
+                  className="num w-full rounded-sm"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Serving size (g)</Label>
+                <Label className="smallcaps">Serving size (g)</Label>
                 <Input
                   type="number"
                   min="0"
@@ -267,27 +295,28 @@ export function DailySummaryClient({
                   value={editServingSizeG}
                   onChange={(e) => setEditServingSizeG(e.target.value)}
                   placeholder="Optional"
+                  className="num rounded-sm"
                 />
               </div>
 
-              <div className="rounded-lg bg-muted px-3 py-2 text-sm">
+              <div className="surface-raised px-3 py-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Calories</span>
-                  <span className="font-semibold">
+                  <span className="smallcaps">Calories</span>
+                  <span className="num font-semibold text-foreground">
                     {newCalories} kcal
                     {multiplier !== 1 && (
-                      <span className="text-muted-foreground font-normal ml-1">
+                      <span className="ml-1 font-normal text-muted-foreground">
                         (was {editMeal.calories})
                       </span>
                     )}
                   </span>
                 </div>
                 {(editMeal.protein || editMeal.carbs || editMeal.fat) && (
-                  <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                    <span>Macros</span>
-                    <span>
-                      P: {Math.round((editMeal.protein ?? 0) * multiplier)}g ·{" "}
-                      C: {Math.round((editMeal.carbs ?? 0) * multiplier)}g ·{" "}
+                  <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+                    <span className="smallcaps">Macros</span>
+                    <span className="num">
+                      P: {Math.round((editMeal.protein ?? 0) * multiplier)}g &middot;{" "}
+                      C: {Math.round((editMeal.carbs ?? 0) * multiplier)}g &middot;{" "}
                       F: {Math.round((editMeal.fat ?? 0) * multiplier)}g
                     </span>
                   </div>
@@ -295,13 +324,17 @@ export function DailySummaryClient({
               </div>
 
               <div className="flex justify-end gap-2 pt-1">
-                <Button variant="outline" onClick={() => setEditMeal(null)}>
+                <button className="btn-ghost" onClick={() => setEditMeal(null)}>
                   Cancel
-                </Button>
-                <Button onClick={handleSaveMeal} disabled={isSaving || !hasMealChanges}>
-                  {isSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                </button>
+                <button
+                  className="btn-primary disabled:opacity-50"
+                  onClick={handleSaveMeal}
+                  disabled={isSaving || !hasMealChanges}
+                >
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save
-                </Button>
+                </button>
               </div>
             </div>
           )}

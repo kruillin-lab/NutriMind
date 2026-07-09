@@ -1,23 +1,29 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { clampInt } from "@/src/lib/validation";
+import {
+  ApiError,
+  dayRange,
+  handleRoute,
+  requireUserId,
+} from "@/src/lib/api-helpers";
 
 export async function POST(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to log exercise", async () => {
+    const userId = await requireUserId();
 
     const body = await req.json();
     const { exerciseMinutes, caloriesBurned, description } = body;
 
-    if (!exerciseMinutes || exerciseMinutes <= 0) {
-      return NextResponse.json(
-        { error: "Invalid exercise duration" },
-        { status: 400 }
-      );
+    const safeMinutes = clampInt(exerciseMinutes, 0, 1440);
+    if (safeMinutes === null || safeMinutes <= 0) {
+      throw new ApiError(400, "Invalid exercise duration");
+    }
+
+    const safeBurned = caloriesBurned != null ? clampInt(caloriesBurned, 0, 10000) : 0;
+    if (safeBurned === null) {
+      throw new ApiError(400, "Invalid calories burned");
     }
 
     const user = await prisma.user.findUnique({
@@ -26,16 +32,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user || !user.calorieBank) {
-      return NextResponse.json(
-        { error: "User or calorie bank not found" },
-        { status: 404 }
-      );
+      throw new ApiError(404, "User or calorie bank not found");
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { start: today, end: tomorrow } = dayRange();
 
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       let dailyLog = await tx.dailyLog.findFirst({
@@ -58,17 +58,17 @@ export async function POST(req: NextRequest) {
       const updatedLog = await tx.dailyLog.update({
         where: { id: dailyLog.id },
         data: {
-          exerciseMinutes: (dailyLog.exerciseMinutes || 0) + exerciseMinutes,
-          caloriesBurned: (dailyLog.caloriesBurned || 0) + (caloriesBurned || 0),
+          exerciseMinutes: (dailyLog.exerciseMinutes || 0) + safeMinutes,
+          caloriesBurned: (dailyLog.caloriesBurned || 0) + safeBurned,
         },
       });
 
-      if (caloriesBurned > 0 && user.calorieBank) {
+      if (safeBurned > 0 && user.calorieBank) {
         await tx.calorieBank.update({
           where: { userId: user.id },
           data: {
-            currentBalance: { increment: caloriesBurned },
-            totalBanked: { increment: caloriesBurned },
+            currentBalance: { increment: safeBurned },
+            totalBanked: { increment: safeBurned },
           },
         });
 
@@ -76,10 +76,10 @@ export async function POST(req: NextRequest) {
           data: {
             bankId: user.calorieBank.id,
             type: "BANK",
-            amount: caloriesBurned,
+            amount: safeBurned,
             reason: description
-              ? `Exercise: ${description} (+${caloriesBurned} kcal)`
-              : `Exercise: +${caloriesBurned} kcal`,
+              ? `Exercise: ${description} (+${safeBurned} kcal)`
+              : `Exercise: +${safeBurned} kcal`,
             caloriesConsumed: updatedLog.caloriesConsumed,
             caloriesTarget: updatedLog.calorieTarget,
             sourceType: "exercise",
@@ -90,33 +90,21 @@ export async function POST(req: NextRequest) {
       return updatedLog;
     });
 
-    return NextResponse.json({
+    return {
       success: true,
       exerciseMinutes: result.exerciseMinutes,
       caloriesBurned: result.caloriesBurned,
-    });
-  } catch (error) {
-    console.error("Error logging exercise:", error);
-    return NextResponse.json(
-      { error: "Failed to log exercise" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }
 
 export async function GET(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to fetch exercise data", async () => {
+    const userId = await requireUserId();
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
-    const date = dateParam ? new Date(dateParam) : new Date();
-    date.setHours(0, 0, 0, 0);
-    const nextDay = new Date(date);
-    nextDay.setDate(nextDay.getDate() + 1);
+    const { start: date, end: nextDay } = dayRange(dateParam);
 
     const dailyLog = await prisma.dailyLog.findFirst({
       where: {
@@ -125,15 +113,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    return {
       exerciseMinutes: dailyLog?.exerciseMinutes || 0,
       caloriesBurned: dailyLog?.caloriesBurned || 0,
-    });
-  } catch (error) {
-    console.error("Error fetching exercise data:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch exercise data" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }

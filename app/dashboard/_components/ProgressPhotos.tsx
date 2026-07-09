@@ -2,8 +2,6 @@
 
 import NextImage from "next/image";
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -167,32 +165,29 @@ export function ProgressPhotos() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center h-32">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        </CardContent>
-      </Card>
+      <section className="surface p-6">
+        <div className="flex items-center justify-center h-32">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </section>
     );
   }
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Camera className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-lg">Progress Photos</CardTitle>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Photo
-            </Button>
+      <section className="surface overflow-hidden">
+        <div className="foil" />
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <div className="flex items-center gap-2">
+            <Camera className="h-4 w-4" style={{ color: "var(--brass)" }} />
+            <h3 className="smallcaps">Progress Photos</h3>
           </div>
-        </CardHeader>
-        <CardContent>
+          <button onClick={() => setDialogOpen(true)} className="btn-ghost h-8 px-3 text-xs">
+            <Plus className="h-4 w-4 mr-1" />
+            Add Photo
+          </button>
+        </div>
+        <div className="px-5 py-4">
           {photos.length === 0 ? (
             <div className="text-center py-8">
               <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
@@ -202,22 +197,20 @@ export function ProgressPhotos() {
               <p className="text-xs text-muted-foreground/70 mt-1">
                 Take photos to track your visual progress over time
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
+              <button
                 onClick={() => setDialogOpen(true)}
+                className="btn-ghost mt-4 h-8 px-3 text-xs"
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Add Your First Photo
-              </Button>
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {photos.map((photo) => (
                 <div
                   key={photo.id}
-                  className="relative group aspect-square rounded-lg overflow-hidden bg-muted"
+                  className="relative group aspect-square rounded-sm overflow-hidden border border-border bg-muted"
                 >
                   <NextImage
                     src={photo.imageData}
@@ -232,7 +225,7 @@ export function ProgressPhotos() {
                       {formatDate(photo.photoDate)}
                     </p>
                     {photo.weightKg && (
-                      <p className="text-white/80 text-xs">
+                      <p className="text-white/80 text-xs num">
                         {photo.weightKg.toFixed(1)} kg
                       </p>
                     )}
@@ -241,22 +234,20 @@ export function ProgressPhotos() {
                         {photo.caption}
                       </p>
                     )}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="mt-2 h-7 text-xs"
+                    <button
                       onClick={() => handleDelete(photo.id)}
+                      className="mt-2 inline-flex h-7 items-center rounded-sm border border-[var(--ledger-red)]/40 bg-[var(--ledger-red)]/20 px-2 text-xs text-white transition-colors hover:bg-[var(--ledger-red)]/30"
                     >
                       <Trash2 className="h-3 w-3 mr-1" />
                       Delete
-                    </Button>
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
@@ -265,17 +256,18 @@ export function ProgressPhotos() {
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label htmlFor="photo">Photo</Label>
+              <Label htmlFor="photo" className="smallcaps">Photo</Label>
               <Input
                 id="photo"
                 type="file"
                 accept="image/*"
                 onChange={handleFileSelect}
+                className="rounded-sm"
               />
             </div>
 
             {previewUrl && (
-              <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+              <div className="relative aspect-video rounded-sm overflow-hidden border border-border bg-muted">
                 <NextImage
                   src={previewUrl}
                   alt="Preview"
@@ -288,17 +280,18 @@ export function ProgressPhotos() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="photoDate">Date</Label>
+              <Label htmlFor="photoDate" className="smallcaps">Date</Label>
               <Input
                 id="photoDate"
                 type="date"
                 value={photoDate}
                 onChange={(e) => setPhotoDate(e.target.value)}
+                className="num rounded-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="weight">Weight (kg, optional)</Label>
+              <Label htmlFor="weight" className="smallcaps">Weight (kg, optional)</Label>
               <Input
                 id="weight"
                 type="number"
@@ -306,30 +299,33 @@ export function ProgressPhotos() {
                 placeholder="e.g., 70.5"
                 value={weightKg}
                 onChange={(e) => setWeightKg(e.target.value)}
+                className="num rounded-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="caption">Caption (optional)</Label>
+              <Label htmlFor="caption" className="smallcaps">Caption (optional)</Label>
               <Input
                 id="caption"
                 placeholder="e.g., Week 4 progress"
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
+                className="rounded-sm"
               />
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
+              <button
                 onClick={() => setDialogOpen(false)}
                 disabled={uploading}
+                className="btn-ghost h-9 px-4 text-xs disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={handleUpload}
                 disabled={!selectedFile || uploading}
+                className="btn-primary h-9 px-4 text-xs disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {uploading ? (
                   <>
@@ -342,7 +338,7 @@ export function ProgressPhotos() {
                     Upload Photo
                   </>
                 )}
-              </Button>
+              </button>
             </div>
           </div>
         </DialogContent>

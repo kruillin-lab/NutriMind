@@ -4,9 +4,6 @@ import { useState, useEffect } from "react";
 import { ScannerModal, type NutritionResult } from "./ScannerModal";
 import {
   Camera,
-  ClipboardPenLine,
-  Send,
-  Sparkles,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -90,13 +87,24 @@ const MANUAL_MACRO_FIELDS: Array<{
   { key: "servingSizeG", label: "Serving", unit: "g" },
 ];
 
+// Rendering groups only — validation still iterates MANUAL_MACRO_FIELDS as a whole.
+const CALORIES_FIELD = MANUAL_MACRO_FIELDS[0];
+const MACRO_ROW_FIELDS = MANUAL_MACRO_FIELDS.slice(1, 4); // protein, carbs, fat
+const MICRO_FIELDS = MANUAL_MACRO_FIELDS.slice(4); // fiber, sugar, sodium, serving
+
 function parseManualNumber(value: string) {
   if (!value.trim()) return 0;
   return Number(value);
 }
 
+// Shared field styling — AI textarea and manual inputs read as one voice.
+// "Deposit slip" framing: engraved sharp-cornered fields on the paper background.
+const FIELD_CLASS =
+  "w-full rounded-sm border border-input bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30";
+// Numeric deposit-slip fields — same voice, tabular mono figures.
+const NUM_FIELD_CLASS = `${FIELD_CLASS} num`;
+
 export function QuickLogClient({ userId }: QuickLogClientProps) {
-  void userId;
   const [mode, setMode] = useState<LogMode>("ai");
   const [input, setInput] = useState("");
   const [manualMeal, setManualMeal] = useState<ManualMealState>(INITIAL_MANUAL_MEAL);
@@ -114,12 +122,25 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
   const [popularFoods, setPopularFoods] = useState<CachedFood[]>([]);
   const [isLoadingPopular, setIsLoadingPopular] = useState(false);
   const [mealType, setMealType] = useState("OTHER");
+  const [showMicros, setShowMicros] = useState(false);
+
+  const jsonHeaders = () => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (process.env.NODE_ENV !== "production") {
+      headers["X-Test-User-Id"] = userId;
+    }
+    return headers;
+  };
 
   useEffect(() => {
     const fetch_ = async () => {
       setIsLoadingPopular(true);
       try {
-        const res = await fetch("/api/cached-foods?limit=6");
+        const headers: Record<string, string> = {};
+        if (process.env.NODE_ENV !== "production") {
+          headers["X-Test-User-Id"] = userId;
+        }
+        const res = await fetch("/api/cached-foods?limit=6", { headers });
         if (!res.ok) throw new Error("failed");
         const data = await res.json();
         if (data.success) setPopularFoods(data.foods);
@@ -130,7 +151,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
       }
     };
     fetch_();
-  }, []);
+  }, [userId]);
 
   const handleVoice = () => {
     setVoiceError(null);
@@ -191,7 +212,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
     try {
       const res = await fetch("/api/parse-meal", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({ text: input.trim() }),
       });
       if (!res.ok) {
@@ -225,7 +246,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
     try {
       const res = await fetch("/api/meals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({
           name: parsedFoods.map(f => f.name).join(", "),
           calories: sum(f => f.calories),
@@ -311,7 +332,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
     try {
       const res = await fetch("/api/meals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({
           name,
           calories: parsedNumbers.calories,
@@ -346,7 +367,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
     try {
       const res = await fetch("/api/meals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({ name, calories, proteinG: 0, carbsG: 0, fatG: 0, mealType: "SNACK" }),
       });
       if (!res.ok) {
@@ -365,18 +386,17 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
 
   return (
     <>
-      <div className="surface overflow-hidden">
+      <section aria-labelledby="quick-log-heading" className="surface overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-black/[0.08] px-5 py-4">
-          <div className="flex items-center gap-2">
-            {mode === "ai" ? (
-              <Sparkles className="h-4 w-4 text-[#FF5A3D]" />
-            ) : (
-              <ClipboardPenLine className="h-4 w-4 text-[#00C875]" />
-            )}
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6B5738]">Quick Log</span>
+        <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="page-kicker">Primary action</p>
+            <h3 id="quick-log-heading" className="mt-0.5 text-base font-semibold text-foreground">
+              Log a meal
+            </h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">Add nutrition by description or enter the numbers yourself.</p>
           </div>
-          <div className="flex rounded-lg border border-[#18120E]/20 bg-[#FFF0B8] p-0.5">
+          <div className="flex items-baseline gap-4" role="group" aria-label="Meal logging mode">
             {([
               { value: "ai", label: "AI" },
               { value: "manual", label: "Manual" },
@@ -384,15 +404,17 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
               <button
                 key={option.value}
                 type="button"
+                aria-pressed={mode === option.value}
                 onClick={() => {
                   setMode(option.value);
                   setSubmitError(null);
                 }}
-                className={`rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                className={`smallcaps pb-0.5 transition-colors ${
                   mode === option.value
-                    ? "bg-[#18120E] text-[#DFFF35]"
-                    : "text-[#6B5738] hover:bg-[#FFE8A8] hover:text-[#18120E]"
+                    ? "border-b-2 text-foreground"
+                    : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"
                 }`}
+                style={mode === option.value ? { borderColor: "var(--brass)" } : undefined}
               >
                 {option.label}
               </button>
@@ -400,18 +422,21 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
           </div>
         </div>
 
-        <div className="p-5 space-y-4">
-          {/* Meal type */}
-          <div className="flex gap-1.5 flex-wrap">
+        <div className="space-y-4 p-5">
+          {/* Meal type — rectangular brass-outline tags */}
+          <div className="flex gap-1.5 flex-wrap" role="group" aria-label="Meal type">
             {MEAL_TYPES.map((t) => (
               <button
                 key={t}
+                type="button"
+                aria-pressed={mealType === t}
                 onClick={() => setMealType(t)}
-                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider border transition-colors ${
+                className="pill transition-colors"
+                style={
                   mealType === t
-                    ? "border-[#18120E] bg-[#DFFF35] text-[#18120E] shadow-[2px_2px_0_#18120E]"
-                    : "border-black/[0.12] text-[#6B5738] hover:border-black/[0.2] hover:bg-[#FFE8A8] hover:text-[#18120E]"
-                }`}
+                    ? { background: "var(--primary)", borderColor: "var(--brass)", color: "var(--primary-foreground)" }
+                    : undefined
+                }
               >
                 {t.charAt(0) + t.slice(1).toLowerCase()}
               </button>
@@ -423,76 +448,97 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
               {/* Textarea */}
               <div className="relative">
                 <textarea
+                  aria-label="Describe what you ate"
                   placeholder="Describe what you ate in natural language…"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   rows={3}
-                  className="w-full resize-none rounded-lg border-2 border-[#18120E]/20 bg-[#FFF0B8] px-3.5 py-3 pr-20 text-sm text-[#18120E] outline-none transition-colors placeholder:text-[#8A7350] focus:border-[#18120E] focus:ring-2 focus:ring-[#DFFF35]/70"
+                  className={`${FIELD_CLASS} resize-none pr-20`}
                 />
                 <div className="absolute bottom-2.5 right-2.5 flex gap-1">
                   <button
+                    type="button"
                     onClick={handleVoice}
                     disabled={isListening}
                     className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
                       isListening
-                        ? "bg-red-500/20 text-red-500 animate-pulse"
-                        : "text-[#6B5738] hover:bg-[#FFF8E7] hover:text-[#18120E]"
+                        ? "animate-pulse bg-destructive/15 text-destructive"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                     }`}
                     title={isListening ? "Listening…" : "Voice input"}
+                    aria-label={isListening ? "Listening for meal description" : "Enter meal description by voice"}
                   >
                     {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowScanner(true)}
-                    className="flex h-7 w-7 items-center justify-center rounded-md text-[#6B5738] transition-colors hover:bg-[#FFF8E7] hover:text-[#18120E]"
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                     title="Scan barcode or nutrition label"
+                    aria-label="Scan barcode or nutrition label"
                   >
                     <Camera className="h-4 w-4" />
                   </button>
                 </div>
               </div>
               {voiceError && (
-                <p className="text-[11px] text-rose-400">{voiceError}</p>
+                <p className="text-xs text-destructive" role="alert">{voiceError}</p>
               )}
 
               {/* Parse button */}
               <button
+                type="button"
                 onClick={() => handleParse(0)}
                 disabled={!input.trim() || isLoading || isSubmitting}
-                className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-[#18120E] bg-[#DFFF35] py-2.5 text-sm font-semibold text-[#18120E] shadow-[4px_4px_0_#18120E] transition-all hover:bg-[#00C8FF] hover:shadow-[2px_2px_0_#18120E] disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-primary w-full gap-2 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Analyzing…{retryCount > 0 && ` (retry ${retryCount}/${MAX_RETRIES})`}
+                    <span role="status" aria-live="polite">
+                      Analyzing…{retryCount > 0 && ` (retry ${retryCount}/${MAX_RETRIES})`}
+                    </span>
                   </>
                 ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" />
-                    Parse with AI
-                  </>
+                  "Review nutrition"
                 )}
               </button>
             </>
           ) : (
-            <form onSubmit={handleManualSubmit} className="space-y-3">
+            <form onSubmit={handleManualSubmit} className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6B5738]">
-                  Meal name
-                </label>
+                <label htmlFor="manual-meal-name" className="smallcaps mb-1.5 block">Meal name</label>
                 <input
+                  id="manual-meal-name"
                   value={manualMeal.name}
                   onChange={(e) => handleManualChange("name", e.target.value)}
                   placeholder="e.g. Chicken rice bowl"
-                  className="w-full rounded-lg border-2 border-[#18120E]/20 bg-[#FFF0B8] px-3.5 py-2.5 text-sm text-[#18120E] outline-none transition-colors placeholder:text-[#8A7350] focus:border-[#18120E] focus:ring-2 focus:ring-[#DFFF35]/70"
+                  className={FIELD_CLASS}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                {MANUAL_MACRO_FIELDS.map((field) => (
+              {/* Calories — full width, the field that gates submit */}
+              <label className="block">
+                <span className="smallcaps mb-1.5 block">
+                  {CALORIES_FIELD.label} <span className="normal-case tracking-normal text-muted-foreground/70">({CALORIES_FIELD.unit})</span>
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  inputMode="decimal"
+                  value={manualMeal[CALORIES_FIELD.key]}
+                  onChange={(e) => handleManualChange(CALORIES_FIELD.key, e.target.value)}
+                  className={NUM_FIELD_CLASS}
+                />
+              </label>
+
+              {/* Macros — 3-col row */}
+              <div className="grid grid-cols-3 gap-2">
+                {MACRO_ROW_FIELDS.map((field) => (
                   <label key={field.key} className="block">
-                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B5738]">
-                      {field.label}{field.required ? " *" : ""} <span className="normal-case tracking-normal text-[#8A7350]">({field.unit})</span>
+                    <span className="smallcaps mb-1 block">
+                      {field.label} <span className="normal-case tracking-normal text-muted-foreground/70">({field.unit})</span>
                     </span>
                     <input
                       type="number"
@@ -501,37 +547,72 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                       inputMode="decimal"
                       value={manualMeal[field.key]}
                       onChange={(e) => handleManualChange(field.key, e.target.value)}
-                      className="h-9 w-full rounded-lg border-2 border-[#18120E]/20 bg-[#FFF8E7] px-2.5 text-sm text-[#18120E] outline-none transition-colors focus:border-[#18120E] focus:ring-2 focus:ring-[#DFFF35]/70"
+                      className={NUM_FIELD_CLASS}
                     />
                   </label>
                 ))}
               </div>
 
+              {/* Micros — collapsed behind a disclosure */}
+              <div className="border-t border-border pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowMicros((v) => !v)}
+                  aria-expanded={showMicros}
+                  aria-controls="quick-log-micronutrients"
+                  className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {showMicros ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                  More detail
+                </button>
+                {showMicros && (
+                  <div id="quick-log-micronutrients" className="mt-3 grid grid-cols-3 gap-2">
+                    {MICRO_FIELDS.map((field) => (
+                      <label key={field.key} className="block">
+                        <span className="smallcaps mb-1 block">
+                          {field.label} <span className="normal-case tracking-normal text-muted-foreground/70">({field.unit})</span>
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          inputMode="decimal"
+                          value={manualMeal[field.key]}
+                          onChange={(e) => handleManualChange(field.key, e.target.value)}
+                          className={NUM_FIELD_CLASS}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <button
                 type="submit"
                 disabled={!manualMeal.name.trim() || !manualMeal.calories.trim() || isSubmitting}
-                className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-[#18120E] bg-[#00C875] py-2.5 text-sm font-semibold text-[#18120E] shadow-[4px_4px_0_#18120E] transition-all hover:bg-[#DFFF35] hover:shadow-[2px_2px_0_#18120E] disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-primary w-full gap-2 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardPenLine className="h-4 w-4" />}
-                Log manual meal
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Log meal
               </button>
             </form>
           )}
 
           {/* Error */}
           {mode === "ai" && error && (
-            <div className="rounded-lg border border-rose-500/20 bg-rose-500/[0.07] p-3.5 space-y-2">
+            <div role="alert" className="rounded-sm border border-destructive/25 bg-destructive/5 p-3.5 space-y-2">
               <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm text-rose-300 font-medium">Failed to parse</p>
-                  <p className="text-xs text-rose-400/70 mt-0.5">{error}</p>
+                  <p className="text-sm text-destructive font-medium">Failed to parse</p>
+                  <p className="text-xs text-destructive/80 mt-0.5">{error}</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => handleParse(0)}
                 disabled={isLoading}
-                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-rose-500/20 py-1.5 text-xs text-rose-300 hover:bg-rose-500/10 transition-colors"
+                className="flex w-full items-center justify-center gap-1.5 rounded-sm border border-destructive/25 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
               >
                 <RotateCcw className="h-3 w-3" />
                 Try Again
@@ -541,60 +622,64 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
 
           {/* Parsed results */}
           {mode === "ai" && showParsed && parsedFoods.length > 0 && (
-            <div className="overflow-hidden rounded-lg border-2 border-[#18120E]/18 bg-[#FFF0B8]">
-              <div className="flex items-center justify-between border-b border-black/[0.08] px-3.5 py-2.5">
-                <span className="text-xs font-medium text-[#3A2A1B]">Detected items</span>
-                <button onClick={() => setShowParsed(false)} className="text-[#6B5738] transition-colors hover:text-[#18120E]">
+            <div className="border-t border-border pt-3">
+              <div className="flex items-center justify-between pb-1">
+                <span className="smallcaps">Detected items</span>
+                <button type="button" aria-label="Dismiss detected items" onClick={() => setShowParsed(false)} className="text-muted-foreground transition-colors hover:text-foreground">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <div className="max-h-[140px] divide-y divide-black/[0.06] overflow-y-auto">
+              <div className="max-h-[140px] overflow-y-auto">
                 {parsedFoods.map((food, i) => (
-                  <div key={i} className="flex items-center justify-between px-3.5 py-2">
+                  <div key={i} className="ledger-row">
                     <div>
-                      <p className="text-sm text-[#2A2017]">{food.name}</p>
-                      <p className="text-[11px] text-[#6B5738]">
-                        P:{food.protein ?? 0}g · C:{food.carbs ?? 0}g · F:{food.fat ?? 0}g
+                      <p className="text-sm text-foreground">{food.name}</p>
+                      <p className="num text-[11px] text-muted-foreground">
+                        P:{food.protein ?? 0}g &middot; C:{food.carbs ?? 0}g &middot; F:{food.fat ?? 0}g
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="num text-sm font-semibold text-[#2A2017]">{food.calories}</p>
-                      <p className="text-[11px] font-semibold text-[#00895A]">{Math.round(food.confidence * 100)}%</p>
+                      <p className="num text-sm font-semibold text-foreground">{food.calories}</p>
+                      <p className="num text-[11px] font-semibold" style={{ color: "var(--ledger-green)" }}>
+                        {Math.round(food.confidence * 100)}%
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-between border-t border-black/[0.08] px-3.5 py-2.5">
-                <span className="num text-sm font-semibold text-[#2A2017]">Total: {totalCal} kcal</span>
-                <button
-                  onClick={handleConfirm}
-                  disabled={isSubmitting}
-                  className="flex items-center gap-1.5 rounded-lg border border-[#18120E] bg-[#00C875] px-3 py-1.5 text-xs font-semibold text-[#18120E] transition-colors hover:bg-[#DFFF35] disabled:opacity-40"
-                >
-                  {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                  Log Meal
-                </button>
+              <div className="flex items-baseline justify-between border-t-2 border-foreground pt-2.5">
+                <span className="smallcaps">Total</span>
+                <span className="num-display text-base text-foreground">{totalCal} kcal</span>
               </div>
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={isSubmitting}
+                className="btn-primary mt-3 w-full gap-1.5 disabled:opacity-40"
+              >
+                {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                Log this meal
+              </button>
             </div>
           )}
 
           {/* Submit error */}
           {submitError && (
-            <div className="flex items-start gap-2 rounded-lg border border-rose-500/20 bg-rose-500/[0.07] p-3">
-              <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-rose-300">{submitError}</p>
+            <div role="alert" className="flex items-start gap-2 rounded-sm border border-destructive/25 bg-destructive/5 p-3">
+              <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-xs text-destructive">{submitError}</p>
             </div>
           )}
 
           {/* Popular foods */}
           {mode === "ai" && (isLoadingPopular || popularFoods.length > 0) && (
-            <div className="space-y-2 border-t border-black/[0.08] pt-1">
-              <div className="flex items-center gap-1.5 text-[11px] text-[#6B5738]">
+            <div className="space-y-2 border-t border-border pt-1">
+              <div className="smallcaps flex items-center gap-1.5">
                 <TrendingUp className="h-3 w-3" />
                 Popular
               </div>
               {isLoadingPopular ? (
-                <div className="flex items-center gap-2 text-xs text-gray-300">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" />
                   Loading…
                 </div>
@@ -603,13 +688,14 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                   {popularFoods.map((food) => (
                     <button
                       key={food.id}
+                      type="button"
                       onClick={() => { setInput(food.originalText); setIsExpanded(false); }}
                       disabled={isSubmitting}
                       title={`${food.calories} kcal · Used ${food.hitCount}×`}
-                      className="rounded-full border border-black/[0.12] bg-[#FFF0B8] px-2.5 py-0.5 text-[11px] text-[#3A2A1B] transition-colors hover:border-black/[0.24] hover:bg-[#DFFF35] hover:text-[#18120E] disabled:opacity-40"
+                      className="pill normal-case tracking-normal font-normal transition-colors hover:bg-secondary disabled:opacity-40"
                     >
                       {food.name}
-                      <span className="ml-1 text-[#6B5738]">{food.calories}</span>
+                      <span className="num text-muted-foreground">{food.calories}</span>
                     </button>
                   ))}
                 </div>
@@ -618,7 +704,8 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
           )}
 
           {/* Quick add */}
-          <div className="space-y-2 border-t border-black/[0.08] pt-1">
+          <div className="space-y-2 border-t border-border pt-1">
+            <p className="smallcaps">One-tap foods</p>
             <div className="flex flex-wrap gap-1.5">
               {[
                 { label: "Coffee", cal: 5 },
@@ -628,11 +715,12 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
               ].map(({ label, cal }) => (
                 <button
                   key={label}
+                  type="button"
                   onClick={() => handleQuickAdd(label, cal)}
                   disabled={isSubmitting}
-                  className="rounded-full border border-black/[0.12] bg-[#FFF8E7] px-2.5 py-0.5 text-[11px] text-[#3A2A1B] transition-colors hover:border-black/[0.24] hover:bg-[#FFE8A8] hover:text-[#18120E] disabled:opacity-40"
+                  className="pill normal-case tracking-normal font-normal transition-colors hover:bg-secondary disabled:opacity-40"
                 >
-                  {label} <span className="text-[#6B5738]">{cal}</span>
+                  {label} <span className="num text-muted-foreground">{cal}</span>
                 </button>
               ))}
             </div>
@@ -640,16 +728,19 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
 
           {/* Suggestions toggle */}
           {mode === "ai" && (
-          <div className="border-t border-black/[0.08] pt-1">
+          <div className="border-t border-border pt-1">
             <button
+              type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-1 text-[11px] text-[#6B5738] transition-colors hover:text-[#18120E]"
+              aria-expanded={isExpanded}
+              aria-controls="quick-log-examples"
+              className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
             >
               {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               {isExpanded ? "Hide examples" : "Show example phrases"}
             </button>
             {isExpanded && (
-              <div className="mt-2 space-y-1">
+              <div id="quick-log-examples" className="mt-2 space-y-1">
                 {[
                   "Had a grilled chicken salad with avocado and olive oil dressing",
                   "Coffee with oat milk and a banana",
@@ -659,8 +750,9 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                 ].map((s, i) => (
                   <button
                     key={i}
+                    type="button"
                     onClick={() => { setInput(s); setIsExpanded(false); }}
-                    className="block w-full rounded px-2 py-1 text-left text-[11px] text-[#6B5738] transition-colors hover:bg-[#FFE8A8] hover:text-[#18120E]"
+                    className="block w-full rounded-sm px-2 py-1 text-left text-[11px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                   >
                     &ldquo;{s}&rdquo;
                   </button>
@@ -670,7 +762,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
           </div>
           )}
         </div>
-      </div>
+      </section>
 
       {showScanner && (
         <ScannerModal

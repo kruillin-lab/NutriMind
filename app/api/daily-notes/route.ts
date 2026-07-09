@@ -1,21 +1,20 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { Prisma } from "@prisma/client";
+import {
+  ApiError,
+  dayRange,
+  handleRoute,
+  requireUserId,
+} from "@/src/lib/api-helpers";
 
 export async function GET(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to fetch daily notes", async () => {
+    const userId = await requireUserId();
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
-    const date = dateParam ? new Date(dateParam) : new Date();
-    date.setHours(0, 0, 0, 0);
-    const nextDay = new Date(date);
-    nextDay.setDate(nextDay.getDate() + 1);
+    const { start: date, end: nextDay } = dayRange(dateParam);
 
     const dailyLog = await prisma.dailyLog.findFirst({
       where: {
@@ -25,33 +24,25 @@ export async function GET(req: NextRequest) {
       select: { id: true, notes: true },
     });
 
-    return NextResponse.json({
+    return {
       notes: dailyLog?.notes || "",
       logId: dailyLog?.id || null,
-    });
-  } catch (error) {
-    console.error("Error fetching daily notes:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch daily notes" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }
 
 export async function PUT(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to save daily notes", async () => {
+    const userId = await requireUserId();
 
     const body = await req.json();
     const { notes, date } = body;
 
-    const noteDate = date ? new Date(date) : new Date();
-    noteDate.setHours(0, 0, 0, 0);
-    const nextDay = new Date(noteDate);
-    nextDay.setDate(nextDay.getDate() + 1);
+    if (typeof notes !== "string" || notes.length > 10000) {
+      throw new ApiError(400, "Notes must be a string of at most 10000 characters");
+    }
+
+    const { start: noteDate, end: nextDay } = dayRange(date);
 
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       let dailyLog = await tx.dailyLog.findFirst({
@@ -84,12 +75,6 @@ export async function PUT(req: NextRequest) {
       return dailyLog;
     });
 
-    return NextResponse.json({ success: true, notes: result.notes });
-  } catch (error) {
-    console.error("Error saving daily notes:", error);
-    return NextResponse.json(
-      { error: "Failed to save daily notes" },
-      { status: 500 }
-    );
-  }
+    return { success: true, notes: result.notes };
+  });
 }

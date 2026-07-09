@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2, Save, BookOpen } from "lucide-react";
@@ -66,15 +64,14 @@ export function DailyJournal({ initialDate }: DailyJournalProps) {
   const hasChanges = notes !== originalNotes;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <BookOpen className="h-5 w-5 text-indigo-500" />
-          Daily Journal
-        </CardTitle>
-      </CardHeader>
+    <section className="surface overflow-hidden">
+      <div className="foil" />
+      <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+        <BookOpen className="h-4 w-4" style={{ color: "var(--brass)" }} />
+        <h3 className="smallcaps">Daily Journal</h3>
+      </div>
 
-      <CardContent className="space-y-3">
+      <div className="space-y-3 px-5 py-4">
         {loading ? (
           <div className="text-center py-4 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
@@ -83,7 +80,7 @@ export function DailyJournal({ initialDate }: DailyJournalProps) {
         ) : (
           <>
             <div>
-              <Label htmlFor="journal-notes" className="text-xs text-muted-foreground">
+              <Label htmlFor="journal-notes" className="smallcaps">
                 How are you feeling today? Note your mood, energy, hunger, or anything else.
               </Label>
               <Textarea
@@ -91,18 +88,18 @@ export function DailyJournal({ initialDate }: DailyJournalProps) {
                 placeholder="Feeling energetic today. Had a good workout. Not too hungry in the evening..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="min-h-[100px] resize-none mt-2"
+                className="min-h-[100px] resize-none mt-2 rounded-sm"
               />
             </div>
 
             <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
+              <p className="num text-xs text-muted-foreground">
                 {notes.length > 0 ? `${notes.length} characters` : "No notes yet"}
               </p>
-              <Button
+              <button
                 onClick={handleSave}
                 disabled={saving || !hasChanges}
-                size="sm"
+                className="btn-primary h-8 px-4 text-xs disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {saving ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -110,11 +107,11 @@ export function DailyJournal({ initialDate }: DailyJournalProps) {
                   <Save className="mr-2 h-4 w-4" />
                 )}
                 {saved ? "Saved!" : "Save"}
-              </Button>
+              </button>
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Scale, Plus, Trash2, TrendingDown, TrendingUp } from "lucide-react";
@@ -128,6 +126,8 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
         })
         .join(" ");
 
+    const pathD = toPath(points);
+    const areaD = `${pathD} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`;
     const rawDots = points.map((p, i) => ({
       x: (i / (points.length - 1)) * chartWidth,
       y: chartHeight - ((p.weightKg - minWeight) / range) * chartHeight,
@@ -136,48 +136,48 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
     const showSma28 = entries.length >= 14;
 
     return (
-      <div className="mt-4 p-3 bg-slate-50 rounded-lg">
-        <div className="flex justify-between text-xs text-muted-foreground mb-2">
-          <span>{minWeight.toFixed(1)} kg</span>
-          <span>{maxWeight.toFixed(1)} kg</span>
+      <div className="mt-4 rounded-sm border border-border bg-secondary p-3">
+        <div className="flex justify-between smallcaps mb-2">
+          <span className="num">{minWeight.toFixed(1)} kg</span>
+          <span className="num">{maxWeight.toFixed(1)} kg</span>
         </div>
-        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-28">
-          <path
-            d={toPath(points)}
-            fill="none"
-            stroke="hsl(142, 76%, 36%)"
-            strokeWidth="1"
-            strokeOpacity="0.35"
-          />
+        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-28" preserveAspectRatio="none">
+          <line x1="0" y1={chartHeight} x2={chartWidth} y2={chartHeight} stroke="rgba(23,20,13,0.08)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          <line x1="0" y1={chartHeight / 2} x2={chartWidth} y2={chartHeight / 2} stroke="rgba(23,20,13,0.08)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          <path d={areaD} fill="var(--brass)" fillOpacity="0.1" stroke="none" />
+          <path d={pathD} fill="none" stroke="var(--brass)" strokeWidth="1" strokeOpacity="0.45" vectorEffect="non-scaling-stroke" />
           {rawDots.map((p, i) => (
             <circle
               key={i}
               cx={p.x}
               cy={p.y}
-              r="1.2"
-              fill="hsl(142, 76%, 36%)"
-              fillOpacity="0.5"
+              r="1.6"
+              fill="var(--brass)"
+              fillOpacity="0.7"
+              vectorEffect="non-scaling-stroke"
             />
           ))}
           <path
             d={toPath(sma7)}
             fill="none"
-            stroke="hsl(199, 89%, 48%)"
+            stroke="var(--ledger-green)"
             strokeWidth="2"
             strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
           />
           {showSma28 && (
             <path
               d={toPath(sma28)}
               fill="none"
-              stroke="hsl(262, 83%, 58%)"
+              stroke="var(--chart-3)"
               strokeWidth="1.5"
               strokeDasharray="3 2"
               strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
             />
           )}
         </svg>
-        <div className="flex justify-between text-xs text-muted-foreground mt-2">
+        <div className="flex justify-between num text-xs text-muted-foreground mt-2">
           <span>{new Date(entries[0].date).toLocaleDateString()}</span>
           <span>{new Date(entries[entries.length - 1].date).toLocaleDateString()}</span>
         </div>
@@ -185,14 +185,14 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
           <span className="inline-flex items-center gap-1">
             <span
               className="inline-block w-3 h-[2px] rounded-full"
-              style={{ background: "hsl(142, 76%, 36%)", opacity: 0.5 }}
+              style={{ background: "var(--brass)", opacity: 0.7 }}
             />
             Daily
           </span>
           <span className="inline-flex items-center gap-1">
             <span
               className="inline-block w-3 h-[2px] rounded-full"
-              style={{ background: "hsl(199, 89%, 48%)" }}
+              style={{ background: "var(--ledger-green)" }}
             />
             7-day avg
           </span>
@@ -202,7 +202,7 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
                 className="inline-block w-3 h-[2px] rounded-full"
                 style={{
                   background:
-                    "repeating-linear-gradient(90deg, hsl(262, 83%, 58%) 0 3px, transparent 3px 5px)",
+                    "repeating-linear-gradient(90deg, var(--chart-3) 0 3px, transparent 3px 5px)",
                 }}
               />
               28-day avg
@@ -214,31 +214,40 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <Scale className="h-5 w-5 text-teal-500" />
-          Weight Tracker
-        </CardTitle>
-      </CardHeader>
+    <section className="surface overflow-hidden">
+      <div className="foil" />
+      <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+        <Scale className="h-4 w-4" style={{ color: "var(--brass)" }} />
+        <h3 className="smallcaps">Weight Tracker</h3>
+      </div>
 
-      <CardContent className="space-y-4">
+      <div className="space-y-4 px-5 py-4">
         {loading ? (
-          <div className="text-center py-4 text-muted-foreground">Loading weight data...</div>
+          <div className="text-center py-4 smallcaps">Loading weight data...</div>
         ) : (
           <>
             {/* Current Weight Display */}
             {latestWeight && (
-              <div className="flex items-center justify-between p-3 bg-teal-50 rounded-lg border border-teal-100">
+              <div className="flex items-center justify-between rounded-sm surface-raised p-4">
                 <div>
-                  <p className="text-2xl font-bold text-teal-700">{latestWeight.toFixed(1)} kg</p>
-                  <p className="text-xs text-teal-600">Current weight</p>
+                  <p className="num-display text-3xl text-foreground">
+                    {latestWeight.toFixed(1)} kg
+                  </p>
+                  <p className="smallcaps mt-1">Current weight</p>
                 </div>
                 {trend && (
-                  <div className={`flex items-center gap-1 ${trend.isDown ? "text-green-600" : trend.isUp ? "text-red-600" : "text-gray-500"}`}>
-                    {trend.isDown ? <TrendingDown className="h-5 w-5" /> : trend.isUp ? <TrendingUp className="h-5 w-5" /> : null}
-                    <span className="text-sm font-medium">{trend.diff} kg</span>
-                  </div>
+                  <span
+                    className={`flex items-center gap-1 ${
+                      trend.isDown ? "chip-green" : trend.isUp ? "chip-rose" : "num text-xs text-muted-foreground"
+                    }`}
+                  >
+                    {trend.isDown ? (
+                      <TrendingDown className="h-3.5 w-3.5" />
+                    ) : trend.isUp ? (
+                      <TrendingUp className="h-3.5 w-3.5" />
+                    ) : null}
+                    {trend.diff} kg
+                  </span>
                 )}
               </div>
             )}
@@ -247,11 +256,11 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
             {simpleChart()}
 
             {/* Log Weight Form */}
-            <div className="space-y-3 pt-2 border-t">
-              <Label className="text-sm font-medium">Log Weight</Label>
+            <div className="space-y-3 border-t border-border pt-4">
+              <Label className="smallcaps">Log Weight</Label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="weight" className="text-xs text-muted-foreground">
+                  <Label htmlFor="weight" className="smallcaps">
                     Weight (kg)
                   </Label>
                   <Input
@@ -263,10 +272,11 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
                     onChange={(e) => setWeightInput(e.target.value)}
                     min="20"
                     max="500"
+                    className="num rounded-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="date" className="text-xs text-muted-foreground">
+                  <Label htmlFor="date" className="smallcaps">
                     Date (optional)
                   </Label>
                   <Input
@@ -274,43 +284,45 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
                     type="date"
                     value={dateInput}
                     onChange={(e) => setDateInput(e.target.value)}
+                    className="num rounded-sm"
                   />
                 </div>
               </div>
-              <Button
+              <button
                 onClick={handleLogWeight}
                 disabled={isLogging || !weightInput}
-                className="w-full"
+                className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 {isLogging ? "Logging..." : "Log Weight"}
-              </Button>
+              </button>
             </div>
 
             {/* Recent Entries */}
             {entries.length > 0 && (
-              <div className="space-y-2 pt-2 border-t">
-                <Label className="text-sm font-medium">Recent Entries</Label>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
+              <div className="border-t border-border pt-2">
+                <Label className="smallcaps">Recent Entries</Label>
+                <div className="max-h-40 overflow-y-auto mt-2">
                   {[...entries].reverse().slice(0, 7).map((entry) => (
                     <div
                       key={entry.id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                      className="flex items-center justify-between border-t border-border py-2 first:border-t-0"
                     >
                       <div>
-                        <p className="font-medium text-sm">{entry.weightKg.toFixed(1)} kg</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="num text-sm font-medium text-foreground">
+                          {entry.weightKg.toFixed(1)} kg
+                        </p>
+                        <p className="num text-xs text-muted-foreground">
                           {new Date(entry.date).toLocaleDateString()}
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
                         onClick={() => handleDeleteEntry(entry.id)}
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                        className="h-8 w-8 flex items-center justify-center text-muted-foreground transition-colors hover:text-destructive"
+                        aria-label="Delete entry"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </Button>
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -318,7 +330,7 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Calendar, BarChart3 } from "lucide-react";
 
 interface DailyLog {
@@ -35,6 +33,11 @@ interface WeeklyViewProps {
   initialStats?: Stats;
   dailyTarget?: number;
 }
+
+// Vault ledger palette: green = under target (deposit), brass = over target (drawn down)
+const BAR_GREEN = "var(--ledger-green)";
+const BAR_BRASS = "var(--brass)";
+const BAR_EMPTY = "color-mix(in srgb, var(--foreground) 8%, transparent)";
 
 export function WeeklyView({
   initialLogs = [],
@@ -80,86 +83,82 @@ export function WeeklyView({
   };
 
   const getBarColor = (log: DailyLog) => {
-    if (log.caloriesConsumed === 0) return "bg-gray-200";
-    return log.isUnderTarget ? "bg-green-500" : "bg-red-500";
+    if (log.caloriesConsumed === 0) return BAR_EMPTY;
+    return log.isUnderTarget ? BAR_GREEN : BAR_BRASS;
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            <BarChart3 className="h-5 w-5 text-blue-500" />
-            {range === "week" ? "This Week" : "This Month"}
-          </CardTitle>
-          <div className="flex gap-1">
-            <Button
-              variant={range === "week" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setRange("week")}
-            >
-              Week
-            </Button>
-            <Button
-              variant={range === "month" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setRange("month")}
-            >
-              Month
-            </Button>
-          </div>
+    <section className="surface overflow-hidden">
+      <div className="foil" />
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <h3 className="flex items-center gap-2 smallcaps">
+          <BarChart3 className="h-4 w-4" style={{ color: "var(--brass)" }} />
+          {range === "week" ? "This Week" : "This Month"}
+        </h3>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setRange("week")}
+            className={range === "week" ? "btn-primary h-8 px-3 text-xs" : "btn-ghost h-8 px-3 text-xs"}
+          >
+            Week
+          </button>
+          <button
+            onClick={() => setRange("month")}
+            className={range === "month" ? "btn-primary h-8 px-3 text-xs" : "btn-ghost h-8 px-3 text-xs"}
+          >
+            Month
+          </button>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-4">
+      <div className="space-y-4 px-5 py-4">
         {loading ? (
           <div className="text-center py-8 text-muted-foreground">Loading...</div>
         ) : logs.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+            <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
             <p className="text-sm">No data yet. Start logging meals to see trends.</p>
           </div>
         ) : (
           <>
             {/* Stats Row */}
             {stats && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-xs text-blue-600">Avg Consumed</p>
-                  <p className="text-lg font-bold text-blue-700">{stats.avgConsumed}</p>
-                  <p className="text-xs text-blue-500">cal/day</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-px overflow-hidden border border-border bg-border">
+                <div className="bg-card p-3">
+                  <p className="smallcaps">Avg Consumed</p>
+                  <p className="num-display text-lg text-foreground">{stats.avgConsumed}</p>
+                  <p className="smallcaps">cal/day</p>
                 </div>
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <p className="text-xs text-green-600">Compliance</p>
-                  <p className="text-lg font-bold text-green-700">{stats.complianceRate}%</p>
-                  <p className="text-xs text-green-500">days under target</p>
+                <div className="bg-card p-3">
+                  <p className="smallcaps">Compliance</p>
+                  <p className="num-display text-lg text-foreground">{stats.complianceRate}%</p>
+                  <p className="smallcaps">days under target</p>
                 </div>
-                <div className="p-3 bg-purple-50 rounded-lg">
-                  <p className="text-xs text-purple-600">Avg Protein</p>
-                  <p className="text-lg font-bold text-purple-700">{stats.avgProtein}g</p>
-                  <p className="text-xs text-purple-500">per day</p>
+                <div className="bg-card p-3">
+                  <p className="smallcaps">Avg Protein</p>
+                  <p className="num-display text-lg text-foreground">{stats.avgProtein}g</p>
+                  <p className="smallcaps">per day</p>
                 </div>
-                <div className="p-3 bg-orange-50 rounded-lg">
-                  <p className="text-xs text-orange-600">Avg Carbs</p>
-                  <p className="text-lg font-bold text-orange-700">{stats.avgCarbs}g</p>
-                  <p className="text-xs text-orange-500">per day</p>
+                <div className="bg-card p-3">
+                  <p className="smallcaps">Avg Carbs</p>
+                  <p className="num-display text-lg text-foreground">{stats.avgCarbs}g</p>
+                  <p className="smallcaps">per day</p>
                 </div>
               </div>
             )}
 
-            {/* Bar Chart */}
+            {/* Bar Chart — ledger columns */}
             <div className="relative">
-              {/* Target line label */}
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>{dailyTarget} cal target</span>
-                <span>{maxCalories} cal max</span>
+              <div className="flex justify-between smallcaps mb-1">
+                <span className="num">{dailyTarget} cal target</span>
+                <span className="num">{maxCalories} cal max</span>
               </div>
 
-              <div className="flex items-end gap-1 h-[160px] border-b border-l border-gray-200 px-1 pb-0">
+              <div className="flex items-end gap-1 h-[160px] border-b-2 border-foreground px-1 pb-0">
                 {/* Target line */}
                 <div
-                  className="absolute left-0 right-0 border-t-2 border-dashed border-red-300"
-                  style={{ bottom: `${(dailyTarget / maxCalories) * 100}%` }}
+                  className="absolute left-0 right-0 border-t border-dashed"
+                  style={{ bottom: `${(dailyTarget / maxCalories) * 100}%`, borderColor: "var(--destructive)" }}
                 />
 
                 {logs.map((log) => {
@@ -174,17 +173,20 @@ export function WeeklyView({
                       style={{ height: "100%" }}
                     >
                       {/* Tooltip */}
-                      <div className="absolute bottom-full mb-2 hidden group-hover:block z-10 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                        <p className="font-semibold">{log.caloriesConsumed} cal</p>
-                        <p>P: {log.proteinG}g C: {log.carbsG}g F: {log.fatG}g</p>
+                      <div className="surface absolute bottom-full mb-2 hidden group-hover:block z-10 px-2 py-1 text-xs text-foreground whitespace-nowrap">
+                        <p className="num font-semibold">{log.caloriesConsumed} cal</p>
+                        <p className="num">P: {log.proteinG}g C: {log.carbsG}g F: {log.fatG}g</p>
                         {log.exerciseMinutes > 0 && (
-                          <p>Exercise: {log.exerciseMinutes}min</p>
+                          <p className="num">Exercise: {log.exerciseMinutes}min</p>
                         )}
                       </div>
 
                       <div
-                        className={`w-full rounded-t ${getBarColor(log)} transition-all hover:opacity-80`}
-                        style={{ height: `${Math.max(heightPct, 2)}%` }}
+                        className="w-full transition-opacity hover:opacity-80"
+                        style={{
+                          height: `${Math.max(heightPct, 2)}%`,
+                          backgroundColor: getBarColor(log),
+                        }}
                       />
                     </div>
                   );
@@ -196,7 +198,7 @@ export function WeeklyView({
                 {logs.map((log) => (
                   <div
                     key={log.id}
-                    className="flex-1 text-center text-[10px] text-muted-foreground truncate"
+                    className="num flex-1 text-center text-[10px] text-muted-foreground truncate"
                   >
                     {getDayLabel(log.date)}
                   </div>
@@ -204,28 +206,39 @@ export function WeeklyView({
               </div>
             </div>
 
+            {/* Totals — double rule */}
+            {stats && (
+              <div className="flex items-baseline justify-between border-t-2 border-foreground pt-3">
+                <span className="smallcaps">Days under target</span>
+                <span className="num-display text-xl text-foreground">
+                  {stats.daysUnderTarget}
+                  <span className="text-sm text-muted-foreground">/{stats.daysTotal}</span>
+                </span>
+              </div>
+            )}
+
             {/* Legend */}
-            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded bg-green-500" />
+            <div className="flex items-center justify-center gap-4 smallcaps">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3" style={{ backgroundColor: BAR_GREEN }} />
                 <span>Under target</span>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded bg-red-500" />
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3" style={{ backgroundColor: BAR_BRASS }} />
                 <span>Over target</span>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded bg-gray-200" />
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3" style={{ backgroundColor: BAR_EMPTY }} />
                 <span>No data</span>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-4 border-t-2 border-dashed border-red-300" />
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 border-t border-dashed" style={{ borderColor: "var(--destructive)" }} />
                 <span>Target line</span>
               </div>
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

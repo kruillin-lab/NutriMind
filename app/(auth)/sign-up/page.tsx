@@ -1,31 +1,45 @@
 import { SignUp } from "@clerk/nextjs";
+import { AuthFrame } from "../_components/AuthFrame";
 
 export const dynamic = "force-dynamic";
 
 export default function SignUpPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-black">
+    <AuthFrame
+      eyebrow="NutriMind Reserve · New account"
+      title="Open a calorie reserve."
+      description="Create a private nutrition ledger, establish a daily allowance, and carry deliberate choices forward instead of starting over each morning."
+    >
       <SignUp
         routing="hash"
         appearance={{
+          variables: {
+            colorPrimary: "#9A7B23",
+            colorBackground: "#FBF8F0",
+            colorText: "#17140D",
+            colorTextSecondary: "#6C6349",
+            colorInputBackground: "#FBF8F0",
+            colorInputText: "#17140D",
+            colorDanger: "#97271F",
+            colorNeutral: "#17140D",
+            borderRadius: "0.25rem",
+            fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+          },
           elements: {
             rootBox: "mx-auto",
-            card: "bg-white dark:bg-zinc-900 shadow-lg rounded-xl",
-            headerTitle: "text-zinc-900 dark:text-zinc-50",
-            headerSubtitle: "text-zinc-600 dark:text-zinc-400",
-            socialButtonsBlockButton: "border-zinc-300 dark:border-zinc-700",
-            socialButtonsBlockButtonText: "text-zinc-900 dark:text-zinc-50",
-            formFieldLabel: "text-zinc-700 dark:text-zinc-300",
-            formFieldInput:
-              "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50",
-            footerActionLink:
-              "text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400",
-            primaryButton:
-              "bg-emerald-600 hover:bg-emerald-700 text-white",
+            card: "surface",
+            headerTitle: "font-bold tracking-[-0.02em] text-foreground",
+            headerSubtitle: "text-muted-foreground",
+            socialButtonsBlockButton: "border-border",
+            socialButtonsBlockButtonText: "text-foreground",
+            formFieldLabel: "smallcaps text-foreground",
+            formFieldInput: "border-input bg-card text-foreground rounded-[0.25rem]",
+            footerActionLink: "text-[var(--brass-ink)] hover:text-foreground",
+            formButtonPrimary: "btn-primary",
           },
         }}
         forceRedirectUrl="/onboarding"
       />
-    </div>
+    </AuthFrame>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Bell, Loader2, CheckCircle, XCircle } from "lucide-react";
@@ -161,58 +160,53 @@ export function PushNotifications() {
 
   if (!isSupported) {
     return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg">Push Notifications</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
+      <section className="surface overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+          <Bell className="h-4 w-4 text-muted-foreground" />
+          <h3 className="smallcaps">Push Notifications</h3>
+        </div>
+        <div className="px-5 py-4">
           <div className="flex items-center gap-3 text-muted-foreground">
             <XCircle className="h-5 w-5" />
             <p className="text-sm">
               Push notifications are not supported in your browser
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     );
   }
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center h-20">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        </CardContent>
-      </Card>
+      <section className="surface p-6">
+        <div className="flex items-center justify-center h-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </section>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg">Push Notifications</CardTitle>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={isEnabled}
-              onCheckedChange={handleToggle}
-              disabled={subscribing}
-            />
-            <Label className="sr-only">Enable push notifications</Label>
-          </div>
+    <section className="surface overflow-hidden">
+      <div className="foil" />
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <div className="flex items-center gap-2">
+          <Bell className="h-4 w-4" style={{ color: "var(--brass)" }} />
+          <h3 className="smallcaps">Push Notifications</h3>
         </div>
-      </CardHeader>
-      <CardContent>
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={isEnabled}
+            onCheckedChange={handleToggle}
+            disabled={subscribing}
+          />
+          <Label className="sr-only">Enable push notifications</Label>
+        </div>
+      </div>
+      <div className="px-5 py-4">
         {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
+          <div className="mb-4 rounded-sm border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </div>
         )}
@@ -220,12 +214,12 @@ export function PushNotifications() {
         <div className="space-y-4">
           <div className="flex items-start gap-3">
             {isEnabled ? (
-              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+              <CheckCircle className="h-5 w-5 mt-0.5" style={{ color: "var(--ledger-green)" }} />
             ) : (
               <Bell className="h-5 w-5 text-muted-foreground mt-0.5" />
             )}
             <div>
-              <p className="text-sm font-medium">
+              <p className="text-sm font-medium text-foreground">
                 {isEnabled ? "Notifications enabled" : "Notifications disabled"}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -237,20 +231,20 @@ export function PushNotifications() {
           </div>
 
           {isEnabled && subscriptionInfo.length > 0 && (
-            <div className="pt-2 border-t">
-              <p className="text-xs font-medium text-muted-foreground mb-2">
+            <div className="border-t border-border pt-3">
+              <p className="smallcaps mb-2">
                 Active devices ({subscriptionInfo.length})
               </p>
-              <div className="space-y-2">
+              <div>
                 {subscriptionInfo.map((sub) => (
                   <div
                     key={sub.id}
-                    className="flex items-center justify-between text-xs p-2 bg-muted rounded"
+                    className="flex items-center justify-between border-t border-border py-2 first:border-t-0 text-xs"
                   >
-                    <span className="truncate max-w-[200px]">
+                    <span className="truncate max-w-[200px] text-foreground">
                       {sub.userAgent || "Unknown device"}
                     </span>
-                    <span className="text-muted-foreground">
+                    <span className="num text-muted-foreground">
                       {new Date(sub.createdAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -266,7 +260,7 @@ export function PushNotifications() {
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

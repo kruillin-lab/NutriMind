@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Loader2, RotateCcw, Save, User, Target, Settings as SettingsIcon, Clock, Download, Bell, Activity } from "lucide-react";
+import { AlertTriangle, Loader2, RotateCcw, Save, Clock, Download } from "lucide-react";
 import { PushNotifications } from "@/app/dashboard/_components/PushNotifications";
 import { HealthIntegrations } from "./HealthIntegrations";
 
@@ -48,6 +47,27 @@ interface SettingsClientProps {
   initialMetabolic: MetabolicSummary | null;
 }
 
+type FeedbackArea = "profile" | "goals" | "bank" | "notifications" | "maintenance";
+
+interface FeedbackState {
+  area: FeedbackArea;
+  message: string;
+  tone: "success" | "notice" | "error";
+}
+
+function SectionFeedback({ area, feedback }: { area: FeedbackArea; feedback: FeedbackState | null }) {
+  if (!feedback || feedback.area !== area) return null;
+
+  return (
+    <p
+      role={feedback.tone === "error" ? "alert" : "status"}
+      className={`border-l-2 px-3 py-2 text-sm ${feedback.tone === "error" ? "border-destructive text-destructive" : "border-[var(--brass)] text-foreground"}`}
+    >
+      {feedback.message}
+    </p>
+  );
+}
+
 export function SettingsClient({
   initialProfile,
   initialCalorieBank,
@@ -56,18 +76,18 @@ export function SettingsClient({
   const [profile, setProfile] = useState<ProfileData>(initialProfile);
   const [calorieBank, setCalorieBank] = useState<CalorieBankData>(initialCalorieBank);
   const metabolic = initialMetabolic;
-  const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "goals" | "bank" | "notifications" | "export" | "integrations">("profile");
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [savingArea, setSavingArea] = useState<Exclude<FeedbackArea, "maintenance"> | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [expireResult, setExpireResult] = useState<string | null>(null);
   const [isExpiring, setIsExpiring] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [exportDays, setExportDays] = useState(90);
+  const isSaving = savingArea !== null;
 
   const handleSaveProfile = async () => {
-    setIsSaving(true);
-    setSaveMessage(null);
+    setSavingArea("profile");
+    setFeedback(null);
     try {
       const response = await fetch("/api/settings", {
         method: "PUT",
@@ -76,21 +96,21 @@ export function SettingsClient({
       });
 
       if (response.ok) {
-        setSaveMessage("Profile saved successfully!");
+        setFeedback({ area: "profile", message: "Profile saved.", tone: "success" });
       } else {
-        setSaveMessage("Failed to save profile.");
+        setFeedback({ area: "profile", message: "Failed to save profile.", tone: "error" });
       }
     } catch (error) {
       console.error("Error saving profile:", error);
-      setSaveMessage("Error saving profile.");
+      setFeedback({ area: "profile", message: "Error saving profile.", tone: "error" });
     } finally {
-      setIsSaving(false);
+      setSavingArea(null);
     }
   };
 
   const handleSaveGoals = async () => {
-    setIsSaving(true);
-    setSaveMessage(null);
+    setSavingArea("goals");
+    setFeedback(null);
     try {
       const response = await fetch("/api/settings", {
         method: "PUT",
@@ -99,21 +119,21 @@ export function SettingsClient({
       });
 
       if (response.ok) {
-        setSaveMessage("Goals saved successfully!");
+        setFeedback({ area: "goals", message: "Goals saved.", tone: "success" });
       } else {
-        setSaveMessage("Failed to save goals.");
+        setFeedback({ area: "goals", message: "Failed to save goals.", tone: "error" });
       }
     } catch (error) {
       console.error("Error saving goals:", error);
-      setSaveMessage("Error saving goals.");
+      setFeedback({ area: "goals", message: "Error saving goals.", tone: "error" });
     } finally {
-      setIsSaving(false);
+      setSavingArea(null);
     }
   };
 
   const handleSaveBank = async () => {
-    setIsSaving(true);
-    setSaveMessage(null);
+    setSavingArea("bank");
+    setFeedback(null);
     try {
       const response = await fetch("/api/settings", {
         method: "PUT",
@@ -122,15 +142,46 @@ export function SettingsClient({
       });
 
       if (response.ok) {
-        setSaveMessage("Calorie bank settings saved!");
+        setFeedback({ area: "bank", message: "Calorie bank settings saved.", tone: "success" });
       } else {
-        setSaveMessage("Failed to save bank settings.");
+        setFeedback({ area: "bank", message: "Failed to save bank settings.", tone: "error" });
       }
     } catch (error) {
       console.error("Error saving bank settings:", error);
-      setSaveMessage("Error saving bank settings.");
+      setFeedback({ area: "bank", message: "Error saving bank settings.", tone: "error" });
     } finally {
-      setIsSaving(false);
+      setSavingArea(null);
+    }
+  };
+
+  const handleToggleDigest = async () => {
+    const next = !profile.emailDigest;
+    setSavingArea("notifications");
+    setFeedback(null);
+
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile: { emailDigest: next } }),
+      });
+
+      if (!response.ok) {
+        setFeedback({ area: "notifications", message: "Failed to update the daily digest.", tone: "error" });
+        return;
+      }
+
+      setProfile((current) => ({ ...current, emailDigest: next }));
+      setFeedback({
+        area: "notifications",
+        message: next ? "Daily digest enabled." : "Daily digest disabled.",
+        tone: "success",
+      });
+    } catch (error) {
+      console.error("Error updating daily digest:", error);
+      setFeedback({ area: "notifications", message: "Error updating the daily digest.", tone: "error" });
+    } finally {
+      setSavingArea(null);
     }
   };
 
@@ -163,12 +214,12 @@ export function SettingsClient({
   const handleResetCalorieBank = async () => {
     if (!resetConfirm) {
       setResetConfirm(true);
-      setSaveMessage("Click reset again to confirm. This clears your bank balance totals, not meal history.");
+      setFeedback({ area: "maintenance", message: "Click reset again to confirm. This clears your bank balance totals, not meal history.", tone: "notice" });
       return;
     }
 
     setIsResetting(true);
-    setSaveMessage(null);
+    setFeedback(null);
 
     try {
       const response = await fetch("/api/calorie-bank/reset", {
@@ -183,564 +234,548 @@ export function SettingsClient({
           totalBanked: data.calorieBank.totalBanked,
           totalSpent: data.calorieBank.totalSpent,
         }));
-        setSaveMessage("Calorie bank reset to zero.");
+        setFeedback({ area: "maintenance", message: "Calorie bank reset to zero.", tone: "success" });
         setResetConfirm(false);
       } else {
-        setSaveMessage("Failed to reset calorie bank.");
+        setFeedback({ area: "maintenance", message: "Failed to reset calorie bank.", tone: "error" });
       }
     } catch (error) {
       console.error("Error resetting calorie bank:", error);
-      setSaveMessage("Error resetting calorie bank.");
+      setFeedback({ area: "maintenance", message: "Error resetting calorie bank.", tone: "error" });
     } finally {
       setIsResetting(false);
     }
   };
 
-  const tabs = [
-    { id: "profile" as const, label: "Profile", icon: User },
-    { id: "goals" as const, label: "Goals", icon: Target },
-    { id: "bank" as const, label: "Calorie Bank", icon: SettingsIcon },
-    { id: "notifications" as const, label: "Notifications", icon: Bell },
-    { id: "integrations" as const, label: "Integrations", icon: Activity },
-    { id: "export" as const, label: "Export", icon: Download },
-  ];
-
-  const saveMessageClass = saveMessage?.startsWith("Click reset")
-    ? "border border-[#FFB000]/30 bg-[#FFB000]/14 text-[#FFE8A8]"
-    : saveMessage?.includes("success") || saveMessage?.includes("saved") || saveMessage === "Calorie bank reset to zero."
-      ? "border border-[#DFFF35]/30 bg-[#DFFF35]/18 text-[#DFFF35]"
-      : "border border-[#FF5A3D]/30 bg-[#FF5A3D]/14 text-[#FFB4A4]";
-
   return (
-    <div className="space-y-6">
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-1 rounded-lg border-2 border-[#18120E] bg-[#FFF8E7] p-1 shadow-[5px_5px_0_#18120E]">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setActiveTab(tab.id);
-              setSaveMessage(null);
-            }}
-            className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? "border-[#18120E] bg-[#DFFF35] text-[#18120E] shadow-[2px_2px_0_#18120E]"
-                : "border-transparent text-[#6B5738] hover:bg-[#FFE8A8] hover:text-[#18120E]"
-            }`}
-          >
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Save Message */}
-      {saveMessage && (
-        <div className={`p-3 rounded-lg text-sm ${saveMessageClass}`}>
-          {saveMessage}
+    <div className="grid items-start gap-8 lg:grid-cols-[13rem_minmax(0,1fr)]">
+      <aside className="space-y-4 lg:sticky lg:top-24">
+        <div className="surface overflow-hidden">
+          <div className="foil" />
+          <div className="p-4">
+            <p className="smallcaps">Reserve position</p>
+            <p className="num-display mt-3 text-3xl text-foreground">
+              {calorieBank.currentBalance >= 0 ? "+" : "−"}
+              {Math.abs(Math.round(calorieBank.currentBalance)).toLocaleString()}
+            </p>
+            <p className="smallcaps mt-1">kcal available</p>
+            <div className="mt-4 border-t border-border pt-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="smallcaps">Daily limit</span>
+                <span className="num text-xs text-foreground">{calorieBank.dailyTarget.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
 
-      {/* Profile Tab */}
-      {activeTab === "profile" && (
-        <Card className="surface border-0 shadow-none">
-          <CardHeader>
-            <CardTitle>Physical Profile</CardTitle>
-            <CardDescription>
-              Update your height, birth date, gender, and activity level.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="height">Height (cm)</Label>
-                <Input
-                  id="height"
-                  type="number"
-                  value={profile.heightCm}
-                  onChange={(e) =>
-                    setProfile({ ...profile, heightCm: parseFloat(e.target.value) || 0 })
-                  }
-                  min="100"
-                  max="250"
-                />
-              </div>
-              <div>
-                <Label htmlFor="birthDate">Birth Date</Label>
-                <Input
-                  id="birthDate"
-                  type="date"
-                  value={profile.birthDate}
-                  onChange={(e) => setProfile({ ...profile, birthDate: e.target.value })}
-                />
-              </div>
-            </div>
+        <nav aria-label="Account controls" className="surface p-2">
+          {[
+            ["#identity", "Identity"],
+            ["#goals", "Goal mandate"],
+            ["#reserve", "Reserve rules"],
+            ["#notifications", "Notifications"],
+            ["#integrations", "Integrations"],
+            ["#statements", "Statements"],
+          ].map(([href, label]) => (
+            <a key={href} href={href} className="smallcaps block px-3 py-2.5 transition-colors hover:bg-secondary hover:text-foreground">
+              {label}
+            </a>
+          ))}
+        </nav>
+      </aside>
 
+      <div className="min-w-0 space-y-6">
+      {/* Profile */}
+      <section id="identity" className="surface scroll-mt-24 overflow-hidden p-5 sm:p-7">
+        <p className="smallcaps text-foreground">01 · Account identity</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">Profile</h2>
+        <p className="mt-1 text-[15px] text-muted-foreground">
+          Height, birth date, gender, and activity level.
+        </p>
+        <div className="mt-6 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <Label htmlFor="gender">Gender</Label>
-              <Select
-                value={profile.gender}
-                onValueChange={(v) => setProfile({ ...profile, gender: v || "OTHER" })}
-              >
-                <SelectTrigger id="gender">
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MALE">Male</SelectItem>
-                  <SelectItem value="FEMALE">Female</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="activityLevel">Activity Level</Label>
-              <Select
-                value={profile.activityLevel}
-                onValueChange={(v) => setProfile({ ...profile, activityLevel: v || "SEDENTARY" })}
-              >
-                <SelectTrigger id="activityLevel">
-                  <SelectValue placeholder="Select activity level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="SEDENTARY">Sedentary (little or no exercise)</SelectItem>
-                  <SelectItem value="LIGHT">Lightly active (1-3 days/week)</SelectItem>
-                  <SelectItem value="MODERATE">Moderately active (3-5 days/week)</SelectItem>
-                  <SelectItem value="ACTIVE">Very active (6-7 days/week)</SelectItem>
-                  <SelectItem value="VERY_ACTIVE">Extra active (very hard exercise)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="timezone">Timezone</Label>
+              <Label htmlFor="height" className="smallcaps">Height (cm)</Label>
               <Input
-                id="timezone"
-                value={profile.timezone}
-                onChange={(e) => setProfile({ ...profile, timezone: e.target.value })}
-                placeholder={Intl.DateTimeFormat().resolvedOptions().timeZone}
+                id="height"
+                type="number"
+                value={profile.heightCm}
+                onChange={(e) =>
+                  setProfile({ ...profile, heightCm: parseFloat(e.target.value) || 0 })
+                }
+                min="100"
+                max="250"
+                className="mt-1.5"
               />
             </div>
-
-            <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full">
-              {isSaving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-              Save Profile
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Goals Tab */}
-      {activeTab === "goals" && (
-        <Card className="surface border-0 shadow-none">
-          <CardHeader>
-            <CardTitle>Weight Goals</CardTitle>
-            <CardDescription>
-              Set your target weight and goal date.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="goalWeight">Goal Weight (kg)</Label>
-                <Input
-                  id="goalWeight"
-                  type="number"
-                  value={profile.goalWeightKg || ""}
-                  onChange={(e) =>
-                    setProfile({
-                      ...profile,
-                      goalWeightKg: e.target.value ? parseFloat(e.target.value) : null,
-                    })
-                  }
-                  min="30"
-                  max="300"
-                  placeholder="70"
-                />
-              </div>
-              <div>
-                <Label htmlFor="targetDate">Target Date</Label>
-                <Input
-                  id="targetDate"
-                  type="date"
-                  value={profile.targetDate}
-                  onChange={(e) => setProfile({ ...profile, targetDate: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <Button onClick={handleSaveGoals} disabled={isSaving} className="w-full">
-              {isSaving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-              Save Goals
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Calorie Bank Tab */}
-      {activeTab === "bank" && (
-        <Card className="surface border-0 shadow-none">
-          <CardHeader>
-            <CardTitle>Calorie Bank Settings</CardTitle>
-            <CardDescription>
-              Configure your daily calorie target and bank behavior.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: "Balance", value: calorieBank.currentBalance },
-                { label: "Banked", value: calorieBank.totalBanked },
-                { label: "Spent", value: calorieBank.totalSpent },
-              ].map((item) => (
-                <div key={item.label} className="rounded-lg border-2 border-[#18120E]/18 bg-[#FFF0B8] p-3 shadow-[2px_2px_0_#18120E]">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6B5738]">{item.label}</p>
-                  <p className="num mt-1 text-lg font-semibold text-[#18120E]">{Math.round(item.value)} kcal</p>
-                </div>
-              ))}
-            </div>
-
             <div>
-              <Label htmlFor="dailyTarget">Daily Calorie Target</Label>
+              <Label htmlFor="birthDate" className="smallcaps">Birth date</Label>
               <Input
-                id="dailyTarget"
+                id="birthDate"
+                type="date"
+                value={profile.birthDate}
+                onChange={(e) => setProfile({ ...profile, birthDate: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="gender" className="smallcaps">Gender</Label>
+            <Select
+              value={profile.gender}
+              onValueChange={(v) => setProfile({ ...profile, gender: v || "OTHER" })}
+            >
+              <SelectTrigger id="gender" className="mt-1.5">
+                <SelectValue placeholder="Select gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MALE">Male</SelectItem>
+                <SelectItem value="FEMALE">Female</SelectItem>
+                <SelectItem value="OTHER">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="activityLevel" className="smallcaps">Activity level</Label>
+            <Select
+              value={profile.activityLevel}
+              onValueChange={(v) => setProfile({ ...profile, activityLevel: v || "SEDENTARY" })}
+            >
+              <SelectTrigger id="activityLevel" className="mt-1.5">
+                <SelectValue placeholder="Select activity level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SEDENTARY">Sedentary (little or no exercise)</SelectItem>
+                <SelectItem value="LIGHT">Lightly active (1-3 days/week)</SelectItem>
+                <SelectItem value="MODERATE">Moderately active (3-5 days/week)</SelectItem>
+                <SelectItem value="ACTIVE">Very active (6-7 days/week)</SelectItem>
+                <SelectItem value="VERY_ACTIVE">Extra active (very hard exercise)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="timezone" className="smallcaps">Timezone</Label>
+            <Input
+              id="timezone"
+              value={profile.timezone}
+              onChange={(e) => setProfile({ ...profile, timezone: e.target.value })}
+              placeholder={Intl.DateTimeFormat().resolvedOptions().timeZone}
+              className="mt-1.5"
+            />
+          </div>
+
+          <Button onClick={handleSaveProfile} disabled={isSaving} aria-busy={savingArea === "profile"} className="btn-primary">
+            {savingArea === "profile" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Save profile
+          </Button>
+          <SectionFeedback area="profile" feedback={feedback} />
+        </div>
+      </section>
+
+      {/* Goals */}
+      <section id="goals" className="surface scroll-mt-24 overflow-hidden p-5 sm:p-7">
+        <p className="smallcaps text-foreground">02 · Goal mandate</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">Goals</h2>
+        <p className="mt-1 text-[15px] text-muted-foreground">
+          Target weight and goal date.
+        </p>
+        <div className="mt-6 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="goalWeight" className="smallcaps">Goal weight (kg)</Label>
+              <Input
+                id="goalWeight"
                 type="number"
-                value={calorieBank.dailyTarget}
+                value={profile.goalWeightKg || ""}
                 onChange={(e) =>
-                  setCalorieBank({
-                    ...calorieBank,
-                    dailyTarget: parseInt(e.target.value, 10) || 2000,
+                  setProfile({
+                    ...profile,
+                    goalWeightKg: e.target.value ? parseFloat(e.target.value) : null,
                   })
                 }
-                min="1000"
-                max="5000"
+                min="30"
+                max="300"
+                placeholder="70"
+                className="mt-1.5"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Your daily calorie budget. Underspent calories are banked.
-              </p>
             </div>
-
             <div>
-              <Label htmlFor="expireDays">Calorie Expiration (days)</Label>
+              <Label htmlFor="targetDate" className="smallcaps">Target date</Label>
               <Input
-                id="expireDays"
-                type="number"
-                value={calorieBank.expireAfterDays}
-                onChange={(e) =>
-                  setCalorieBank({
-                    ...calorieBank,
-                    expireAfterDays: parseInt(e.target.value, 10) || 30,
-                  })
-                }
-                min="1"
-                max="365"
+                id="targetDate"
+                type="date"
+                value={profile.targetDate}
+                onChange={(e) => setProfile({ ...profile, targetDate: e.target.value })}
+                className="mt-1.5"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Banked calories expire after this many days.
-              </p>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2">
+          <Button onClick={handleSaveGoals} disabled={isSaving} aria-busy={savingArea === "goals"} className="btn-primary">
+            {savingArea === "goals" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Save goals
+          </Button>
+          <SectionFeedback area="goals" feedback={feedback} />
+        </div>
+      </section>
+
+      {/* Calorie Bank */}
+      <section id="reserve" className="surface scroll-mt-24 overflow-hidden p-5 sm:p-7">
+        <p className="smallcaps text-foreground">03 · Reserve controls</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">Calorie bank</h2>
+        <p className="mt-1 text-[15px] text-muted-foreground">
+          Daily target and bank behavior.
+        </p>
+
+        <div className="mt-6">
+          <div className="ledger-row border-t-0">
+            <span className="smallcaps">Balance</span>
+            <span className="num text-base text-foreground">{Math.round(calorieBank.currentBalance)} kcal</span>
+          </div>
+          <div className="ledger-row">
+            <span className="smallcaps">Banked</span>
+            <span className="num text-base text-foreground">{Math.round(calorieBank.totalBanked)} kcal</span>
+          </div>
+          <div className="ledger-row">
+            <span className="smallcaps">Spent</span>
+            <span className="num text-base text-foreground">{Math.round(calorieBank.totalSpent)} kcal</span>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          <div>
+            <Label htmlFor="dailyTarget" className="smallcaps">Daily calorie target</Label>
+            <Input
+              id="dailyTarget"
+              type="number"
+              value={calorieBank.dailyTarget}
+              onChange={(e) =>
+                setCalorieBank({
+                  ...calorieBank,
+                  dailyTarget: parseInt(e.target.value, 10) || 2000,
+                })
+              }
+              min="1000"
+              max="5000"
+              className="mt-1.5"
+            />
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Your daily calorie budget. Underspent calories are banked.
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="expireDays" className="smallcaps">Calorie expiration (days)</Label>
+            <Input
+              id="expireDays"
+              type="number"
+              value={calorieBank.expireAfterDays}
+              onChange={(e) =>
+                setCalorieBank({
+                  ...calorieBank,
+                  expireAfterDays: parseInt(e.target.value, 10) || 30,
+                })
+              }
+              min="1"
+              max="365"
+              className="mt-1.5"
+            />
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Banked calories expire after this many days.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="allowNegative"
+              checked={calorieBank.allowNegative}
+              onChange={(e) =>
+                setCalorieBank({ ...calorieBank, allowNegative: e.target.checked })
+              }
+              className="h-4 w-4 rounded border-input accent-primary focus:ring-ring"
+            />
+            <Label htmlFor="allowNegative" className="text-sm">
+              Allow negative bank balance (go into debt)
+            </Label>
+          </div>
+
+          <div className="border-t border-border pt-6">
+            <div className="flex items-start gap-3">
               <input
                 type="checkbox"
-                id="allowNegative"
-                checked={calorieBank.allowNegative}
+                id="autoAdjustTarget"
+                checked={calorieBank.autoAdjustTarget}
                 onChange={(e) =>
-                  setCalorieBank({ ...calorieBank, allowNegative: e.target.checked })
+                  setCalorieBank({ ...calorieBank, autoAdjustTarget: e.target.checked })
                 }
-                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                className="mt-0.5 h-4 w-4 rounded border-input accent-primary focus:ring-ring"
               />
-              <Label htmlFor="allowNegative" className="text-sm">
-                Allow negative bank balance (go into debt)
-              </Label>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 p-3 space-y-2">
-              <div className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  id="autoAdjustTarget"
-                  checked={calorieBank.autoAdjustTarget}
-                  onChange={(e) =>
-                    setCalorieBank({ ...calorieBank, autoAdjustTarget: e.target.checked })
-                  }
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <div>
-                  <Label htmlFor="autoAdjustTarget" className="text-sm font-medium">
-                    Auto-adjust my daily target
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Recalculate weekly from observed weight and intake. Only applies once your metabolic estimate has stabilised.
-                  </p>
-                </div>
-              </div>
-              {metabolic && (
-                <div className="text-xs text-muted-foreground border-t pt-2 grid grid-cols-2 gap-y-1">
-                  <span>Estimated metabolic rate</span>
-                  <span className="text-right font-medium text-foreground">
-                    {Math.round(metabolic.trueMetabolicRate)} kcal/day
-                  </span>
-                  <span>Prediction accuracy</span>
-                  <span className="text-right font-medium text-foreground">
-                    {metabolic.predictionsMade === 0
-                      ? "—"
-                      : `${Math.round(metabolic.predictionAccuracy * 100)}% (${metabolic.predictionsMade} cycle${metabolic.predictionsMade === 1 ? "" : "s"})`}
-                  </span>
-                  <span>Last recalculated</span>
-                  <span className="text-right font-medium text-foreground">
-                    {new Date(metabolic.lastCalculatedAt).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-4 border-t">
-              <p className="text-sm font-medium mb-3">Macro Targets (grams/day)</p>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label htmlFor="proteinTarget" className="text-xs text-muted-foreground">
-                    Protein (g)
-                  </Label>
-                  <Input
-                    id="proteinTarget"
-                    type="number"
-                    value={calorieBank.proteinTargetG || ""}
-                    onChange={(e) =>
-                      setCalorieBank({
-                        ...calorieBank,
-                        proteinTargetG: parseInt(e.target.value, 10) || 0,
-                      })
-                    }
-                    min="0"
-                    max="500"
-                    placeholder="150"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="carbsTarget" className="text-xs text-muted-foreground">
-                    Carbs (g)
-                  </Label>
-                  <Input
-                    id="carbsTarget"
-                    type="number"
-                    value={calorieBank.carbsTargetG || ""}
-                    onChange={(e) =>
-                      setCalorieBank({
-                        ...calorieBank,
-                        carbsTargetG: parseInt(e.target.value, 10) || 0,
-                      })
-                    }
-                    min="0"
-                    max="500"
-                    placeholder="250"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="fatTarget" className="text-xs text-muted-foreground">
-                    Fat (g)
-                  </Label>
-                  <Input
-                    id="fatTarget"
-                    type="number"
-                    value={calorieBank.fatTargetG || ""}
-                    onChange={(e) =>
-                      setCalorieBank({
-                        ...calorieBank,
-                        fatTargetG: parseInt(e.target.value, 10) || 0,
-                      })
-                    }
-                    min="0"
-                    max="300"
-                    placeholder="65"
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Set to 0 to disable. When set, daily macros will show progress bars.
-              </p>
-            </div>
-
-            <div className="pt-4 border-t space-y-3">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-[#FF5A3D]" />
-                <p className="text-sm font-medium">Reset Bank</p>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Set the current balance and lifetime bank totals back to zero. Meal logs and daily nutrition history stay intact.
-              </p>
-              <Button
-                variant={resetConfirm ? "destructive" : "outline"}
-                onClick={handleResetCalorieBank}
-                disabled={isResetting}
-                className="w-full"
-              >
-                {isResetting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                )}
-                {resetConfirm ? "Confirm Reset Calorie Bank" : "Reset Calorie Bank"}
-              </Button>
-            </div>
-
-            <div className="pt-4 border-t space-y-3">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm font-medium">Manual Expiration</p>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Expire banked calories older than {calorieBank.expireAfterDays} days.
-                Normally runs daily at midnight.
-              </p>
-              <Button
-                variant="outline"
-                onClick={handleExpireCalories}
-                disabled={isExpiring}
-                className="w-full"
-              >
-                {isExpiring ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Clock className="mr-2 h-4 w-4" />
-                )}
-                Run Expiration Now
-              </Button>
-              {expireResult && (
-                <p className="text-xs text-center text-muted-foreground">
-                  {expireResult}
+              <div>
+                <Label htmlFor="autoAdjustTarget" className="text-sm font-medium">
+                  Automatically adjust my daily target
+                </Label>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Recalculate weekly from your recorded weight and intake after the estimate has enough history to stabilize.
                 </p>
-              )}
+              </div>
             </div>
 
-            <Button onClick={handleSaveBank} disabled={isSaving} className="w-full">
-              {isSaving ? (
+            {metabolic && (
+              <dl className="mt-4 divide-y divide-border border-y border-border text-xs">
+                <div className="ledger-row border-t-0">
+                  <dt className="smallcaps">Estimated metabolic rate</dt>
+                  <dd className="num text-foreground">{Math.round(metabolic.trueMetabolicRate)} kcal/day</dd>
+                </div>
+                <div className="ledger-row">
+                  <dt className="smallcaps">Prediction confidence</dt>
+                  <dd className="num text-foreground">
+                    {metabolic.predictionsMade === 0
+                      ? "Pending"
+                      : `${Math.round(metabolic.predictionAccuracy * 100)}% · ${metabolic.predictionsMade} cycle${metabolic.predictionsMade === 1 ? "" : "s"}`}
+                  </dd>
+                </div>
+                <div className="ledger-row">
+                  <dt className="smallcaps">Last recalculated</dt>
+                  <dd className="num text-foreground">{new Date(metabolic.lastCalculatedAt).toLocaleDateString()}</dd>
+                </div>
+              </dl>
+            )}
+          </div>
+
+          <div className="border-t border-border pt-6">
+            <p className="smallcaps">Macro targets (grams/day)</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div>
+                <Label htmlFor="proteinTarget" className="smallcaps">Protein</Label>
+                <Input
+                  id="proteinTarget"
+                  type="number"
+                  value={calorieBank.proteinTargetG || ""}
+                  onChange={(e) =>
+                    setCalorieBank({
+                      ...calorieBank,
+                      proteinTargetG: parseInt(e.target.value, 10) || 0,
+                    })
+                  }
+                  min="0"
+                  max="500"
+                  placeholder="150"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="carbsTarget" className="smallcaps">Carbs</Label>
+                <Input
+                  id="carbsTarget"
+                  type="number"
+                  value={calorieBank.carbsTargetG || ""}
+                  onChange={(e) =>
+                    setCalorieBank({
+                      ...calorieBank,
+                      carbsTargetG: parseInt(e.target.value, 10) || 0,
+                    })
+                  }
+                  min="0"
+                  max="500"
+                  placeholder="250"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="fatTarget" className="smallcaps">Fat</Label>
+                <Input
+                  id="fatTarget"
+                  type="number"
+                  value={calorieBank.fatTargetG || ""}
+                  onChange={(e) =>
+                    setCalorieBank({
+                      ...calorieBank,
+                      fatTargetG: parseInt(e.target.value, 10) || 0,
+                    })
+                  }
+                  min="0"
+                  max="300"
+                  placeholder="65"
+                  className="mt-1.5"
+                />
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Set to 0 to disable. When set, daily macros will show progress bars.
+            </p>
+          </div>
+
+          <Button onClick={handleSaveBank} disabled={isSaving} aria-busy={savingArea === "bank"} className="btn-primary">
+            {savingArea === "bank" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Save bank settings
+          </Button>
+          <SectionFeedback area="bank" feedback={feedback} />
+
+          <div className="border-t border-border pt-6 space-y-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <p className="smallcaps">Reserve maintenance</p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Expire banked calories older than {calorieBank.expireAfterDays} days.
+              Normally runs daily at midnight.
+            </p>
+            <Button
+              variant="outline"
+              onClick={handleExpireCalories}
+              disabled={isExpiring}
+              aria-busy={isExpiring}
+            >
+              {isExpiring ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Save className="mr-2 h-4 w-4" />
+                <Clock className="mr-2 h-4 w-4" />
               )}
-              Save Bank Settings
+              Run expiration now
             </Button>
-          </CardContent>
-        </Card>
-      )}
+            {expireResult && <p className="text-xs text-muted-foreground" role="status">{expireResult}</p>}
+          </div>
 
-      {/* Notifications Tab */}
-      {activeTab === "notifications" && (
-        <div className="space-y-4">
-          <PushNotifications />
-          <div className="rounded-2xl border border-[#18120E]/12 bg-[#FFF8E7] p-6 space-y-4">
-            <div>
-              <h3 className="text-base font-semibold text-[#18120E]">Daily Email Digest</h3>
-              <p className="mt-1 text-sm text-[#6B5738]">
-                Receive a daily summary of yesterday&apos;s calories, macros, and bank balance at 8 AM UTC.
-                Requires <code className="text-xs bg-[#FFF0B8] px-1 py-0.5 rounded">RESEND_API_KEY</code> to be configured.
-              </p>
+          <div className="space-y-3 border border-destructive/30 bg-destructive/5 p-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <p className="smallcaps text-destructive">Danger zone</p>
             </div>
-            <label className="flex items-center justify-between gap-4 cursor-pointer">
-              <span className="text-sm font-medium text-[#18120E]">Enable daily digest email</span>
+            <p className="text-xs text-muted-foreground">
+              Reset the current balance and lifetime bank totals to zero. Meal logs and daily nutrition history stay intact.
+            </p>
+            <Button
+              variant={resetConfirm ? "destructive" : "outline"}
+              onClick={handleResetCalorieBank}
+              disabled={isResetting}
+              aria-busy={isResetting}
+            >
+              {isResetting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RotateCcw className="mr-2 h-4 w-4" />
+              )}
+              {resetConfirm ? "Confirm reset calorie bank" : "Reset calorie bank"}
+            </Button>
+            <SectionFeedback area="maintenance" feedback={feedback} />
+          </div>
+        </div>
+      </section>
+
+      {/* Notifications */}
+      <section id="notifications" className="surface scroll-mt-24 overflow-hidden p-5 sm:p-7">
+        <p className="smallcaps text-foreground">04 · Account alerts</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">Notifications</h2>
+        <div className="mt-6 space-y-6">
+          <PushNotifications />
+          <div className="border-t border-border pt-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-xl">
+                <p className="smallcaps text-foreground">Daily account digest</p>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Receive yesterday&apos;s calorie position, macros, reserve balance, and logging streak by email at 8:00 AM UTC.
+                </p>
+              </div>
               <button
-                onClick={async () => {
-                  const next = !profile.emailDigest;
-                  setProfile((p) => ({ ...p, emailDigest: next }));
-                  await fetch("/api/settings", {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ profile: { emailDigest: next } }),
-                  });
-                }}
-                className={`relative h-6 w-11 rounded-full border-2 border-[#18120E] transition-colors ${
-                  profile.emailDigest ? "bg-[#00C875]" : "bg-[#FFF0B8]"
+                type="button"
+                role="switch"
+                aria-checked={profile.emailDigest}
+                aria-label="Daily digest email"
+                onClick={handleToggleDigest}
+                disabled={savingArea === "notifications"}
+                className={`relative h-7 w-12 shrink-0 rounded-full border border-border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  profile.emailDigest ? "bg-[var(--ledger-green)]" : "bg-secondary"
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full border border-[#18120E] bg-[#FFF8E7] transition-transform ${
+                  className={`absolute left-1 top-1 h-[18px] w-[18px] rounded-full bg-card shadow-sm transition-transform ${
                     profile.emailDigest ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
               </button>
-            </label>
+            </div>
+            <SectionFeedback area="notifications" feedback={feedback} />
           </div>
         </div>
-      )}
+      </section>
 
-      {/* Integrations Tab */}
-      {activeTab === "integrations" && <HealthIntegrations />}
+      {/* Integrations */}
+      <section id="integrations" className="surface scroll-mt-24 overflow-hidden p-5 sm:p-7">
+        <p className="smallcaps text-foreground">05 · External records</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">Health integrations</h2>
+        <p className="mt-1 text-[15px] text-muted-foreground">
+          Bring historical weight records into your private nutrition ledger.
+        </p>
+        <div className="mt-6">
+          <HealthIntegrations />
+        </div>
+      </section>
 
-      {/* Export Tab */}
-      {activeTab === "export" && (
-        <Card className="surface border-0 shadow-none">
-          <CardHeader>
-            <CardTitle>Export Data</CardTitle>
-            <CardDescription>
-              Download your nutrition data as a CSV file for personal records or sharing with a nutritionist.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="export-days">Date Range</Label>
-              <Select
-                value={exportDays.toString()}
-                onValueChange={(v) => setExportDays(parseInt(v || "90", 10) || 90)}
-              >
-                <SelectTrigger id="export-days">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30">Last 30 days</SelectItem>
-                  <SelectItem value="90">Last 90 days</SelectItem>
-                  <SelectItem value="180">Last 6 months</SelectItem>
-                  <SelectItem value="365">Last year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium">What&apos;s included:</p>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-500" />
-                  <span>Meals (name, macros, source, timestamps)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span>Daily logs (calories, macros, water, exercise, notes)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-purple-500" />
-                  <span>Weight entries</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-orange-500" />
-                  <span>Exercise log</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-indigo-500" />
-                  <span>Journal entries</span>
-                </li>
-              </ul>
-            </div>
-
-            <Button
-              onClick={() => {
-                window.open(`/api/export?days=${exportDays}`, "_blank");
-              }}
-              className="w-full"
+      {/* Export */}
+      <section id="statements" className="surface scroll-mt-24 overflow-hidden p-5 sm:p-7">
+        <p className="smallcaps text-foreground">06 · Account statements</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">Export data</h2>
+        <p className="mt-1 text-[15px] text-muted-foreground">
+          Download your nutrition data as a CSV file for personal records or sharing with a nutritionist.
+        </p>
+        <div className="mt-6 space-y-4">
+          <div>
+            <Label htmlFor="export-days" className="smallcaps">Date range</Label>
+            <Select
+              value={exportDays.toString()}
+              onValueChange={(v) => setExportDays(parseInt(v || "90", 10) || 90)}
             >
-              <Download className="mr-2 h-4 w-4" />
-              Export CSV
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+              <SelectTrigger id="export-days" className="mt-1.5">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30">Last 30 days</SelectItem>
+                <SelectItem value="90">Last 90 days</SelectItem>
+                <SelectItem value="180">Last 6 months</SelectItem>
+                <SelectItem value="365">Last year</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <p className="smallcaps">Included</p>
+            <ul className="mt-2 space-y-1 text-[15px] text-muted-foreground">
+              <li>Meals (name, macros, source, timestamps)</li>
+              <li>Daily logs (calories, macros, water, exercise, notes)</li>
+              <li>Weight entries</li>
+              <li>Exercise log</li>
+              <li>Journal entries</li>
+            </ul>
+          </div>
+
+          <Button
+            onClick={() => {
+              window.open(`/api/export?days=${exportDays}`, "_blank");
+            }}
+            className="btn-primary"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
+      </section>
+      </div>
     </div>
   );
 }

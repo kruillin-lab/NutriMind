@@ -1,27 +1,46 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
-import { Prisma } from "@prisma/client";
-import { addLocalDays, getLocalMidnight, parseLocalDate } from "@/lib/date-utils";
-import { applyCalorieBankOverageAdjustment } from "@/src/lib/calorieBank";
+import { addLocalDays, getLocalMidnight, isValidLocalDateKey, parseLocalDate } from "@/lib/date-utils";
+import { recordMeal } from "@/src/lib/nutrition-day";
+import { clampInt, clampNumber, truncate } from "@/src/lib/validation";
+import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
 import { checkAndAwardAchievements } from "@/src/lib/achievements";
+import { toMealActivityItem } from "@/src/lib/meal-activity";
 
 export async function POST(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to log meal", async () => {
+    const userId = await requireUserId();
 
-    const body = await req.json();
+    const body = await req.json().catch(() => {
+      throw new ApiError(400, "Invalid meal data");
+    });
     const { name, calories, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg, vitaminCMg, calciumMg, ironMg, potassiumMg, servingSizeG, mealType = "OTHER", date: dateParam } = body;
 
-    if (!name || calories == null || calories < 0) {
-      return NextResponse.json(
-        { error: "Invalid meal data" },
-        { status: 400 }
-      );
+    const safeName = truncate(name, 200);
+    const safeCalories = clampInt(calories, 0, 10000);
+
+    if (!safeName || safeCalories === null) {
+      throw new ApiError(400, "Invalid meal data");
     }
+
+    if (dateParam != null && !isValidLocalDateKey(dateParam)) {
+      throw new ApiError(400, "Invalid date");
+    }
+
+    // Clamp macros (grams) to 0..1000 and micros (mg) to 0..10000; non-numeric values fall back to 0
+    const nutrients = {
+      proteinG: clampNumber(proteinG, 0, 1000) ?? 0,
+      carbsG: clampNumber(carbsG, 0, 1000) ?? 0,
+      fatG: clampNumber(fatG, 0, 1000) ?? 0,
+      fiberG: clampNumber(fiberG, 0, 1000) ?? 0,
+      sugarG: clampNumber(sugarG, 0, 1000) ?? 0,
+      sodiumMg: clampNumber(sodiumMg, 0, 10000) ?? 0,
+      vitaminCMg: clampNumber(vitaminCMg, 0, 10000) ?? 0,
+      calciumMg: clampNumber(calciumMg, 0, 10000) ?? 0,
+      ironMg: clampNumber(ironMg, 0, 10000) ?? 0,
+      potassiumMg: clampNumber(potassiumMg, 0, 10000) ?? 0,
+    };
+    const safeServingSizeG = servingSizeG != null ? clampNumber(servingSizeG, 0, 10000) : null;
 
     // Get user with profile and calorie bank
     const user = await prisma.user.findUnique({
@@ -32,14 +51,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      throw new ApiError(404, "User not found");
     }
 
     if (!user.calorieBank) {
-      return NextResponse.json(
-        { error: "Calorie bank not initialized" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Calorie bank not initialized");
     }
 
     const dailyTarget = user.calorieBank.dailyTarget;
@@ -47,127 +63,50 @@ export async function POST(req: NextRequest) {
     const targetDate = dateParam ? parseLocalDate(dateParam) : getLocalMidnight();
     const nextDay = addLocalDays(targetDate, 1);
 
-    // Create meal and update daily log in transaction
-    const result = await prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        // Find or create today's daily log
-        let dailyLog = await tx.dailyLog.findFirst({
-          where: {
-            userId: user.id,
-            date: {
-              gte: targetDate,
-              lt: nextDay,
-            },
-          },
-        });
-
-        if (!dailyLog) {
-          dailyLog = await tx.dailyLog.create({
-            data: {
-              userId: user.id,
-              date: targetDate,
-              calorieTarget: dailyTarget,
-            },
-          });
-        }
-
-        // Create the meal
-        const meal = await tx.meal.create({
-          data: {
-            dailyLogId: dailyLog.id,
-            name,
-            calories,
-            proteinG: proteinG || 0,
-            carbsG: carbsG || 0,
-            fatG: fatG || 0,
-            fiberG: fiberG || 0,
-            sugarG: sugarG || 0,
-            sodiumMg: sodiumMg || 0,
-            vitaminCMg: vitaminCMg || 0,
-            calciumMg: calciumMg || 0,
-            ironMg: ironMg || 0,
-            potassiumMg: potassiumMg || 0,
-            servingSizeG: servingSizeG != null ? servingSizeG : null,
-            mealType,
-          },
-        });
-
-        // Update daily log consumed calories and all nutrients
-        const newConsumed = dailyLog.caloriesConsumed + calories;
-        const remaining = dailyLog.calorieTarget - newConsumed;
-
-        const updatedLog = await tx.dailyLog.update({
-          where: { id: dailyLog.id },
-          data: {
-            caloriesConsumed: newConsumed,
-            proteinG: (dailyLog.proteinG || 0) + (proteinG || 0),
-            carbsG: (dailyLog.carbsG || 0) + (carbsG || 0),
-            fatG: (dailyLog.fatG || 0) + (fatG || 0),
-            fiberG: (dailyLog.fiberG || 0) + (fiberG || 0),
-            sugarG: (dailyLog.sugarG || 0) + (sugarG || 0),
-            sodiumMg: (dailyLog.sodiumMg || 0) + (sodiumMg || 0),
-            vitaminCMg: (dailyLog.vitaminCMg || 0) + (vitaminCMg || 0),
-            calciumMg: (dailyLog.calciumMg || 0) + (calciumMg || 0),
-            ironMg: (dailyLog.ironMg || 0) + (ironMg || 0),
-            potassiumMg: (dailyLog.potassiumMg || 0) + (potassiumMg || 0),
-          },
-        });
-
-        const bankAdjustment = await applyCalorieBankOverageAdjustment({
-          bank: user.calorieBank,
-          tx,
-          previousConsumed: dailyLog.caloriesConsumed,
-          nextConsumed: newConsumed,
-          calorieTarget: dailyLog.calorieTarget,
-          sourceId: dailyLog.id,
-          spendReason: `Overspend from meal: ${name}`,
-          refundReason: `Refund from meal: ${name}`,
-        });
-
-        return {
-          meal,
-          dailyLog: updatedLog,
-          bankTransaction: bankAdjustment.bankTransaction,
-          bankAdjustment: bankAdjustment.adjustment,
-          remaining,
-          bankUpdate: bankAdjustment.bankUpdate,
-        };
-      }
-    );
+    const result = await prisma.$transaction((tx) => recordMeal({
+      tx,
+      userId: user.id,
+      bank: user.calorieBank,
+      day: { start: targetDate, end: nextDay },
+      calorieTarget: dailyTarget,
+      meal: {
+        name: safeName,
+        calories: safeCalories,
+        mealType,
+        servingSizeG: safeServingSizeG,
+        ...nutrients,
+      },
+      spendReason: `Overspend from meal: ${safeName}`,
+      refundReason: `Refund from meal: ${safeName}`,
+    }));
 
     // Fire-and-forget achievement check — never blocks the response
     checkAndAwardAchievements(user.id).catch(() => {});
 
-    return NextResponse.json({
+    return {
       success: true,
       meal: result.meal,
-      remainingCalories: result.remaining,
+      remainingCalories: result.remainingCalories,
       bankBalance: result.bankUpdate?.currentBalance ?? user.calorieBank.currentBalance,
       message:
-        result.remaining >= 0
-          ? `Logged ${calories} calories. ${Math.round(result.remaining)} remaining today.`
+        result.remainingCalories >= 0
+          ? `Logged ${safeCalories} calories. ${Math.round(result.remainingCalories)} remaining today.`
           : result.bankTransaction
-            ? `Logged ${calories} calories. Used ${Math.round(result.bankAdjustment.amount)} from bank.`
-            : `Logged ${calories} calories. ${Math.abs(Math.round(result.remaining))} over budget (insufficient bank balance).`,
-    });
-  } catch (error) {
-    console.error("Error logging meal:", error);
-    return NextResponse.json(
-      { error: "Failed to log meal" },
-      { status: 500 }
-    );
-  }
+            ? `Logged ${safeCalories} calories. Used ${Math.round(result.bankAdjustment.amount)} from bank.`
+            : `Logged ${safeCalories} calories. ${Math.abs(Math.round(result.remainingCalories))} over budget (insufficient bank balance).`,
+    };
+  });
 }
 
 export async function GET(req: NextRequest) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to fetch meals", async () => {
+    const userId = await requireUserId();
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
+    if (dateParam && !isValidLocalDateKey(dateParam)) {
+      throw new ApiError(400, "Invalid date");
+    }
     const date = dateParam ? parseLocalDate(dateParam) : getLocalMidnight();
     const nextDay = addLocalDays(date, 1);
 
@@ -195,10 +134,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      throw new ApiError(404, "User not found");
     }
 
     const dailyLog = user.dailyLogs[0] || {
@@ -221,28 +157,11 @@ export async function GET(req: NextRequest) {
 
     const remainingCalories = dailyLog.calorieTarget - dailyLog.caloriesConsumed;
 
-    return NextResponse.json({
+    return {
       targetCalories: dailyLog.calorieTarget,
       consumedCalories: dailyLog.caloriesConsumed,
       remainingCalories,
-      meals: dailyLog.meals.map((meal) => ({
-        id: meal.id,
-        name: meal.name,
-        calories: meal.calories,
-        protein: meal.proteinG,
-        carbs: meal.carbsG,
-        fat: meal.fatG,
-        fiber: meal.fiberG,
-        sugar: meal.sugarG,
-        sodium: meal.sodiumMg,
-        vitaminC: meal.vitaminCMg,
-        calcium: meal.calciumMg,
-        iron: meal.ironMg,
-        potassium: meal.potassiumMg,
-        servingSizeG: meal.servingSizeG,
-        mealType: meal.mealType,
-        createdAt: meal.createdAt,
-      })),
+      meals: dailyLog.meals.map(toMealActivityItem),
       dailyTotals: {
         protein: dailyLog.proteinG || 0,
         carbs: dailyLog.carbsG || 0,
@@ -265,12 +184,6 @@ export async function GET(req: NextRequest) {
           ? Math.max(0, (user.calorieBank?.currentBalance || 0) - Math.abs(remainingCalories))
           : remainingCalories,
       },
-    });
-  } catch (error) {
-    console.error("Error fetching meals:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch meals" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }

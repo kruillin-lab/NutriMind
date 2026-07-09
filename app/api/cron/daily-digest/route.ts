@@ -164,7 +164,7 @@ function computeStreak(dates: Date[]): number {
     .sort((a, b) => b - a);
   const unique = [...new Set(sorted)];
   let streak = 0;
-  let expected = new Date();
+  const expected = new Date();
   expected.setUTCHours(0, 0, 0, 0);
   expected.setDate(expected.getDate() - 1); // start from yesterday
   for (const ts of unique) {

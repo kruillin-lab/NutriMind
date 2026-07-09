@@ -1,6 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { checkRateLimit } from "@/src/lib/rateLimit";
+import { jsonError } from "@/src/lib/api-helpers";
 import OpenAI from "openai";
 
 // NUTRIMIND_OPENAI_API_KEY avoids collision with any system-level OPENAI_API_KEY env var
@@ -35,17 +37,23 @@ function normalizeText(text: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    const testUserId = req.headers.get("X-Test-User-Id");
+    const { userId: clerkUserId } = testUserId && process.env.NODE_ENV !== "production"
+      ? { userId: testUserId }
+      : await auth();
+    const userId = clerkUserId;
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return jsonError(401, "Unauthorized");
+    }
+
+    // Best-effort per-instance rate limit: 20 requests per user per minute
+    if (!checkRateLimit(`parse-meal:${userId}`, 20, 60_000)) {
+      return jsonError(429, "Too many requests");
     }
 
     // Validate we have a proper OpenAI key
     if (!OPENAI_API_KEY || !OPENAI_API_KEY.startsWith('sk-')) {
-      return NextResponse.json(
-        { error: "Invalid or missing OpenAI API key. Please check .env.local" },
-        { status: 500 }
-      );
+      return jsonError(500, "Invalid or missing OpenAI API key. Please check .env.local");
     }
 
     // Initialize OpenAI client with values from .env.local (bypassing system env vars)
@@ -64,10 +72,11 @@ export async function POST(req: NextRequest) {
     const { text } = body;
 
     if (!text || typeof text !== "string") {
-      return NextResponse.json(
-        { error: "Missing or invalid 'text' field" },
-        { status: 400 }
-      );
+      return jsonError(400, "Missing or invalid 'text' field");
+    }
+
+    if (text.length > 500) {
+      return jsonError(400, "Text too long (max 500 characters)");
     }
 
     const normalizedKey = normalizeText(text);
@@ -172,10 +181,7 @@ Guidelines:
     const responseContent = completion.choices[0].message.content;
 
     if (!responseContent) {
-      return NextResponse.json(
-        { error: "Empty response from AI" },
-        { status: 500 }
-      );
+      return jsonError(500, "Empty response from AI");
     }
 
     // Clean up any markdown code blocks if present
@@ -190,18 +196,12 @@ Guidelines:
     } catch (parseError) {
       void parseError;
       console.error("Failed to parse AI response:", responseContent);
-      return NextResponse.json(
-        { error: "AI returned invalid JSON format" },
-        { status: 500 }
-      );
+      return jsonError(500, "AI returned invalid JSON format");
     }
 
     // Validate the parsed results
     if (!Array.isArray(parsedFoods)) {
-      return NextResponse.json(
-        { error: "AI response is not an array" },
-        { status: 500 }
-      );
+      return jsonError(500, "AI response is not an array");
     }
 
     // Sanitize and validate each food item
@@ -277,9 +277,6 @@ Guidelines:
       stack: errorStack,
       timestamp: new Date().toISOString(),
     });
-    return NextResponse.json(
-      { error: `Failed to parse meal: ${errorMessage}` },
-      { status: 500 }
-    );
+    return jsonError(500, `Failed to parse meal: ${errorMessage}`);
   }
 }

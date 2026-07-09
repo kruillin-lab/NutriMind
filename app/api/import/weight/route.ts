@@ -24,12 +24,6 @@ function parseDate(raw: string): Date | null {
   return null;
 }
 
-function parseWeight(raw: string, unit: string): number | null {
-  const v = parseFloat(raw.trim().replace(/[^\d.]/g, ""));
-  if (isNaN(v) || v <= 0) return null;
-  return unit === "lbs" ? v * 0.453592 : v;
-}
-
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

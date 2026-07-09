@@ -1,26 +1,18 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/src/lib/prisma";
 import { createCalorieBankResetData } from "@/src/lib/calorieBank";
+import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
 
 export async function POST() {
-  try {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  return handleRoute("Failed to reset calorie bank", async () => {
+    const userId = await requireUserId();
 
     const bank = await prisma.calorieBank.findUnique({
       where: { userId },
     });
 
     if (!bank) {
-      return NextResponse.json(
-        { error: "Calorie bank not initialized" },
-        { status: 404 }
-      );
+      throw new ApiError(404, "Calorie bank not initialized");
     }
 
     const resetBank = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -42,15 +34,9 @@ export async function POST() {
       return updatedBank;
     });
 
-    return NextResponse.json({
+    return {
       success: true,
       calorieBank: resetBank,
-    });
-  } catch (error) {
-    console.error("Error resetting calorie bank:", error);
-    return NextResponse.json(
-      { error: "Failed to reset calorie bank" },
-      { status: 500 }
-    );
-  }
+    };
+  });
 }

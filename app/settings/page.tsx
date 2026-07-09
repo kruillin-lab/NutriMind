@@ -43,13 +43,17 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen app-field">
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <header className="mb-8 border-b border-[#FFF8E7]/15 pb-6">
-          <div className="mb-3 h-2 w-32 rounded-full border border-[#FFF8E7]/20 bg-[linear-gradient(90deg,#DFFF35,#00C875,#00C8FF,#FF5A3D)] shadow-[0_14px_34px_rgba(223,255,53,0.18)]" />
-          <h1 className="text-4xl font-semibold tracking-[-0.02em] text-[#FFF8E7]">Settings</h1>
-          <p className="mt-2 text-[#FFF8E7]/72">
-            Manage your profile, goals, and calorie bank settings.
+    <div className="min-h-screen bg-hero">
+      <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 lg:py-14">
+        <header className="mb-10 grid gap-5 border-b border-border pb-8 md:grid-cols-[minmax(0,1fr)_minmax(16rem,0.55fr)] md:items-end">
+          <div>
+            <p className="smallcaps text-foreground">NutriMind Reserve · Account administration</p>
+            <h1 className="mt-3 text-[clamp(2.25rem,5vw,3.75rem)] font-bold tracking-[-0.03em] leading-[1] text-foreground">
+              Account Controls
+            </h1>
+          </div>
+          <p className="text-[15px] leading-6 text-muted-foreground md:text-right">
+            Manage the assumptions, limits, alerts, and statements that govern your calorie reserve.
           </p>
         </header>
 

@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Minus, Plus, Save, Trash2, Star, Utensils } from "lucide-react";
 
@@ -32,14 +30,6 @@ interface MealTemplate {
 interface MealTemplatesProps {
   onUseTemplate: (template: MealTemplate, quantity: number) => void;
 }
-
-const mealTypeColors: Record<string, string> = {
-  BREAKFAST: "bg-orange-100 text-orange-800",
-  LUNCH: "bg-green-100 text-green-800",
-  DINNER: "bg-blue-100 text-blue-800",
-  SNACK: "bg-purple-100 text-purple-800",
-  OTHER: "bg-gray-100 text-gray-800",
-};
 
 const DEFAULT_TEMPLATE_QUANTITY = 1;
 const MIN_TEMPLATE_QUANTITY = 0.25;
@@ -177,38 +167,38 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
 
   if (loading) {
     return (
-      <div className="text-center py-4 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
-        Loading templates...
+      <div className="py-4 text-center text-muted-foreground">
+        <Loader2 className="mx-auto mb-2 h-4 w-4 animate-spin" />
+        Loading templates…
       </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            <Star className="h-5 w-5 text-yellow-500" />
-            My Templates
-          </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsCreating(!isCreating)}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            {isCreating ? "Cancel" : "Add"}
-          </Button>
+    <div className="surface overflow-hidden">
+      <div className="foil" />
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <div className="flex items-center gap-2">
+          <Star className="h-4 w-4" style={{ color: "var(--brass)" }} />
+          <span className="smallcaps">My templates</span>
         </div>
-      </CardHeader>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsCreating(!isCreating)}
+          className="btn-ghost h-8 rounded-sm px-3 text-xs"
+        >
+          <Plus className="mr-1 h-3.5 w-3.5" />
+          {isCreating ? "Cancel" : "Add"}
+        </Button>
+      </div>
 
-      <CardContent className="space-y-3">
+      <div className="px-5 py-4">
         {isCreating && (
-          <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+          <div className="surface-raised mb-4 space-y-3 p-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="tmpl-name" className="text-xs text-muted-foreground">
+                <Label htmlFor="tmpl-name" className="smallcaps">
                   Name
                 </Label>
                 <Input
@@ -216,17 +206,18 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
                   placeholder="My usual breakfast"
                   value={newTemplate.name}
                   onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                  className="rounded-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="tmpl-type" className="text-xs text-muted-foreground">
+                <Label htmlFor="tmpl-type" className="smallcaps">
                   Type
                 </Label>
                 <Select
                   value={newTemplate.mealType}
                   onValueChange={(v) => setNewTemplate({ ...newTemplate, mealType: v || "OTHER" })}
                 >
-                  <SelectTrigger id="tmpl-type">
+                  <SelectTrigger id="tmpl-type" className="w-full rounded-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -241,7 +232,7 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
             </div>
             <div className="grid grid-cols-4 gap-3">
               <div>
-                <Label htmlFor="tmpl-cal" className="text-xs text-muted-foreground">
+                <Label htmlFor="tmpl-cal" className="smallcaps">
                   Calories
                 </Label>
                 <Input
@@ -250,10 +241,11 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
                   placeholder="350"
                   value={newTemplate.calories}
                   onChange={(e) => setNewTemplate({ ...newTemplate, calories: e.target.value })}
+                  className="num rounded-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="tmpl-protein" className="text-xs text-muted-foreground">
+                <Label htmlFor="tmpl-protein" className="smallcaps">
                   Protein (g)
                 </Label>
                 <Input
@@ -262,10 +254,11 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
                   placeholder="25"
                   value={newTemplate.proteinG}
                   onChange={(e) => setNewTemplate({ ...newTemplate, proteinG: e.target.value })}
+                  className="num rounded-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="tmpl-carbs" className="text-xs text-muted-foreground">
+                <Label htmlFor="tmpl-carbs" className="smallcaps">
                   Carbs (g)
                 </Label>
                 <Input
@@ -274,10 +267,11 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
                   placeholder="40"
                   value={newTemplate.carbsG}
                   onChange={(e) => setNewTemplate({ ...newTemplate, carbsG: e.target.value })}
+                  className="num rounded-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="tmpl-fat" className="text-xs text-muted-foreground">
+                <Label htmlFor="tmpl-fat" className="smallcaps">
                   Fat (g)
                 </Label>
                 <Input
@@ -286,28 +280,29 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
                   placeholder="10"
                   value={newTemplate.fatG}
                   onChange={(e) => setNewTemplate({ ...newTemplate, fatG: e.target.value })}
+                  className="num rounded-sm"
                 />
               </div>
             </div>
-            <Button onClick={handleCreate} disabled={isSaving} size="sm" className="w-full">
+            <Button onClick={handleCreate} disabled={isSaving} size="sm" className="btn-primary w-full rounded-sm">
               {isSaving ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Save className="mr-2 h-4 w-4" />
               )}
-              Save Template
+              Save template
             </Button>
           </div>
         )}
 
         {templates.length === 0 && !isCreating ? (
-          <div className="text-center py-6 text-muted-foreground">
-            <Utensils className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+          <div className="py-6 text-center text-muted-foreground">
+            <Utensils className="mx-auto mb-2 h-8 w-8 opacity-40" />
             <p className="text-sm">No templates yet</p>
-            <p className="text-xs mt-1">Save your go-to meals for quick logging</p>
+            <p className="mt-1 text-xs">Save your go-to meals for quick logging</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div>
             {templates.map((tmpl) => {
               const quantityInput = getQuantityInput(tmpl.id);
               const quantity = parseQuantity(quantityInput);
@@ -317,22 +312,17 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
               return (
               <div
                 key={tmpl.id}
-                className="flex flex-col gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors sm:flex-row sm:items-center sm:justify-between"
+                className="ledger-row flex-col items-stretch gap-3 sm:flex-row sm:items-center"
               >
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <Badge
-                      variant="outline"
-                      className={`text-xs ${mealTypeColors[tmpl.mealType]}`}
-                    >
-                      {tmpl.mealType}
-                    </Badge>
-                    <p className="font-medium text-sm truncate">{tmpl.name}</p>
+                    <span className="pill">{tmpl.mealType}</span>
+                    <p className="truncate text-sm text-foreground">{tmpl.name}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="num mt-1 text-xs text-muted-foreground">
                     {tmpl.calories} cal · P: {tmpl.proteinG}g · C: {tmpl.carbsG}g · F: {tmpl.fatG}g
                     {isMultiplied && (
-                      <span className="ml-2 font-medium text-foreground">
+                      <span className="ml-2 text-foreground">
                         · Total {totalCalories} cal
                       </span>
                     )}
@@ -342,11 +332,11 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-1 sm:flex-nowrap">
-                  <div className="flex h-8 items-center overflow-hidden rounded-md border-2 border-[#18120E]/25 bg-[#FFF8E7] shadow-[2px_2px_0_#18120E]">
+                  <div className="flex h-8 items-center overflow-hidden rounded-sm border border-input bg-card">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-none text-[#6B5738] hover:bg-[#FFE8A8] hover:text-[#18120E] disabled:opacity-35"
+                      className="h-7 w-7 rounded-none text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-35"
                       onClick={() => handleQuantityStep(tmpl.id, -1)}
                       disabled={quantity != null && quantity <= MIN_TEMPLATE_QUANTITY}
                     >
@@ -366,12 +356,12 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
                         const nextQuantity = parseQuantity(getQuantityInput(tmpl.id)) ?? DEFAULT_TEMPLATE_QUANTITY;
                         handleQuantityChange(tmpl.id, formatQuantity(nextQuantity));
                       }}
-                      className="h-7 w-14 rounded-none border-x-2 border-y-0 border-[#18120E]/15 bg-[#FFF0B8] px-1 text-center text-xs font-semibold text-[#18120E] shadow-none focus-visible:ring-0"
+                      className="num h-7 w-14 rounded-none border-x border-y-0 border-border bg-secondary px-1 text-center text-xs font-semibold text-foreground shadow-none focus-visible:ring-0"
                     />
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-none text-[#6B5738] hover:bg-[#FFE8A8] hover:text-[#18120E] disabled:opacity-35"
+                      className="h-7 w-7 rounded-none text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-35"
                       onClick={() => handleQuantityStep(tmpl.id, 1)}
                       disabled={quantity != null && quantity >= MAX_TEMPLATE_QUANTITY}
                     >
@@ -384,14 +374,14 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
                     size="sm"
                     onClick={() => handleLogTemplate(tmpl)}
                     disabled={!quantity}
-                    className="text-xs"
+                    className="btn-primary h-8 rounded-sm px-3 text-xs"
                   >
                     Log
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-red-600"
+                    className="h-8 w-8 rounded-sm text-muted-foreground hover:text-destructive"
                     onClick={() => handleDelete(tmpl.id)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -402,7 +392,7 @@ export function MealTemplates({ onUseTemplate }: MealTemplatesProps) {
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

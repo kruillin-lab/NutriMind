@@ -42,8 +42,9 @@ export async function POST(req: Request) {
       "svix-timestamp": svix_timestamp,
       "svix-signature": svix_signature,
     }) as { type: string; data: { id: string; email_addresses: { email_address: string }[]; first_name?: string; last_name?: string } };
-  } catch (err) {
-    console.error("Error verifying webhook:", err);
+  } catch {
+    // Do not log the raw error: it can echo attacker-controlled payload details
+    console.error("Clerk webhook signature verification failed");
     return NextResponse.json(
       { error: "Invalid webhook signature" },
       { status: 400 }

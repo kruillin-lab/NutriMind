@@ -1,5 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/src/lib/rateLimit";
+import { jsonError } from "@/src/lib/api-helpers";
 import OpenAI from "openai";
 
 // NUTRIMIND_OPENAI_API_KEY avoids collision with any system-level OPENAI_API_KEY env var
@@ -26,18 +28,28 @@ Use 0 for any nutrients not shown. All values must be numbers, not strings.`;
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return jsonError(401, "Unauthorized");
+  }
+
+  // Best-effort per-instance rate limit: 10 requests per user per minute
+  if (!checkRateLimit(`parse-label:${userId}`, 10, 60_000)) {
+    return jsonError(429, "Too many requests");
   }
 
   if (!OPENAI_API_KEY.startsWith("sk-")) {
-    return NextResponse.json({ error: "Invalid or missing OpenAI API key" }, { status: 500 });
+    return jsonError(500, "Invalid or missing OpenAI API key");
   }
 
   const body = await req.json();
   const { image } = body;
 
-  if (!image || !image.startsWith("data:image/")) {
-    return NextResponse.json({ error: "Missing or invalid image" }, { status: 400 });
+  if (!image || typeof image !== "string" || !image.startsWith("data:image/")) {
+    return jsonError(400, "Missing or invalid image");
+  }
+
+  // Data-URL length cap (~6MB of image data once base64 overhead is included)
+  if (image.length > 8_000_000) {
+    return jsonError(413, "Image too large");
   }
 
   const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
@@ -65,12 +77,12 @@ export async function POST(req: NextRequest) {
     try {
       parsed = JSON.parse(jsonString);
     } catch {
-      return NextResponse.json({ error: "AI returned invalid JSON" }, { status: 500 });
+      return jsonError(500, "AI returned invalid JSON");
     }
 
     return NextResponse.json({ success: true, nutrition: parsed });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: `OpenAI error: ${message}` }, { status: 500 });
+    return jsonError(500, `OpenAI error: ${message}`);
   }
 }

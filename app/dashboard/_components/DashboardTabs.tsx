@@ -17,6 +17,9 @@ import FoodDatabaseSearch from "./FoodDatabaseSearch";
 import MealPlanner from "./MealPlanner";
 import { ProgressPhotos } from "./ProgressPhotos";
 import { QuickWeightLog } from "./QuickWeightLog";
+import { AchievementBadges } from "./AchievementBadges";
+import { GroceryList } from "./GroceryList";
+import { RecipeBuilder } from "./RecipeBuilder";
 
 interface Meal {
   id: string;
@@ -252,6 +255,8 @@ export function DashboardTabs({
         />
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-12 xl:items-start">
           <div className="xl:col-span-5"><MealTemplatesWrapper /></div>
+          <div className="xl:col-span-7"><RecipeBuilder /></div>
+          <div className="xl:col-span-5"><GroceryList /></div>
           <div className="xl:col-span-7"><MealPlanner /></div>
         </div>
       </TabsContent>
@@ -264,6 +269,7 @@ export function DashboardTabs({
           description="Keep private notes, measurements, and progress photos alongside your nutrition history."
         />
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
+          <div className="lg:col-span-12"><AchievementBadges /></div>
           <div className="lg:col-span-5"><DailyJournal /></div>
           <div className="lg:col-span-7"><BodyMeasurements /></div>
           <div className="lg:col-span-12"><ProgressPhotos /></div>

@@ -4,6 +4,8 @@ import { addLocalDays, getLocalMidnight, isValidLocalDateKey, parseLocalDate } f
 import { recordMeal } from "@/src/lib/nutrition-day";
 import { clampInt, clampNumber, truncate } from "@/src/lib/validation";
 import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
+import { checkAndAwardAchievements } from "@/src/lib/achievements";
+import { toMealActivityItem } from "@/src/lib/meal-activity";
 
 export async function POST(req: NextRequest) {
   return handleRoute("Failed to log meal", async () => {
@@ -77,6 +79,9 @@ export async function POST(req: NextRequest) {
       spendReason: `Overspend from meal: ${safeName}`,
       refundReason: `Refund from meal: ${safeName}`,
     }));
+
+    // Fire-and-forget achievement check — never blocks the response
+    checkAndAwardAchievements(user.id).catch(() => {});
 
     return {
       success: true,
@@ -156,24 +161,7 @@ export async function GET(req: NextRequest) {
       targetCalories: dailyLog.calorieTarget,
       consumedCalories: dailyLog.caloriesConsumed,
       remainingCalories,
-      meals: dailyLog.meals.map((meal) => ({
-        id: meal.id,
-        name: meal.name,
-        calories: meal.calories,
-        protein: meal.proteinG,
-        carbs: meal.carbsG,
-        fat: meal.fatG,
-        fiber: meal.fiberG,
-        sugar: meal.sugarG,
-        sodium: meal.sodiumMg,
-        vitaminC: meal.vitaminCMg,
-        calcium: meal.calciumMg,
-        iron: meal.ironMg,
-        potassium: meal.potassiumMg,
-        servingSizeG: meal.servingSizeG,
-        mealType: meal.mealType,
-        createdAt: meal.createdAt,
-      })),
+      meals: dailyLog.meals.map(toMealActivityItem),
       dailyTotals: {
         protein: dailyLog.proteinG || 0,
         carbs: dailyLog.carbsG || 0,

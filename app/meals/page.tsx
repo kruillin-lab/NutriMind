@@ -4,31 +4,13 @@ import { headers } from 'next/headers';
 import { prisma } from '@/src/lib/prisma';
 import { MealHistoryClient } from './_components/MealHistoryClient';
 import { addLocalDays, formatLocalDateKey, isValidLocalDateKey, parseLocalDate } from '@/lib/date-utils';
+import { toMealActivityItem, type MealActivityItem } from '@/src/lib/meal-activity';
 
 interface MealsPageData {
   targetCalories: number;
   consumedCalories: number;
   remainingCalories: number;
-  meals: Array<{
-    id: string;
-    name: string;
-    mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK' | 'OTHER';
-    calories: number;
-    proteinG: number;
-    carbsG: number;
-    fatG: number;
-    fiberG: number;
-    sugarG: number;
-    sodiumMg: number;
-    vitaminCMg: number;
-    calciumMg: number;
-    ironMg: number;
-    potassiumMg: number;
-    servingSizeG: number | null;
-    source: 'AI_PARSED' | 'MANUAL_ENTRY';
-    aiConfidence: number | null;
-    createdAt: string;
-  }>;
+  meals: MealActivityItem[];
   calorieBank: {
     borrowed: number;
     remaining: number;
@@ -76,27 +58,7 @@ async function getMealsForDate(userId: string, dateParam: string): Promise<Meals
   const remainingCalories = dailyLog.calorieTarget - dailyLog.caloriesConsumed;
   const isOverBudget = remainingCalories < 0;
 
-  // Transform meals to match client expectations
-  const meals = dailyLog.meals.map((meal) => ({
-    id: meal.id,
-    name: meal.name,
-    mealType: meal.mealType as 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK' | 'OTHER',
-    calories: meal.calories,
-    proteinG: meal.proteinG,
-    carbsG: meal.carbsG,
-    fatG: meal.fatG,
-    fiberG: meal.fiberG,
-    sugarG: meal.sugarG,
-    sodiumMg: meal.sodiumMg,
-    vitaminCMg: meal.vitaminCMg,
-    calciumMg: meal.calciumMg,
-    ironMg: meal.ironMg,
-    potassiumMg: meal.potassiumMg,
-    servingSizeG: meal.servingSizeG,
-    source: (meal.source?.toUpperCase() as 'AI_PARSED' | 'MANUAL_ENTRY') || 'MANUAL_ENTRY',
-    aiConfidence: meal.aiConfidence,
-    createdAt: meal.createdAt.toISOString(),
-  }));
+  const meals = dailyLog.meals.map(toMealActivityItem);
 
   // Transform calorieBank to match client expectations
   const currentBalance = user.calorieBank?.currentBalance || 0;

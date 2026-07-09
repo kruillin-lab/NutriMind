@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Scale, Plus, Trash2, TrendingDown, TrendingUp } from "lucide-react";
+import { movingAverage, WeightPoint } from "@/src/lib/weightSmoothing";
 
 interface WeightEntry {
   id: string;
@@ -102,22 +103,37 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
   const simpleChart = () => {
     if (entries.length < 2) return null;
 
-    const weights = entries.map((e) => e.weightKg);
-    const minWeight = Math.min(...weights);
-    const maxWeight = Math.max(...weights);
+    const points: WeightPoint[] = entries.map((e) => ({
+      date: new Date(e.date),
+      weightKg: e.weightKg,
+    }));
+    const sma7 = movingAverage(points, 7);
+    const sma28 = movingAverage(points, 28);
+
+    const minWeight = Math.min(...points.map((p) => p.weightKg));
+    const maxWeight = Math.max(...points.map((p) => p.weightKg));
     const range = maxWeight - minWeight || 1;
 
     const chartHeight = 120;
     const chartWidth = 100;
 
-    const points = entries.map((entry, index) => {
-      const x = (index / (entries.length - 1)) * chartWidth;
-      const y = chartHeight - ((entry.weightKg - minWeight) / range) * chartHeight;
-      return { x, y, weight: entry.weightKg, date: entry.date };
-    });
+    const toPath = (series: WeightPoint[]): string =>
+      series
+        .map((p, i) => {
+          const x = (i / (series.length - 1)) * chartWidth;
+          const y = chartHeight - ((p.weightKg - minWeight) / range) * chartHeight;
+          return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+        })
+        .join(" ");
 
-    const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+    const pathD = toPath(points);
     const areaD = `${pathD} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`;
+    const rawDots = points.map((p, i) => ({
+      x: (i / (points.length - 1)) * chartWidth,
+      y: chartHeight - ((p.weightKg - minWeight) / range) * chartHeight,
+    }));
+
+    const showSma28 = entries.length >= 14;
 
     return (
       <div className="mt-4 rounded-sm border border-border bg-secondary p-3">
@@ -129,14 +145,69 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
           <line x1="0" y1={chartHeight} x2={chartWidth} y2={chartHeight} stroke="rgba(23,20,13,0.08)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
           <line x1="0" y1={chartHeight / 2} x2={chartWidth} y2={chartHeight / 2} stroke="rgba(23,20,13,0.08)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
           <path d={areaD} fill="var(--brass)" fillOpacity="0.1" stroke="none" />
-          <path d={pathD} fill="none" stroke="var(--brass)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-          {points.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r="2" fill="var(--brass)" />
+          <path d={pathD} fill="none" stroke="var(--brass)" strokeWidth="1" strokeOpacity="0.45" vectorEffect="non-scaling-stroke" />
+          {rawDots.map((p, i) => (
+            <circle
+              key={i}
+              cx={p.x}
+              cy={p.y}
+              r="1.6"
+              fill="var(--brass)"
+              fillOpacity="0.7"
+              vectorEffect="non-scaling-stroke"
+            />
           ))}
+          <path
+            d={toPath(sma7)}
+            fill="none"
+            stroke="var(--ledger-green)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+          {showSma28 && (
+            <path
+              d={toPath(sma28)}
+              fill="none"
+              stroke="var(--chart-3)"
+              strokeWidth="1.5"
+              strokeDasharray="3 2"
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
         </svg>
         <div className="flex justify-between num text-xs text-muted-foreground mt-2">
           <span>{new Date(entries[0].date).toLocaleDateString()}</span>
           <span>{new Date(entries[entries.length - 1].date).toLocaleDateString()}</span>
+        </div>
+        <div className="flex flex-wrap gap-3 mt-2 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <span
+              className="inline-block w-3 h-[2px] rounded-full"
+              style={{ background: "var(--brass)", opacity: 0.7 }}
+            />
+            Daily
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span
+              className="inline-block w-3 h-[2px] rounded-full"
+              style={{ background: "var(--ledger-green)" }}
+            />
+            7-day avg
+          </span>
+          {showSma28 && (
+            <span className="inline-flex items-center gap-1">
+              <span
+                className="inline-block w-3 h-[2px] rounded-full"
+                style={{
+                  background:
+                    "repeating-linear-gradient(90deg, var(--chart-3) 0 3px, transparent 3px 5px)",
+                }}
+              />
+              28-day avg
+            </span>
+          )}
         </div>
       </div>
     );

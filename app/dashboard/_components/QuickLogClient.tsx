@@ -11,6 +11,8 @@ import {
   AlertCircle,
   RotateCcw,
   TrendingUp,
+  Mic,
+  MicOff,
 } from "lucide-react";
 
 interface ParsedFood {
@@ -115,6 +117,8 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [showScanner, setShowScanner] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const [popularFoods, setPopularFoods] = useState<CachedFood[]>([]);
   const [isLoadingPopular, setIsLoadingPopular] = useState(false);
   const [mealType, setMealType] = useState("OTHER");
@@ -148,6 +152,43 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
     };
     fetch_();
   }, [userId]);
+
+  const handleVoice = () => {
+    setVoiceError(null);
+    type AnyRecognition = {
+      lang: string; interimResults: boolean; maxAlternatives: number;
+      onstart: (() => void) | null;
+      onend: (() => void) | null;
+      onerror: ((e: { error: string }) => void) | null;
+      onresult: ((e: { results: { 0: { transcript: string } }[] }) => void) | null;
+      start: () => void;
+    };
+    type RecognitionCtor = new () => AnyRecognition;
+    const w = window as unknown as { SpeechRecognition?: RecognitionCtor; webkitSpeechRecognition?: RecognitionCtor };
+    const Ctor = (typeof window !== "undefined" && (w.SpeechRecognition || w.webkitSpeechRecognition)) || null;
+    if (!Ctor) {
+      setVoiceError("Voice input is not supported in this browser.");
+      return;
+    }
+    const recognition = new Ctor();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (e) => {
+      setIsListening(false);
+      if (e.error !== "no-speech") setVoiceError("Couldn't hear anything. Try again.");
+    };
+    recognition.onresult = (e) => {
+      const transcript = e.results[0]?.[0]?.transcript?.trim();
+      if (transcript) {
+        setInput((prev) => prev ? `${prev}, ${transcript}` : transcript);
+        setVoiceError(null);
+      }
+    };
+    recognition.start();
+  };
 
   const handleScanResult = (result: NutritionResult) => {
     setParsedFoods([{
@@ -412,18 +453,37 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   rows={3}
-                  className={`${FIELD_CLASS} resize-none pr-10`}
+                  className={`${FIELD_CLASS} resize-none pr-20`}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowScanner(true)}
-                  className="absolute bottom-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                  title="Scan barcode or nutrition label"
-                  aria-label="Scan barcode or nutrition label"
-                >
-                  <Camera className="h-4 w-4" />
-                </button>
+                <div className="absolute bottom-2.5 right-2.5 flex gap-1">
+                  <button
+                    type="button"
+                    onClick={handleVoice}
+                    disabled={isListening}
+                    className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+                      isListening
+                        ? "animate-pulse bg-destructive/15 text-destructive"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    }`}
+                    title={isListening ? "Listening…" : "Voice input"}
+                    aria-label={isListening ? "Listening for meal description" : "Enter meal description by voice"}
+                  >
+                    {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowScanner(true)}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    title="Scan barcode or nutrition label"
+                    aria-label="Scan barcode or nutrition label"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
+              {voiceError && (
+                <p className="text-xs text-destructive" role="alert">{voiceError}</p>
+              )}
 
               {/* Parse button */}
               <button

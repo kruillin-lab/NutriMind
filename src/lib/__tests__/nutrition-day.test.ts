@@ -66,6 +66,7 @@ function createBank(): CalorieBank {
     spendByDate: null,
     allowNegative: false,
     expireAfterDays: 30,
+    autoAdjustTarget: false,
     expiredAmount: 0,
     proteinTargetG: 0,
     carbsTargetG: 0,

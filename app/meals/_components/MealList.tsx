@@ -16,27 +16,9 @@ import {
 import { EditMealModal } from './EditMealModal';
 import { CopyMealDialog } from '@/app/dashboard/_components/CopyMealDialog';
 import { SaveAsTemplateDialog } from '@/app/dashboard/_components/SaveAsTemplateDialog';
+import type { MealActivityItem } from '@/src/lib/meal-activity';
 
-interface Meal {
-  id: string;
-  name: string;
-  mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK' | 'OTHER';
-  calories: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-  fiberG?: number;
-  sugarG?: number;
-  sodiumMg?: number;
-  vitaminCMg?: number;
-  calciumMg?: number;
-  ironMg?: number;
-  potassiumMg?: number;
-  servingSizeG?: number | null;
-  source: 'AI_PARSED' | 'MANUAL_ENTRY';
-  aiConfidence: number | null;
-  createdAt: string;
-}
+type Meal = MealActivityItem;
 
 interface MealListProps {
   meals: Meal[];

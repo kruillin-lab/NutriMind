@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Loader2, RotateCcw, Save, Clock, Download } from "lucide-react";
 import { PushNotifications } from "@/app/dashboard/_components/PushNotifications";
+import { HealthIntegrations } from "./HealthIntegrations";
 
 interface ProfileData {
   heightCm: number;
@@ -16,12 +17,14 @@ interface ProfileData {
   targetDate: string;
   activityLevel: string;
   timezone: string;
+  emailDigest: boolean;
 }
 
 interface CalorieBankData {
   dailyTarget: number;
   allowNegative: boolean;
   expireAfterDays: number;
+  autoAdjustTarget: boolean;
   proteinTargetG: number;
   carbsTargetG: number;
   fatTargetG: number;
@@ -30,12 +33,21 @@ interface CalorieBankData {
   totalSpent: number;
 }
 
+interface MetabolicSummary {
+  trueMetabolicRate: number;
+  predictionAccuracy: number;
+  predictionsMade: number;
+  lastCalculatedAt: string;
+  calculationMethod: string;
+}
+
 interface SettingsClientProps {
   initialProfile: ProfileData;
   initialCalorieBank: CalorieBankData;
+  initialMetabolic: MetabolicSummary | null;
 }
 
-type FeedbackArea = "profile" | "goals" | "bank" | "maintenance";
+type FeedbackArea = "profile" | "goals" | "bank" | "notifications" | "maintenance";
 
 interface FeedbackState {
   area: FeedbackArea;
@@ -59,9 +71,11 @@ function SectionFeedback({ area, feedback }: { area: FeedbackArea; feedback: Fee
 export function SettingsClient({
   initialProfile,
   initialCalorieBank,
+  initialMetabolic,
 }: SettingsClientProps) {
   const [profile, setProfile] = useState<ProfileData>(initialProfile);
   const [calorieBank, setCalorieBank] = useState<CalorieBankData>(initialCalorieBank);
+  const metabolic = initialMetabolic;
   const [savingArea, setSavingArea] = useState<Exclude<FeedbackArea, "maintenance"> | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [expireResult, setExpireResult] = useState<string | null>(null);
@@ -135,6 +149,37 @@ export function SettingsClient({
     } catch (error) {
       console.error("Error saving bank settings:", error);
       setFeedback({ area: "bank", message: "Error saving bank settings.", tone: "error" });
+    } finally {
+      setSavingArea(null);
+    }
+  };
+
+  const handleToggleDigest = async () => {
+    const next = !profile.emailDigest;
+    setSavingArea("notifications");
+    setFeedback(null);
+
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile: { emailDigest: next } }),
+      });
+
+      if (!response.ok) {
+        setFeedback({ area: "notifications", message: "Failed to update the daily digest.", tone: "error" });
+        return;
+      }
+
+      setProfile((current) => ({ ...current, emailDigest: next }));
+      setFeedback({
+        area: "notifications",
+        message: next ? "Daily digest enabled." : "Daily digest disabled.",
+        tone: "success",
+      });
+    } catch (error) {
+      console.error("Error updating daily digest:", error);
+      setFeedback({ area: "notifications", message: "Error updating the daily digest.", tone: "error" });
     } finally {
       setSavingArea(null);
     }
@@ -229,6 +274,7 @@ export function SettingsClient({
             ["#goals", "Goal mandate"],
             ["#reserve", "Reserve rules"],
             ["#notifications", "Notifications"],
+            ["#integrations", "Integrations"],
             ["#statements", "Statements"],
           ].map(([href, label]) => (
             <a key={href} href={href} className="smallcaps block px-3 py-2.5 transition-colors hover:bg-secondary hover:text-foreground">
@@ -466,6 +512,49 @@ export function SettingsClient({
           </div>
 
           <div className="border-t border-border pt-6">
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="autoAdjustTarget"
+                checked={calorieBank.autoAdjustTarget}
+                onChange={(e) =>
+                  setCalorieBank({ ...calorieBank, autoAdjustTarget: e.target.checked })
+                }
+                className="mt-0.5 h-4 w-4 rounded border-input accent-primary focus:ring-ring"
+              />
+              <div>
+                <Label htmlFor="autoAdjustTarget" className="text-sm font-medium">
+                  Automatically adjust my daily target
+                </Label>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Recalculate weekly from your recorded weight and intake after the estimate has enough history to stabilize.
+                </p>
+              </div>
+            </div>
+
+            {metabolic && (
+              <dl className="mt-4 divide-y divide-border border-y border-border text-xs">
+                <div className="ledger-row border-t-0">
+                  <dt className="smallcaps">Estimated metabolic rate</dt>
+                  <dd className="num text-foreground">{Math.round(metabolic.trueMetabolicRate)} kcal/day</dd>
+                </div>
+                <div className="ledger-row">
+                  <dt className="smallcaps">Prediction confidence</dt>
+                  <dd className="num text-foreground">
+                    {metabolic.predictionsMade === 0
+                      ? "Pending"
+                      : `${Math.round(metabolic.predictionAccuracy * 100)}% · ${metabolic.predictionsMade} cycle${metabolic.predictionsMade === 1 ? "" : "s"}`}
+                  </dd>
+                </div>
+                <div className="ledger-row">
+                  <dt className="smallcaps">Last recalculated</dt>
+                  <dd className="num text-foreground">{new Date(metabolic.lastCalculatedAt).toLocaleDateString()}</dd>
+                </div>
+              </dl>
+            )}
+          </div>
+
+          <div className="border-t border-border pt-6">
             <p className="smallcaps">Macro targets (grams/day)</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <div>
@@ -593,14 +682,54 @@ export function SettingsClient({
       <section id="notifications" className="surface scroll-mt-24 overflow-hidden p-5 sm:p-7">
         <p className="smallcaps text-foreground">04 · Account alerts</p>
         <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">Notifications</h2>
-        <div className="mt-6">
+        <div className="mt-6 space-y-6">
           <PushNotifications />
+          <div className="border-t border-border pt-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-xl">
+                <p className="smallcaps text-foreground">Daily account digest</p>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Receive yesterday&apos;s calorie position, macros, reserve balance, and logging streak by email at 8:00 AM UTC.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={profile.emailDigest}
+                aria-label="Daily digest email"
+                onClick={handleToggleDigest}
+                disabled={savingArea === "notifications"}
+                className={`relative h-7 w-12 shrink-0 rounded-full border border-border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  profile.emailDigest ? "bg-[var(--ledger-green)]" : "bg-secondary"
+                }`}
+              >
+                <span
+                  className={`absolute left-1 top-1 h-[18px] w-[18px] rounded-full bg-card shadow-sm transition-transform ${
+                    profile.emailDigest ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+            <SectionFeedback area="notifications" feedback={feedback} />
+          </div>
+        </div>
+      </section>
+
+      {/* Integrations */}
+      <section id="integrations" className="surface scroll-mt-24 overflow-hidden p-5 sm:p-7">
+        <p className="smallcaps text-foreground">05 · External records</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">Health integrations</h2>
+        <p className="mt-1 text-[15px] text-muted-foreground">
+          Bring historical weight records into your private nutrition ledger.
+        </p>
+        <div className="mt-6">
+          <HealthIntegrations />
         </div>
       </section>
 
       {/* Export */}
       <section id="statements" className="surface scroll-mt-24 overflow-hidden p-5 sm:p-7">
-        <p className="smallcaps text-foreground">05 · Account statements</p>
+        <p className="smallcaps text-foreground">06 · Account statements</p>
         <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">Export data</h2>
         <p className="mt-1 text-[15px] text-muted-foreground">
           Download your nutrition data as a CSV file for personal records or sharing with a nutritionist.

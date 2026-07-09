@@ -14,27 +14,7 @@ import {
 } from 'lucide-react';
 import { MealList } from './MealList';
 import { addLocalDays, formatLocalDateKey, isValidLocalDateKey, parseLocalDate } from '@/lib/date-utils';
-
-interface Meal {
-  id: string;
-  name: string;
-  mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK' | 'OTHER';
-  calories: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-  fiberG?: number;
-  sugarG?: number;
-  sodiumMg?: number;
-  vitaminCMg?: number;
-  calciumMg?: number;
-  ironMg?: number;
-  potassiumMg?: number;
-  servingSizeG?: number | null;
-  source: 'AI_PARSED' | 'MANUAL_ENTRY';
-  aiConfidence: number | null;
-  createdAt: string;
-}
+import type { MealActivityItem } from '@/src/lib/meal-activity';
 
 interface CalorieBank {
   borrowed: number;
@@ -45,7 +25,7 @@ interface MealsResponse {
   targetCalories: number;
   consumedCalories: number;
   remainingCalories: number;
-  meals: Meal[];
+  meals: MealActivityItem[];
   calorieBank: CalorieBank;
 }
 

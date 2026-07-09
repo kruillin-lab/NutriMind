@@ -94,8 +94,26 @@ test.describe.serial('Manual meal logging', () => {
     expect(response.status()).toBe(200);
     await expect(dialog).not.toBeVisible({ timeout: 5000 });
 
-    await page.waitForLoadState('networkidle');
-    const pageText = await page.locator('body').innerText();
-    expect(pageText).toMatch(/400 (?:cal|kcal)/);
+    // The activity ledger refreshes after the amendment response. Auto-wait for
+    // the refreshed statement instead of sampling while its skeleton is visible.
+    await expect(page.locator('body')).toContainText(/400 (?:cal|kcal)/, { timeout: 10000 });
+  });
+
+  test('4. Merged planning, achievement, voice, and account-control surfaces render', async ({ page }) => {
+    await page.goto(`http://localhost:3000/dashboard?test-user-id=${TEST_USER_ID}`);
+    await expect(page.getByRole('button', { name: 'Enter meal description by voice' })).toBeVisible();
+
+    await page.getByRole('tab', { name: 'Planning' }).click();
+    await expect(page.getByText('Recipe Builder', { exact: true })).toBeVisible();
+    await expect(page.getByText('Grocery List', { exact: true })).toBeVisible();
+
+    await page.getByRole('tab', { name: 'Body' }).click();
+    await expect(page.getByText('Achievements', { exact: true })).toBeVisible();
+
+    await page.setExtraHTTPHeaders({ 'X-Test-User-Id': TEST_USER_ID });
+    await page.goto('http://localhost:3000/settings');
+    await expect(page.getByText('Daily account digest', { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Health integrations', exact: true })).toBeVisible();
+    await expect(page.getByText('Health Platform Integrations', { exact: true })).toBeVisible();
   });
 });

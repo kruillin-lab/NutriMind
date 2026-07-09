@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -132,108 +131,108 @@ export default function MealPlanner() {
   const todayPlans = getTodayPlans();
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg">Meal Planner</CardTitle>
-          </div>
-          <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            New Plan
-          </Button>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Meal Plan</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
+    <div className="surface overflow-hidden">
+      <div className="foil" />
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-4 w-4" style={{ color: "var(--brass)" }} />
+          <span className="smallcaps">Meal planner</span>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)} className="btn-ghost h-8 rounded-sm px-3 text-xs">
+          <Plus className="mr-1 h-3.5 w-3.5" />
+          New plan
+        </Button>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="rounded-sm">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold tracking-[-0.02em]">Create meal plan</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="planName" className="smallcaps">Plan name</Label>
+                <Input
+                  id="planName"
+                  placeholder="e.g., Week of Jan 20"
+                  value={newPlan.name}
+                  onChange={(e) =>
+                    setNewPlan({ ...newPlan, name: e.target.value })
+                  }
+                  className="rounded-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="planName">Plan Name</Label>
+                  <Label htmlFor="startDate" className="smallcaps">Start date</Label>
                   <Input
-                    id="planName"
-                    placeholder="e.g., Week of Jan 20"
-                    value={newPlan.name}
+                    id="startDate"
+                    type="date"
+                    value={newPlan.startDate}
                     onChange={(e) =>
-                      setNewPlan({ ...newPlan, name: e.target.value })
+                      setNewPlan({ ...newPlan, startDate: e.target.value })
                     }
+                    className="num rounded-sm"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate">Start Date</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={newPlan.startDate}
-                      onChange={(e) =>
-                        setNewPlan({ ...newPlan, startDate: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="endDate">End Date</Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={newPlan.endDate}
-                      onChange={(e) =>
-                        setNewPlan({ ...newPlan, endDate: e.target.value })
-                      }
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate" className="smallcaps">End date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={newPlan.endDate}
+                    onChange={(e) =>
+                      setNewPlan({ ...newPlan, endDate: e.target.value })
+                    }
+                    className="num rounded-sm"
+                  />
                 </div>
-                <Button
-                  onClick={createPlan}
-                  disabled={creating || !newPlan.name || !newPlan.startDate || !newPlan.endDate}
-                  className="w-full"
-                >
-                  {creating ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Plus className="h-4 w-4 mr-2" />
-                  )}
-                  Create Plan
-                </Button>
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+              <Button
+                onClick={createPlan}
+                disabled={creating || !newPlan.name || !newPlan.startDate || !newPlan.endDate}
+                className="btn-primary w-full rounded-sm"
+              >
+                {creating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="mr-2 h-4 w-4" />
+                )}
+                Create plan
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <div className="px-5 py-4">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : todayPlans.length > 0 ? (
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-muted-foreground mb-2">
-              Today&apos;s Planned Meals
-            </div>
+          <div>
+            <p className="smallcaps mb-1">Today&apos;s planned meals</p>
             {todayPlans.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-3 rounded-xl border border-border bg-card"
+                className="ledger-row"
               >
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm truncate">
+                    <span className="truncate text-sm text-foreground">
                       {item.name}
                     </span>
-                    <span className="text-xs text-muted-foreground capitalize">
+                    <span className="smallcaps">
                       {item.mealType.toLowerCase()}
                     </span>
                   </div>
-                  <div className="num text-xs text-muted-foreground mt-1">
+                  <div className="num mt-1 text-xs text-muted-foreground">
                     {item.calories} cal · P: {item.proteinG}g · C: {item.carbsG}g
                     · F: {item.fatG}g
                   </div>
                 </div>
                 {item.isLogged ? (
-                  <div className="flex items-center gap-1 text-chart-2 text-sm">
+                  <div className="flex items-center gap-1 text-sm" style={{ color: "var(--ledger-green)" }}>
                     <Check className="h-4 w-4" />
-                    <span className="text-xs">Logged</span>
+                    <span className="smallcaps">Logged</span>
                   </div>
                 ) : (
                   <Button
@@ -241,33 +240,32 @@ export default function MealPlanner() {
                     variant="outline"
                     onClick={() => logMeal(item.id)}
                     disabled={loggingId === item.id}
+                    className="btn-ghost h-7 rounded-sm px-2 text-xs"
                   >
                     {loggingId === item.id ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <Plus className="h-3.5 w-3.5" />
                     )}
-                    <span className="ml-1 text-xs">Log</span>
+                    <span className="ml-1">Log</span>
                   </Button>
                 )}
               </div>
             ))}
           </div>
         ) : plans.length > 0 ? (
-          <div className="space-y-3">
-            <div className="text-sm font-medium text-muted-foreground">
-              No meals planned for today
-            </div>
-            <div className="space-y-2">
+          <div>
+            <p className="smallcaps mb-1">No meals planned for today</p>
+            <div>
               {plans.slice(0, 3).map((plan) => (
                 <div
                   key={plan.id}
-                  className="p-3 rounded-xl border border-border bg-card/50 flex items-center justify-between"
+                  className="ledger-row"
                 >
                   <div>
-                    <div className="font-medium text-sm">{plan.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatDate(plan.startDate)} - {formatDate(plan.endDate)} ·{" "}
+                    <div className="text-sm text-foreground">{plan.name}</div>
+                    <div className="num text-xs text-muted-foreground">
+                      {formatDate(plan.startDate)} – {formatDate(plan.endDate)} ·{" "}
                       {plan.items.length} meals
                     </div>
                   </div>
@@ -277,13 +275,13 @@ export default function MealPlanner() {
             </div>
           </div>
         ) : (
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            <CalendarDays className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            <CalendarDays className="mx-auto mb-2 h-8 w-8 opacity-50" />
             <p>No meal plans yet.</p>
-            <p className="text-xs mt-1">Create a plan to start scheduling meals.</p>
+            <p className="mt-1 text-xs">Create a plan to start scheduling meals.</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

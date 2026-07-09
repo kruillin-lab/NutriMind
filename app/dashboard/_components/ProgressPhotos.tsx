@@ -2,7 +2,6 @@
 
 import NextImage from "next/image";
 import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -177,15 +176,16 @@ export function ProgressPhotos() {
   return (
     <>
       <section className="surface overflow-hidden">
+        <div className="foil" />
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2">
-            <Camera className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Progress Photos</h3>
+            <Camera className="h-4 w-4" style={{ color: "var(--brass)" }} />
+            <h3 className="smallcaps">Progress Photos</h3>
           </div>
-          <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
+          <button onClick={() => setDialogOpen(true)} className="btn-ghost h-8 px-3 text-xs">
             <Plus className="h-4 w-4 mr-1" />
             Add Photo
-          </Button>
+          </button>
         </div>
         <div className="px-5 py-4">
           {photos.length === 0 ? (
@@ -197,22 +197,20 @@ export function ProgressPhotos() {
               <p className="text-xs text-muted-foreground/70 mt-1">
                 Take photos to track your visual progress over time
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
+              <button
                 onClick={() => setDialogOpen(true)}
+                className="btn-ghost mt-4 h-8 px-3 text-xs"
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Add Your First Photo
-              </Button>
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {photos.map((photo) => (
                 <div
                   key={photo.id}
-                  className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-muted"
+                  className="relative group aspect-square rounded-sm overflow-hidden border border-border bg-muted"
                 >
                   <NextImage
                     src={photo.imageData}
@@ -236,15 +234,13 @@ export function ProgressPhotos() {
                         {photo.caption}
                       </p>
                     )}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="mt-2 h-7 text-xs"
+                    <button
                       onClick={() => handleDelete(photo.id)}
+                      className="mt-2 inline-flex h-7 items-center rounded-sm border border-[var(--ledger-red)]/40 bg-[var(--ledger-red)]/20 px-2 text-xs text-white transition-colors hover:bg-[var(--ledger-red)]/30"
                     >
                       <Trash2 className="h-3 w-3 mr-1" />
                       Delete
-                    </Button>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -260,17 +256,18 @@ export function ProgressPhotos() {
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label htmlFor="photo">Photo</Label>
+              <Label htmlFor="photo" className="smallcaps">Photo</Label>
               <Input
                 id="photo"
                 type="file"
                 accept="image/*"
                 onChange={handleFileSelect}
+                className="rounded-sm"
               />
             </div>
 
             {previewUrl && (
-              <div className="relative aspect-video rounded-xl overflow-hidden border border-border bg-muted">
+              <div className="relative aspect-video rounded-sm overflow-hidden border border-border bg-muted">
                 <NextImage
                   src={previewUrl}
                   alt="Preview"
@@ -283,17 +280,18 @@ export function ProgressPhotos() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="photoDate">Date</Label>
+              <Label htmlFor="photoDate" className="smallcaps">Date</Label>
               <Input
                 id="photoDate"
                 type="date"
                 value={photoDate}
                 onChange={(e) => setPhotoDate(e.target.value)}
+                className="num rounded-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="weight">Weight (kg, optional)</Label>
+              <Label htmlFor="weight" className="smallcaps">Weight (kg, optional)</Label>
               <Input
                 id="weight"
                 type="number"
@@ -301,30 +299,33 @@ export function ProgressPhotos() {
                 placeholder="e.g., 70.5"
                 value={weightKg}
                 onChange={(e) => setWeightKg(e.target.value)}
+                className="num rounded-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="caption">Caption (optional)</Label>
+              <Label htmlFor="caption" className="smallcaps">Caption (optional)</Label>
               <Input
                 id="caption"
                 placeholder="e.g., Week 4 progress"
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
+                className="rounded-sm"
               />
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
+              <button
                 onClick={() => setDialogOpen(false)}
                 disabled={uploading}
+                className="btn-ghost h-9 px-4 text-xs disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={handleUpload}
                 disabled={!selectedFile || uploading}
+                className="btn-primary h-9 px-4 text-xs disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {uploading ? (
                   <>
@@ -337,7 +338,7 @@ export function ProgressPhotos() {
                     Upload Photo
                   </>
                 )}
-              </Button>
+              </button>
             </div>
           </div>
         </DialogContent>

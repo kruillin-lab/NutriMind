@@ -148,7 +148,7 @@ export function ScannerModal({ onResult, onClose }: ScannerModalProps) {
     <div className="fixed inset-0 z-50 bg-black/80 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-background border-b border-border">
-        <h2 className="font-serif text-lg font-medium">Scan Food</h2>
+        <h2 className="text-lg font-bold tracking-[-0.02em] text-foreground">Scan Food</h2>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-5 w-5" />
         </Button>
@@ -160,11 +160,12 @@ export function ScannerModal({ onResult, onClose }: ScannerModalProps) {
           <button
             key={t}
             onClick={() => switchTab(t)}
-            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition-colors ${
+            className={`smallcaps flex-1 py-3 flex items-center justify-center gap-2 border-b-2 transition-colors ${
               tab === t
-                ? "border-primary text-primary"
+                ? "text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
+            style={tab === t ? { borderColor: "var(--brass)" } : undefined}
           >
             {t === "barcode" ? <QrCode className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
             {t === "barcode" ? "Barcode" : "Nutrition Label"}
@@ -209,26 +210,27 @@ function ResultCard({
   };
 
   return (
-    <div className="surface w-full max-w-sm p-6 space-y-5">
-      <div className="flex items-center gap-2 text-chart-2">
+    <div className="surface w-full max-w-sm space-y-5 overflow-hidden p-6">
+      <div className="foil -mx-6 -mt-6 mb-1" />
+      <div className="flex items-center gap-2" style={{ color: "var(--ledger-green)" }}>
         <CheckCircle className="h-5 w-5" />
-        <span className="font-medium">Found!</span>
+        <span className="smallcaps">Found</span>
       </div>
       <div>
-        <label className="text-xs text-muted-foreground mb-1 block">Name (editable)</label>
+        <label className="smallcaps mb-1 block">Name (editable)</label>
         <Input
           value={editedName}
           onChange={(e) => setEditedName(e.target.value)}
-          className="font-semibold text-lg leading-tight h-auto py-1.5"
+          className="h-auto rounded-sm py-1.5 text-lg font-semibold leading-tight"
         />
         {result.servingSize && (
-          <p className="text-sm text-muted-foreground mt-0.5">Per serving: {result.servingSize}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">Per serving: {result.servingSize}</p>
         )}
       </div>
       <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="bg-secondary rounded-xl border border-border p-3 text-center col-span-2">
-          <p className="num-display font-serif text-3xl text-foreground">{result.calories}</p>
-          <p className="text-muted-foreground text-xs mt-0.5 uppercase tracking-wide">Calories</p>
+        <div className="surface-raised col-span-2 p-3 text-center">
+          <p className="num-display text-3xl text-foreground">{result.calories}</p>
+          <p className="smallcaps mt-0.5">Calories</p>
         </div>
         {[
           ["Protein", `${result.proteinG}g`],
@@ -239,18 +241,18 @@ function ResultCard({
           ["Sodium", `${result.sodiumMg}mg`],
         ].map(([label, value]) => (
           <div key={label} className="flex justify-between">
-            <span className="text-muted-foreground">{label}</span>
-            <span className="font-medium">{value}</span>
+            <span className="smallcaps">{label}</span>
+            <span className="num font-medium text-foreground">{value}</span>
           </div>
         ))}
       </div>
       <div className="flex gap-2 pt-1">
-        <Button variant="outline" className="flex-1" onClick={onRetry}>
+        <button className="btn-ghost flex-1" onClick={onRetry}>
           Scan Again
-        </Button>
-        <Button className="flex-1" onClick={handleConfirm}>
+        </button>
+        <button className="btn-primary flex-1" onClick={handleConfirm}>
           Log This
-        </Button>
+        </button>
       </div>
     </div>
   );
@@ -269,7 +271,7 @@ function BarcodeView({
 }) {
   return (
     <div className="w-full max-w-sm flex flex-col items-center gap-5">
-      <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-zinc-900">
+      <div className="relative w-full aspect-square rounded-sm overflow-hidden bg-zinc-900">
         <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
         {/* Corner brackets overlay */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -277,15 +279,16 @@ function BarcodeView({
             {["tl", "tr", "bl", "br"].map((pos) => (
               <div
                 key={pos}
-                className={`absolute w-7 h-7 border-white border-2 ${
+                className={`absolute w-7 h-7 border-2 ${
                   pos === "tl"
-                    ? "top-0 left-0 border-r-0 border-b-0 rounded-tl-sm"
+                    ? "top-0 left-0 border-r-0 border-b-0"
                     : pos === "tr"
-                    ? "top-0 right-0 border-l-0 border-b-0 rounded-tr-sm"
+                    ? "top-0 right-0 border-l-0 border-b-0"
                     : pos === "bl"
-                    ? "bottom-0 left-0 border-r-0 border-t-0 rounded-bl-sm"
-                    : "bottom-0 right-0 border-l-0 border-t-0 rounded-br-sm"
+                    ? "bottom-0 left-0 border-r-0 border-t-0"
+                    : "bottom-0 right-0 border-l-0 border-t-0"
                 }`}
+                style={{ borderColor: "var(--brass-foil)" }}
               />
             ))}
           </div>
@@ -298,15 +301,15 @@ function BarcodeView({
       </div>
 
       {error ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl bg-card/95 px-4 py-3 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-sm bg-card/95 px-4 py-3 text-center">
           <AlertCircle className="h-6 w-6 text-destructive" />
           <p className="text-sm text-foreground">{error}</p>
-          <Button variant="secondary" size="sm" onClick={onRetry}>
+          <button className="btn-ghost" onClick={onRetry}>
             Try Again
-          </Button>
+          </button>
         </div>
       ) : (
-        <p className="text-white/60 text-sm text-center">
+        <p className="smallcaps text-center text-white/60">
           {status === "loading" ? "Looking up product…" : "Point camera at a barcode"}
         </p>
       )}
@@ -336,14 +339,14 @@ function LabelView({
 
   return (
     <div className="w-full max-w-sm flex flex-col items-center gap-5">
-      <div className="w-full border-2 border-dashed border-white/25 rounded-xl p-10 flex flex-col items-center gap-3 text-white/60">
+      <div className="w-full border-2 border-dashed border-white/25 rounded-sm p-10 flex flex-col items-center gap-3 text-white/60">
         <ImageIcon className="h-14 w-14" />
         <p className="text-sm text-center">
           Take a photo of a nutrition facts panel or upload an image
         </p>
       </div>
       {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-card/95 px-3 py-2 text-destructive text-sm">
+        <div className="flex items-center gap-2 rounded-sm bg-card/95 px-3 py-2 text-destructive text-sm">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           <span>{error}</span>
         </div>
@@ -356,10 +359,10 @@ function LabelView({
         className="hidden"
         onChange={onSelect}
       />
-      <Button className="w-full" onClick={() => fileRef.current?.click()}>
+      <button className="btn-primary w-full" onClick={() => fileRef.current?.click()}>
         <ImageIcon className="h-4 w-4 mr-2" />
         Take Photo / Upload
-      </Button>
+      </button>
     </div>
   );
 }

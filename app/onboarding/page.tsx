@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useRouter } from "next/navigation";
+
+const STEPS = [
+  { n: "01", label: "About you" },
+  { n: "02", label: "Weight goal" },
+  { n: "03", label: "Activity" },
+] as const;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -121,189 +125,204 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 app-field">
-      <Card className="surface w-full max-w-lg">
-        <CardHeader>
-          <CardTitle className="font-serif text-2xl font-medium">Welcome to NutriMind</CardTitle>
-          <CardDescription>
-            Let&apos;s set up your profile to personalize your Calorie Bank
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Progress indicator */}
-          <div className="flex gap-2 mb-6">
-            {[1, 2, 3].map((s) => (
-              <div
-                key={s}
-                className={`h-1.5 flex-1 rounded-full ${
-                  s <= step ? "bg-primary" : "bg-foreground/10"
-                }`}
-              />
-            ))}
+    <div className="bg-hero min-h-screen px-4 py-10 sm:px-8 lg:py-16">
+      <div className="mx-auto grid w-full max-w-6xl items-start gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(28rem,1.15fr)] lg:gap-20">
+        <section aria-labelledby="account-opening-title" className="pt-2 lg:sticky lg:top-28">
+          <span className="seal h-11 w-11 text-[10px] font-bold tracking-tight">NM</span>
+          <p className="smallcaps mt-10 text-foreground">NutriMind Reserve · Account opening</p>
+          <h1
+            id="account-opening-title"
+            className="mt-4 max-w-lg text-[clamp(2.5rem,6vw,4.5rem)] font-bold leading-[0.98] tracking-[-0.035em] text-foreground"
+          >
+            Establish your daily reserve.
+          </h1>
+          <p className="mt-6 max-w-md text-[15px] leading-[1.7] text-muted-foreground">
+            Three short entries set your opening allowance. NutriMind uses them to estimate a starting target; you remain in control of every setting afterward.
+          </p>
+
+          <div className="mt-10 max-w-md border-y border-border py-4">
+            <div className="ledger-row border-t-0">
+              <span className="smallcaps">Application</span>
+              <span className="num text-sm text-foreground">NM-NEW</span>
+            </div>
+            <div className="ledger-row">
+              <span className="smallcaps">Entries required</span>
+              <span className="num text-sm text-foreground">03</span>
+            </div>
+            <div className="ledger-row">
+              <span className="smallcaps">Opening balance</span>
+              <span className="num text-sm text-foreground">0 kcal</span>
+            </div>
           </div>
+        </section>
 
-          {step === 1 && (
-            <div className="space-y-4">
+        <section className="surface overflow-hidden" aria-label="Calorie reserve application">
+          <div className="foil" />
+          <div className="p-5 sm:p-8">
+            <div className="flex items-start justify-between gap-4 border-b border-border pb-5">
               <div>
-                <Label htmlFor="height">Height (cm)</Label>
-                <Input
-                  id="height"
-                  type="number"
-                  value={profile.heightCm}
-                  onChange={(e) =>
-                    setProfile({ ...profile, heightCm: e.target.value })
-                  }
-                  placeholder="175"
-                />
+                <p className="smallcaps">Reserve application</p>
+                <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">
+                  Set up your Calorie Bank
+                </h2>
               </div>
-              <div>
-                <Label htmlFor="birthDate">Birth Date</Label>
-                <Input
-                  id="birthDate"
-                  type="date"
-                  value={profile.birthDate}
-                  onChange={(e) =>
-                    setProfile({ ...profile, birthDate: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <Label>Gender</Label>
-                <RadioGroup
-                  value={profile.gender}
-                  onValueChange={(v) =>
-                    setProfile({ ...profile, gender: v as "MALE" | "FEMALE" })
-                  }
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="MALE" id="male" />
-                    <Label htmlFor="male">Male</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="FEMALE" id="female" />
-                    <Label htmlFor="female">Female</Label>
-                  </div>
-                </RadioGroup>
-              </div>
+              <span className="num text-xs text-muted-foreground">Step {step}/3</span>
             </div>
-          )}
 
-          {step === 2 && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="currentWeight">Current Weight (kg)</Label>
-                <Input
-                  id="currentWeight"
-                  type="number"
-                  step="0.1"
-                  value={currentWeight}
-                  onChange={(e) => setCurrentWeight(e.target.value)}
-                  placeholder="75.5"
-                />
-              </div>
-              <div>
-                <Label htmlFor="goalWeight">Goal Weight (kg)</Label>
-                <Input
-                  id="goalWeight"
-                  type="number"
-                  step="0.1"
-                  value={profile.goalWeightKg}
-                  onChange={(e) =>
-                    setProfile({ ...profile, goalWeightKg: e.target.value })
-                  }
-                  placeholder="70"
-                />
-              </div>
-              <div>
-                <Label htmlFor="bodyFat">Body Fat % (optional)</Label>
-                <Input
-                  id="bodyFat"
-                  type="number"
-                  step="0.1"
-                  value={currentBodyFat}
-                  onChange={(e) => setCurrentBodyFat(e.target.value)}
-                  placeholder="18"
-                />
-              </div>
+            <ol className="mt-5 grid grid-cols-3 gap-2" aria-label="Account setup progress">
+              {STEPS.map((s, i) => {
+                const stepNum = i + 1;
+                const isActive = stepNum === step;
+                const isDone = stepNum < step;
+                return (
+                  <li
+                    key={s.n}
+                    aria-current={isActive ? "step" : undefined}
+                    className={`border-t-2 pt-3 ${isActive || isDone ? "border-[var(--brass)]" : "border-border"}`}
+                  >
+                    <span className="num text-sm font-semibold text-foreground">{s.n}</span>
+                    <span className={`smallcaps mt-1 block ${isActive ? "text-foreground" : ""}`}>
+                      {s.label}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+            <div
+              className="track mt-4"
+              role="progressbar"
+              aria-label="Account setup progress"
+              aria-valuemin={1}
+              aria-valuemax={STEPS.length}
+              aria-valuenow={step}
+            >
+              <div className="fill-indigo" style={{ width: `${(step / STEPS.length) * 100}%` }} />
             </div>
-          )}
 
-          {step === 3 && (
-            <div className="space-y-4">
-              <div>
-                <Label>Activity Level</Label>
-                <RadioGroup
-                  value={profile.activityLevel}
-                  onValueChange={(v) =>
-                    setProfile({
-                      ...profile,
-                      activityLevel: v as typeof profile.activityLevel,
-                    })
-                  }
-                >
-                  {[
-                    { value: "SEDENTARY", label: "Sedentary (desk job)" },
-                    { value: "LIGHTLY_ACTIVE", label: "Lightly Active (1-2 days/week)" },
-                    { value: "MODERATELY_ACTIVE", label: "Moderately Active (3-5 days/week)" },
-                    { value: "VERY_ACTIVE", label: "Very Active (6-7 days/week)" },
-                    { value: "EXTRA_ACTIVE", label: "Extra Active (athlete)" },
-                  ].map((option) => (
-                    <div key={option.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option.value} id={option.value} />
-                      <Label htmlFor={option.value}>{option.label}</Label>
+            <div className="mt-8" aria-live="polite">
+              {step === 1 && (
+                <div className="space-y-5">
+                  <div>
+                    <p className="smallcaps text-foreground">01 · Account holder</p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      Basic details establish the first metabolic estimate.
+                    </p>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <Label htmlFor="height" className="smallcaps">Height (cm)</Label>
+                      <Input id="height" type="number" value={profile.heightCm} onChange={(e) => setProfile({ ...profile, heightCm: e.target.value })} placeholder="175" className="mt-1.5" />
                     </div>
-                  ))}
-                </RadioGroup>
-              </div>
-
-              {profile.heightCm && currentWeight && profile.birthDate && (
-                <div className="mt-4 rounded-xl border border-border bg-secondary p-4">
-                  <p className="text-sm font-medium text-foreground">
-                    Your estimated daily target: {calculateTDEE(calculateBMR())} calories
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    This will be your starting budget for the Calorie Bank
-                  </p>
+                    <div>
+                      <Label htmlFor="birthDate" className="smallcaps">Birth date</Label>
+                      <Input id="birthDate" type="date" value={profile.birthDate} onChange={(e) => setProfile({ ...profile, birthDate: e.target.value })} className="mt-1.5" />
+                    </div>
+                  </div>
+                  <fieldset>
+                    <legend className="smallcaps">Gender</legend>
+                    <RadioGroup value={profile.gender} onValueChange={(v) => setProfile({ ...profile, gender: v as "MALE" | "FEMALE" })} className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div className="flex min-h-11 items-center space-x-3 border border-border bg-card px-3 py-2">
+                        <RadioGroupItem value="MALE" id="male" />
+                        <Label htmlFor="male" className="flex-1">Male</Label>
+                      </div>
+                      <div className="flex min-h-11 items-center space-x-3 border border-border bg-card px-3 py-2">
+                        <RadioGroupItem value="FEMALE" id="female" />
+                        <Label htmlFor="female" className="flex-1">Female</Label>
+                      </div>
+                    </RadioGroup>
+                  </fieldset>
                 </div>
               )}
-            </div>
-          )}
 
-          {submitError && (
-            <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
-              {submitError}
-            </div>
-          )}
+              {step === 2 && (
+                <div className="space-y-5">
+                  <div>
+                    <p className="smallcaps text-foreground">02 · Goal mandate</p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      Record today&apos;s position and the weight you are working toward.
+                    </p>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <Label htmlFor="currentWeight" className="smallcaps">Current weight (kg)</Label>
+                      <Input id="currentWeight" type="number" step="0.1" value={currentWeight} onChange={(e) => setCurrentWeight(e.target.value)} placeholder="75.5" className="mt-1.5" />
+                    </div>
+                    <div>
+                      <Label htmlFor="goalWeight" className="smallcaps">Goal weight (kg)</Label>
+                      <Input id="goalWeight" type="number" step="0.1" value={profile.goalWeightKg} onChange={(e) => setProfile({ ...profile, goalWeightKg: e.target.value })} placeholder="70" className="mt-1.5" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="bodyFat" className="smallcaps">Body fat % (optional)</Label>
+                    <Input id="bodyFat" type="number" step="0.1" value={currentBodyFat} onChange={(e) => setCurrentBodyFat(e.target.value)} placeholder="18" className="mt-1.5" />
+                  </div>
+                </div>
+              )}
 
-          <div className="flex justify-between mt-6">
-            {step > 1 && (
-              <Button variant="outline" onClick={handleBack}>
-                Back
-              </Button>
-            )}
-            {step < 3 ? (
-              <Button
-                onClick={handleNext}
-                className={step === 1 ? "ml-auto" : ""}
-                disabled={
-                  (step === 1 && (!profile.heightCm || !profile.birthDate)) ||
-                  (step === 2 && (!currentWeight || !profile.goalWeightKg))
-                }
-              >
-                Next
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={loading}
-                className={step === 1 ? "ml-auto" : ""}
-              >
-                {loading ? "Setting up..." : "Get Started"}
-              </Button>
-            )}
+              {step === 3 && (
+                <div className="space-y-5">
+                  <div>
+                    <p className="smallcaps text-foreground">03 · Activity profile</p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      Choose the level that best reflects an ordinary week.
+                    </p>
+                  </div>
+                  <fieldset>
+                    <legend className="sr-only">Activity level</legend>
+                    <RadioGroup value={profile.activityLevel} onValueChange={(v) => setProfile({ ...profile, activityLevel: v as typeof profile.activityLevel })} className="grid gap-2">
+                      {[
+                        { value: "SEDENTARY", label: "Sedentary (desk job)" },
+                        { value: "LIGHTLY_ACTIVE", label: "Lightly Active (1-2 days/week)" },
+                        { value: "MODERATELY_ACTIVE", label: "Moderately Active (3-5 days/week)" },
+                        { value: "VERY_ACTIVE", label: "Very Active (6-7 days/week)" },
+                        { value: "EXTRA_ACTIVE", label: "Extra Active (athlete)" },
+                      ].map((option) => (
+                        <div key={option.value} className="flex min-h-11 items-center space-x-3 border border-border bg-card px-3 py-2">
+                          <RadioGroupItem value={option.value} id={option.value} />
+                          <Label htmlFor={option.value} className="flex-1">{option.label}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </fieldset>
+
+                  {profile.heightCm && currentWeight && profile.birthDate && (
+                    <div className="surface-raised border-t-2 border-t-foreground p-4">
+                      <div className="flex items-baseline justify-between gap-4">
+                        <p className="smallcaps">Opening daily allowance</p>
+                        <p className="num-display text-2xl text-foreground">
+                          {calculateTDEE(calculateBMR())} <span className="text-sm font-normal text-muted-foreground">cal</span>
+                        </p>
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                        This is your starting budget. You can revise it later in Account Controls.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {submitError && (
+                <p className="mt-5 border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive" role="alert">
+                  {submitError}
+                </p>
+              )}
+
+              <div className="mt-8 flex justify-between border-t border-border pt-6">
+                {step > 1 && <button type="button" onClick={handleBack} className="btn-ghost">Back</button>}
+                {step < 3 ? (
+                  <button type="button" onClick={handleNext} className={`btn-primary disabled:pointer-events-none disabled:opacity-50 ${step === 1 ? "ml-auto" : ""}`} disabled={(step === 1 && (!profile.heightCm || !profile.birthDate)) || (step === 2 && (!currentWeight || !profile.goalWeightKg))}>
+                    Next
+                  </button>
+                ) : (
+                  <button type="button" onClick={handleSubmit} disabled={loading} aria-busy={loading} className="btn-primary disabled:pointer-events-none disabled:opacity-50">
+                    {loading ? "Setting up..." : "Get started"}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </section>
+      </div>
     </div>
   );
 }

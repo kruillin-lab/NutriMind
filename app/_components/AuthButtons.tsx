@@ -1,7 +1,6 @@
 "use client";
 
 import { useClerk, UserButton } from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
 
 export function AuthButtons() {
   const { openSignIn, user } = useClerk();
@@ -11,13 +10,12 @@ export function AuthButtons() {
   }
 
   return (
-    <Button
+    <button
       type="button"
-      size="sm"
-      variant="outline"
       onClick={() => openSignIn({ forceRedirectUrl: "/dashboard" })}
+      className="btn-ghost h-10 px-4 text-[11px] uppercase tracking-[0.08em]"
     >
-      Sign In
-    </Button>
+      Sign in
+    </button>
   );
 }

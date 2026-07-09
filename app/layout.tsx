@@ -3,13 +3,13 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { AuthButtons } from "./_components/AuthButtons";
 import { ThemeProvider } from "@wrksz/themes/next";
 import { MobileNav } from "@/components/MobileNav";
+import { DesktopNav } from "@/components/DesktopNav";
 import Link from "next/link";
-import { Activity, BarChart3, Database, Settings, Utensils } from "lucide-react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NutriMind - The Calorie Bank",
-  description: "Modern nutrition tracking with AI-powered Calorie Bank",
+  title: "NutriMind Reserve - Your Calorie Account",
+  description: "Run your nutrition like an account: allocate today, build a reserve, and spend it deliberately.",
 };
 
 export default async function RootLayout({
@@ -31,36 +31,23 @@ export default async function RootLayout({
           signUpFallbackRedirectUrl="/onboarding"
         >
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
-              <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-                <Link href="/" className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-                    <Activity className="h-4 w-4" />
+            <header className="sticky top-0 z-50 border-b border-border bg-background/92 backdrop-blur-xl">
+              <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                <Link href="/" className="group flex items-center gap-3" aria-label="NutriMind Reserve home">
+                  <span className="seal flex h-9 w-9 items-center justify-center text-[9px] font-bold tracking-tight transition-transform group-hover:rotate-[-4deg]">
+                    NM
                   </span>
-                  <span className="font-serif text-base font-semibold tracking-tight text-foreground">NutriMind</span>
+                  <span>
+                    <span className="block text-[15px] font-bold tracking-[-0.02em] text-foreground">NutriMind</span>
+                    <span className="smallcaps accent-text block text-[9px]">Reserve account</span>
+                  </span>
                 </Link>
-                <nav className="flex items-center gap-1.5">
-                  <Link href="/dashboard" className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground sm:flex">
-                    <BarChart3 className="h-3.5 w-3.5" />
-                    Dashboard
-                  </Link>
-                  <Link href="/meals" className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground sm:flex">
-                    <Utensils className="h-3.5 w-3.5" />
-                    Meals
-                  </Link>
-                  <Link href="/settings" className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:flex">
-                    <Settings className="h-3.5 w-3.5" />
-                    Settings
-                  </Link>
-                  {process.env.NODE_ENV !== "production" && (
-                    <Link href="/database" className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:flex">
-                      <Database className="h-3.5 w-3.5" />
-                      Database
-                    </Link>
-                  )}
+                <div className="flex items-center gap-2">
+                  <DesktopNav showDatabase={process.env.NODE_ENV !== "production"} />
+                  <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden="true" />
                   <AuthButtons />
                   <MobileNav />
-                </nav>
+                </div>
               </div>
             </header>
             <main className="flex-1">

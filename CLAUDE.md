@@ -27,12 +27,15 @@ npx prisma migrate dev
 
 - **Prisma import**: always `@/src/lib/prisma` — NOT `@/lib/prisma`
 - **OpenAI env collision**: use `NUTRIMIND_OPENAI_API_KEY` (not `OPENAI_API_KEY`) to avoid system-level override. Routes read this first with fallback.
-- **`parse-meal/route.ts`** reads `.env.local` via `readFileSync` directly — intentional workaround, do not remove
+- **OpenAI keys**: parse routes read `NUTRIMIND_OPENAI_API_KEY` first from `process.env`, with `OPENAI_API_KEY` fallback
 - **proxy.ts**: Next.js 16 proxy convention is active. Clerk's wrapper is still named `clerkMiddleware`; keep it there for route protection.
 - **Refresh strategy**: client components call `window.location.reload()` after mutations — intentional, no SWR/React Query yet
-- **Dates**: always UTC midnight (`setUTCHours(0,0,0,0)`) everywhere
+- **Dates**: current behavior mixes route-local/server-local and UTC semantics; preserve each route until the planned user-timezone migration is designed and reconciled
 - **E2E auth bypass**: `X-Test-User-Id` header or `?test-user-id=` query param (non-prod only)
 - Dashboard `page.tsx` is server component — fetches all data in parallel via `Promise.all`, passes as props
+- Dashboard section state is durable in `?view=`; Meals/Activity day state is durable in `?date=`
+- New meal-entry routes call `recordMeal()` from `src/lib/nutrition-day.ts` inside a Prisma transaction; do not duplicate DailyLog/bank mutation logic
+- Finance UX: decorative `--brass` is not a small-text color; use `--brass-ink` / `.accent-text`
 
 ## CalorieBank Logic
 

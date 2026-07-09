@@ -1,7 +1,5 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
-
 export default function GlobalError({
   error,
   reset,
@@ -10,15 +8,19 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <div className="app-field flex min-h-screen items-center justify-center px-4">
+    <div className="bg-hero flex min-h-screen items-center justify-center px-4">
       <div className="surface w-full max-w-md p-8 pt-10 text-center">
-        <AlertTriangle className="mx-auto mb-4 h-10 w-10 text-destructive" />
-        <h2 className="mb-2 font-serif text-2xl text-foreground">Something went wrong</h2>
-        <p className="mb-6 text-sm text-muted-foreground">
-          An unexpected error occurred{error.digest ? ` (ref: ${error.digest})` : ""}. Your data is safe.
+        <p className="smallcaps" style={{ color: "var(--destructive)" }}>
+          Account notice
+        </p>
+        <h2 className="mt-3 mb-2 text-2xl font-bold tracking-[-0.02em] text-foreground">
+          We couldn&apos;t reconcile this view
+        </h2>
+        <p className="mb-6 text-[15px] text-muted-foreground">
+          Your nutrition records are safe. Retry the request, or return to the overview if this account view remains unavailable{error.digest ? ` (ref: ${error.digest})` : ""}.
         </p>
         <button type="button" onClick={reset} className="btn-primary">
-          Try again
+          Reconcile again
         </button>
       </div>
     </div>

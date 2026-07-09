@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { prisma } from '@/src/lib/prisma';
 import { MealHistoryClient } from './_components/MealHistoryClient';
-import { addLocalDays, formatLocalDateKey, parseLocalDate } from '@/lib/date-utils';
+import { addLocalDays, formatLocalDateKey, isValidLocalDateKey, parseLocalDate } from '@/lib/date-utils';
 
 interface MealsPageData {
   targetCalories: number;
@@ -147,9 +147,7 @@ export default async function MealsPage({
   const today = formatLocalDateKey(new Date());
   const dateParam = params.date || today;
 
-  // Validate date format
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  const date = dateRegex.test(dateParam) ? dateParam : today;
+  const date = isValidLocalDateKey(dateParam) ? dateParam : today;
 
   const data = await getMealsForDate(userId, date);
 
@@ -157,6 +155,7 @@ export default async function MealsPage({
     <MealHistoryClient
       initialData={data}
       initialDate={date}
+      userId={userId}
     />
   );
 }

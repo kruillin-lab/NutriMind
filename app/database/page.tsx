@@ -16,10 +16,10 @@ export default async function DatabasePage() {
     <div className="min-h-screen app-field">
       <div className="mx-auto max-w-7xl px-4 py-8">
         <header className="mb-8 border-b border-border pb-6">
-          <p className="text-xs font-medium uppercase tracking-wide text-primary">
+          <p className="page-kicker">
             Development only
           </p>
-          <h1 className="mt-2 text-4xl text-foreground">
+          <h1 className="mt-2 text-4xl font-bold tracking-[-0.02em] text-foreground">
             Database
           </h1>
           <p className="mt-2 max-w-2xl text-muted-foreground">

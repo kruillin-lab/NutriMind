@@ -62,10 +62,11 @@ export function QuickWeightLog({ todayEntry, previousEntry }: QuickWeightLogProp
 
   return (
     <div className="surface overflow-hidden">
+      <div className="foil" />
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div className="flex items-center gap-2">
-          <Scale className="h-4 w-4 text-primary" />
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <Scale className="h-4 w-4" style={{ color: "var(--brass)" }} />
+          <span className="smallcaps">
             Today&apos;s Weight
           </span>
         </div>
@@ -89,9 +90,9 @@ export function QuickWeightLog({ todayEntry, previousEntry }: QuickWeightLogProp
               value={value}
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSave()}
-              className="num w-full rounded-lg border border-input bg-card px-3 py-2 pr-8 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
+              className="num w-full rounded-sm border border-input bg-card px-3 py-2 pr-8 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
             />
-            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 smallcaps">
               kg
             </span>
           </div>
@@ -115,7 +116,7 @@ export function QuickWeightLog({ todayEntry, previousEntry }: QuickWeightLogProp
         {currentEntry && !saved && (
           <p className="text-[11px] text-muted-foreground">
             Last logged:{" "}
-            <span className="num font-serif font-medium text-foreground">
+            <span className="num font-medium text-foreground">
               {currentEntry.weightKg} kg
             </span>
           </p>
@@ -123,7 +124,7 @@ export function QuickWeightLog({ todayEntry, previousEntry }: QuickWeightLogProp
 
         {previousEntry && (
           <p className="text-[11px] text-muted-foreground">
-            Previous: {previousEntry.weightKg} kg
+            Previous: <span className="num">{previousEntry.weightKg} kg</span>
           </p>
         )}
       </div>

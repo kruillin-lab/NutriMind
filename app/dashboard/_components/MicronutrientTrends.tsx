@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import {
   LineChart,
@@ -32,15 +31,13 @@ interface NutritionHistoryResponse {
   data: HistoryData[];
 }
 
-// Approved chart palette, in order
+// Vault chart palette, in order — var(--chart-1..5), cycled
 const COLORS = [
-  '#D97757', // terracotta
-  '#7D8A63', // olive
-  '#6A96B8', // slate blue
-  '#D4A27F', // kraft
-  '#8E6C88', // plum
-  '#B3402F', // danger red
-  '#C7913B', // amber
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
 ];
 
 export default function MicronutrientTrends() {
@@ -135,39 +132,37 @@ export default function MicronutrientTrends() {
 
   return (
     <section className="surface mt-6 overflow-hidden">
+      <div className="foil" />
       <div className="border-b border-border px-5 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h3 className="text-sm font-semibold text-foreground">Micronutrient Trends</h3>
+          <h3 className="smallcaps">Micronutrient Trends</h3>
           <div className="flex gap-2">
             {[7, 30, 90].map(dayOption => (
-              <Button
+              <button
                 key={dayOption}
-                variant={days === dayOption ? 'default' : 'outline'}
-                size="sm"
                 onClick={() => setDays(dayOption)}
+                className={days === dayOption ? 'btn-primary h-8 px-3 text-xs' : 'btn-ghost h-8 px-3 text-xs'}
               >
                 {dayOption}D
-              </Button>
+              </button>
             ))}
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2 mt-3">
           {data.nutrients.map(nutrient => (
-            <Button
+            <button
               key={nutrient.key}
-              variant={selectedNutrients.includes(nutrient.key) ? 'default' : 'outline'}
-              size="sm"
               onClick={() => toggleNutrient(nutrient.key)}
-              className="text-xs"
-              style={{
-                backgroundColor: selectedNutrients.includes(nutrient.key)
-                  ? getNutrientColor(nutrient.key)
-                  : undefined,
-              }}
+              className={selectedNutrients.includes(nutrient.key) ? 'pill' : 'smallcaps rounded-sm border border-border px-2 py-[0.1875rem] transition-colors hover:border-[var(--brass)]'}
+              style={
+                selectedNutrients.includes(nutrient.key)
+                  ? { borderColor: getNutrientColor(nutrient.key), color: getNutrientColor(nutrient.key) }
+                  : undefined
+              }
             >
               {nutrient.label} ({nutrient.unit})
-            </Button>
+            </button>
           ))}
         </div>
       </div>
@@ -176,26 +171,26 @@ export default function MicronutrientTrends() {
         <div className="h-[350px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(20,20,19,0.08)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(23,20,13,0.08)" />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
+                tick={{ fontSize: 12, fill: 'var(--muted-foreground)', fontFamily: 'var(--font-mono)' }}
                 interval="preserveStartEnd"
               />
-              <YAxis tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }} />
+              <YAxis tick={{ fontSize: 12, fill: 'var(--muted-foreground)', fontFamily: 'var(--font-mono)' }} />
               <Tooltip
                 content={({ active, payload, label }) => {
                   if (!active || !payload) return null;
                   return (
                     <div className="surface p-3">
-                      <p className="font-semibold text-sm mb-1 text-foreground">{label}</p>
+                      <p className="smallcaps mb-1">{label}</p>
                       {(payload as unknown as { dataKey: string; color: string; value: number }[]).map((entry) => {
                         const nutrient = data.nutrients.find(n => n.key === entry.dataKey);
                         if (!nutrient) return null;
                         return (
                           <p
                             key={entry.dataKey}
-                            className="text-sm"
+                            className="num text-sm"
                             style={{ color: entry.color }}
                           >
                             {nutrient.label}: {entry.value} {nutrient.unit}

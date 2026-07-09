@@ -92,12 +92,13 @@ export default function FoodDatabaseSearch({ onMealAdded }: FoodDatabaseSearchPr
 
   return (
     <div className="surface overflow-hidden">
+      <div className="foil" />
       <div className="flex items-center gap-2 border-b border-border px-5 py-4">
-        <Utensils className="h-4 w-4 text-primary" />
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Food Database Search</span>
+        <Utensils className="h-4 w-4" style={{ color: "var(--brass)" }} />
+        <span className="smallcaps">Food database search</span>
       </div>
 
-      <div className="p-5 space-y-4">
+      <div className="space-y-4 p-5">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -105,7 +106,7 @@ export default function FoodDatabaseSearch({ onMealAdded }: FoodDatabaseSearchPr
             placeholder="Search foods (e.g. chicken, rice, banana)…"
             value={query}
             onChange={(e) => handleInputChange(e.target.value)}
-            className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/25"
+            className="w-full rounded-sm border border-input bg-background py-2 pl-9 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/25"
           />
         </div>
 
@@ -130,7 +131,7 @@ export default function FoodDatabaseSearch({ onMealAdded }: FoodDatabaseSearchPr
           <div className="-mx-5 max-h-72 divide-y divide-border overflow-y-auto">
             {results.map((food) => (
               <div key={food.id} className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-secondary/60">
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-sm text-foreground">{food.name}</p>
                   <p className="num mt-0.5 text-[11px] text-muted-foreground">
                     <span className="text-foreground">{food.calories} kcal</span>
@@ -141,18 +142,19 @@ export default function FoodDatabaseSearch({ onMealAdded }: FoodDatabaseSearchPr
                 <button
                   onClick={() => handleAddFood(food)}
                   disabled={!!addingId}
-                  className={`ml-4 shrink-0 flex items-center justify-center h-7 w-7 rounded-lg border transition-colors ${
+                  className="ml-4 flex h-7 w-7 shrink-0 items-center justify-center rounded-sm border transition-colors disabled:opacity-40"
+                  style={
                     addedId === food.id
-                      ? "border-chart-2/40 bg-chart-2/15 text-chart-2"
-                      : "border-input bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  } disabled:opacity-40`}
+                      ? { borderColor: "color-mix(in srgb, var(--ledger-green) 40%, transparent)", background: "color-mix(in srgb, var(--ledger-green) 15%, transparent)", color: "var(--ledger-green)" }
+                      : undefined
+                  }
                 >
                   {addingId === food.id ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : addedId === food.id ? (
                     <Check className="h-3.5 w-3.5" />
                   ) : (
-                    <Plus className="h-3.5 w-3.5" />
+                    <Plus className="h-3.5 w-3.5 text-muted-foreground" />
                   )}
                 </button>
               </div>

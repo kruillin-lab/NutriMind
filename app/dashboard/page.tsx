@@ -129,25 +129,28 @@ export default async function DashboardPage({
   const dailyTarget = data.calorieBank?.dailyTarget || 2000;
 
   return (
-    <div className="min-h-screen app-field">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
-        <div className="mb-8 flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="min-h-screen bg-hero">
+      <div className="finance-shell">
+        <header className="mb-8 flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="seal mt-0.5 h-9 w-9 shrink-0 text-[9px] font-bold tracking-tight" aria-hidden="true">NM</span>
+            <div>
+              <p className="page-kicker">NutriMind private ledger</p>
+              <h1 className="mt-1 text-3xl font-bold tracking-[-0.03em] text-foreground sm:text-4xl">
+                Reserve account
+              </h1>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+                Your calorie budget, meals, and health records in one daily account view.
+              </p>
+            </div>
+          </div>
+          <div className="sm:text-right">
+            <p className="smallcaps">Statement date</p>
+            <p className="num mt-1 text-sm text-foreground">
               {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
             </p>
-            <h1 className="font-serif text-4xl font-medium text-foreground sm:text-5xl">Dashboard</h1>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {data.currentStreak > 0 && (
-              <span className="chip-indigo">{data.currentStreak} day streak</span>
-            )}
-            <span className={data.calorieBank && data.calorieBank.currentBalance >= 0 ? "chip-green" : "chip-rose"}>
-              {data.calorieBank && data.calorieBank.currentBalance >= 0 ? "+" : ""}
-              {data.calorieBank?.currentBalance || 0} kcal banked
-            </span>
-          </div>
-        </div>
+        </header>
 
         <DashboardTabs
           userId={userId}

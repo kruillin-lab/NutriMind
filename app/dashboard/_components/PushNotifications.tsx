@@ -12,9 +12,6 @@ interface SubscriptionInfo {
   createdAt: string;
 }
 
-// Olive success accent from the approved chart palette
-const OLIVE = "#7D8A63";
-
 export function PushNotifications() {
   const [isSupported, setIsSupported] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
@@ -166,7 +163,7 @@ export function PushNotifications() {
       <section className="surface overflow-hidden">
         <div className="flex items-center gap-2 border-b border-border px-5 py-4">
           <Bell className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">Push Notifications</h3>
+          <h3 className="smallcaps">Push Notifications</h3>
         </div>
         <div className="px-5 py-4">
           <div className="flex items-center gap-3 text-muted-foreground">
@@ -192,10 +189,11 @@ export function PushNotifications() {
 
   return (
     <section className="surface overflow-hidden">
+      <div className="foil" />
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Push Notifications</h3>
+          <Bell className="h-4 w-4" style={{ color: "var(--brass)" }} />
+          <h3 className="smallcaps">Push Notifications</h3>
         </div>
         <div className="flex items-center gap-2">
           <Switch
@@ -208,7 +206,7 @@ export function PushNotifications() {
       </div>
       <div className="px-5 py-4">
         {error && (
-          <div className="mb-4 rounded-lg border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="mb-4 rounded-sm border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </div>
         )}
@@ -216,7 +214,7 @@ export function PushNotifications() {
         <div className="space-y-4">
           <div className="flex items-start gap-3">
             {isEnabled ? (
-              <CheckCircle className="h-5 w-5 mt-0.5" style={{ color: OLIVE }} />
+              <CheckCircle className="h-5 w-5 mt-0.5" style={{ color: "var(--ledger-green)" }} />
             ) : (
               <Bell className="h-5 w-5 text-muted-foreground mt-0.5" />
             )}
@@ -234,19 +232,19 @@ export function PushNotifications() {
 
           {isEnabled && subscriptionInfo.length > 0 && (
             <div className="border-t border-border pt-3">
-              <p className="text-xs font-medium text-muted-foreground mb-2">
+              <p className="smallcaps mb-2">
                 Active devices ({subscriptionInfo.length})
               </p>
-              <div className="space-y-2">
+              <div>
                 {subscriptionInfo.map((sub) => (
                   <div
                     key={sub.id}
-                    className="flex items-center justify-between rounded-lg bg-secondary p-2 text-xs"
+                    className="flex items-center justify-between border-t border-border py-2 first:border-t-0 text-xs"
                   >
                     <span className="truncate max-w-[200px] text-foreground">
                       {sub.userAgent || "Unknown device"}
                     </span>
-                    <span className="text-muted-foreground">
+                    <span className="num text-muted-foreground">
                       {new Date(sub.createdAt).toLocaleDateString()}
                     </span>
                   </div>

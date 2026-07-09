@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Scale, Plus, Trash2, TrendingDown, TrendingUp } from "lucide-react";
@@ -121,19 +120,21 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
     const areaD = `${pathD} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`;
 
     return (
-      <div className="mt-4 rounded-xl border border-border bg-secondary/60 p-3">
-        <div className="flex justify-between text-xs text-muted-foreground mb-2">
+      <div className="mt-4 rounded-sm border border-border bg-secondary p-3">
+        <div className="flex justify-between smallcaps mb-2">
           <span className="num">{minWeight.toFixed(1)} kg</span>
           <span className="num">{maxWeight.toFixed(1)} kg</span>
         </div>
         <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-28" preserveAspectRatio="none">
-          <path d={areaD} fill="#D97757" fillOpacity="0.12" stroke="none" />
-          <path d={pathD} fill="none" stroke="#D97757" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+          <line x1="0" y1={chartHeight} x2={chartWidth} y2={chartHeight} stroke="rgba(23,20,13,0.08)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          <line x1="0" y1={chartHeight / 2} x2={chartWidth} y2={chartHeight / 2} stroke="rgba(23,20,13,0.08)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          <path d={areaD} fill="var(--brass)" fillOpacity="0.1" stroke="none" />
+          <path d={pathD} fill="none" stroke="var(--brass)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
           {points.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r="2" fill="#D97757" />
+            <circle key={i} cx={p.x} cy={p.y} r="2" fill="var(--brass)" />
           ))}
         </svg>
-        <div className="flex justify-between text-xs text-muted-foreground mt-2">
+        <div className="flex justify-between num text-xs text-muted-foreground mt-2">
           <span>{new Date(entries[0].date).toLocaleDateString()}</span>
           <span>{new Date(entries[entries.length - 1].date).toLocaleDateString()}</span>
         </div>
@@ -143,29 +144,30 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
 
   return (
     <section className="surface overflow-hidden">
+      <div className="foil" />
       <div className="flex items-center gap-2 border-b border-border px-5 py-4">
-        <Scale className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold text-foreground">Weight Tracker</h3>
+        <Scale className="h-4 w-4" style={{ color: "var(--brass)" }} />
+        <h3 className="smallcaps">Weight Tracker</h3>
       </div>
 
       <div className="space-y-4 px-5 py-4">
         {loading ? (
-          <div className="text-center py-4 text-muted-foreground">Loading weight data...</div>
+          <div className="text-center py-4 smallcaps">Loading weight data...</div>
         ) : (
           <>
             {/* Current Weight Display */}
             {latestWeight && (
-              <div className="flex items-center justify-between rounded-xl surface-raised p-4">
+              <div className="flex items-center justify-between rounded-sm surface-raised p-4">
                 <div>
-                  <p className="font-serif text-3xl font-medium text-foreground num">
+                  <p className="num-display text-3xl text-foreground">
                     {latestWeight.toFixed(1)} kg
                   </p>
-                  <p className="mt-1 text-xs tracking-wide text-muted-foreground">Current weight</p>
+                  <p className="smallcaps mt-1">Current weight</p>
                 </div>
                 {trend && (
                   <span
                     className={`flex items-center gap-1 ${
-                      trend.isDown ? "chip-green" : trend.isUp ? "chip-rose" : "text-xs text-muted-foreground"
+                      trend.isDown ? "chip-green" : trend.isUp ? "chip-rose" : "num text-xs text-muted-foreground"
                     }`}
                   >
                     {trend.isDown ? (
@@ -184,10 +186,10 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
 
             {/* Log Weight Form */}
             <div className="space-y-3 border-t border-border pt-4">
-              <Label className="text-sm font-medium text-foreground">Log Weight</Label>
+              <Label className="smallcaps">Log Weight</Label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="weight" className="text-xs text-muted-foreground">
+                  <Label htmlFor="weight" className="smallcaps">
                     Weight (kg)
                   </Label>
                   <Input
@@ -199,10 +201,11 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
                     onChange={(e) => setWeightInput(e.target.value)}
                     min="20"
                     max="500"
+                    className="num rounded-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="date" className="text-xs text-muted-foreground">
+                  <Label htmlFor="date" className="smallcaps">
                     Date (optional)
                   </Label>
                   <Input
@@ -210,45 +213,45 @@ export function WeightTracker({ initialEntries = [] }: WeightTrackerProps) {
                     type="date"
                     value={dateInput}
                     onChange={(e) => setDateInput(e.target.value)}
+                    className="num rounded-sm"
                   />
                 </div>
               </div>
-              <Button
+              <button
                 onClick={handleLogWeight}
                 disabled={isLogging || !weightInput}
-                className="w-full"
+                className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 {isLogging ? "Logging..." : "Log Weight"}
-              </Button>
+              </button>
             </div>
 
             {/* Recent Entries */}
             {entries.length > 0 && (
-              <div className="space-y-2 border-t border-border pt-4">
-                <Label className="text-sm font-medium text-foreground">Recent Entries</Label>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
+              <div className="border-t border-border pt-2">
+                <Label className="smallcaps">Recent Entries</Label>
+                <div className="max-h-40 overflow-y-auto mt-2">
                   {[...entries].reverse().slice(0, 7).map((entry) => (
                     <div
                       key={entry.id}
-                      className="flex items-center justify-between rounded-lg bg-secondary/60 p-2"
+                      className="flex items-center justify-between border-t border-border py-2 first:border-t-0"
                     >
                       <div>
                         <p className="num text-sm font-medium text-foreground">
                           {entry.weightKg.toFixed(1)} kg
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="num text-xs text-muted-foreground">
                           {new Date(entry.date).toLocaleDateString()}
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
                         onClick={() => handleDeleteEntry(entry.id)}
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                        className="h-8 w-8 flex items-center justify-center text-muted-foreground transition-colors hover:text-destructive"
+                        aria-label="Delete entry"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </Button>
+                      </button>
                     </div>
                   ))}
                 </div>

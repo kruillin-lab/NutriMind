@@ -215,8 +215,8 @@ export function DatabaseClient() {
       <aside className="surface overflow-hidden">
         <div className="border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
-            <Database className="h-4 w-4 text-primary" />
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <Database className="h-4 w-4" style={{ color: "var(--brass)" }} />
+            <span className="smallcaps">
               Tables
             </span>
           </div>
@@ -226,14 +226,14 @@ export function DatabaseClient() {
             <button
               key={table.key}
               onClick={() => selectTable(table.key)}
-              className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+              className={`flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-sm transition-colors ${
                 table.key === activeTable
                   ? "border border-border bg-secondary font-medium text-foreground"
                   : "border border-transparent text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
               }`}
             >
               <span>{table.label}</span>
-              <span className="num rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              <span className="num rounded-sm border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                 {table.count}
               </span>
             </button>
@@ -245,7 +245,7 @@ export function DatabaseClient() {
         <div className="surface overflow-hidden">
           <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="smallcaps">
                 {activeLabel}
               </p>
               <p className="num mt-1 text-sm text-muted-foreground">
@@ -256,7 +256,7 @@ export function DatabaseClient() {
               <button
                 onClick={() => loadTable(activeTable, offset)}
                 disabled={isLoading}
-                className="flex items-center gap-2 rounded-lg border border-input px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+                className="btn-ghost h-9 gap-2 rounded-sm px-3 text-sm"
               >
                 <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
                 Refresh
@@ -264,14 +264,14 @@ export function DatabaseClient() {
               <button
                 onClick={previousPage}
                 disabled={offset === 0 || isLoading}
-                className="rounded-lg border border-input px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-40"
+                className="btn-ghost h-9 rounded-sm px-3 text-sm"
               >
                 Previous
               </button>
               <button
                 onClick={nextPage}
                 disabled={offset + PAGE_SIZE >= total || isLoading}
-                className="rounded-lg border border-input px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-40"
+                className="btn-ghost h-9 rounded-sm px-3 text-sm"
               >
                 Next
               </button>
@@ -279,13 +279,13 @@ export function DatabaseClient() {
           </div>
 
           {error && (
-            <div className="mx-5 mt-4 flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="mx-5 mt-4 flex items-start gap-2 rounded-sm border p-3 text-sm" style={{ borderColor: "color-mix(in srgb, var(--destructive) 25%, transparent)", background: "color-mix(in srgb, var(--destructive) 10%, transparent)", color: "var(--destructive)" }}>
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
           {message && (
-            <div className="mx-5 mt-4 rounded-lg border border-chart-2/30 bg-chart-2/10 p-3 text-sm font-medium text-foreground">
+            <div className="mx-5 mt-4 rounded-sm border p-3 text-sm font-medium text-foreground" style={{ borderColor: "color-mix(in srgb, var(--ledger-green) 30%, transparent)", background: "color-mix(in srgb, var(--ledger-green) 10%, transparent)" }}>
               {message}
             </div>
           )}
@@ -295,7 +295,7 @@ export function DatabaseClient() {
               <thead>
                 <tr>
                   {visibleFields.map((field) => (
-                    <th key={field.name} className="px-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <th key={field.name} className="smallcaps px-3">
                       {field.label}
                     </th>
                   ))}
@@ -305,7 +305,7 @@ export function DatabaseClient() {
                 {isLoading ? (
                   <tr>
                     <td className="px-3 py-8 text-center text-muted-foreground" colSpan={visibleFields.length}>
-                      Loading records...
+                      Loading records…
                     </td>
                   </tr>
                 ) : rows.length === 0 ? (
@@ -326,7 +326,7 @@ export function DatabaseClient() {
                       {visibleFields.map((field) => (
                         <td
                           key={field.name}
-                          className="max-w-[240px] truncate border-y border-border bg-secondary/50 px-3 py-3 text-foreground transition-colors first:rounded-l-lg first:border-l last:rounded-r-lg last:border-r"
+                          className="num max-w-[240px] truncate border-y border-border bg-secondary/50 px-3 py-3 text-foreground transition-colors first:rounded-l-sm first:border-l last:rounded-r-sm last:border-r"
                           title={formatCell(row[field.name])}
                         >
                           {formatCell(row[field.name])}
@@ -342,8 +342,8 @@ export function DatabaseClient() {
 
         <div className="surface overflow-hidden">
           <div className="border-b border-border px-5 py-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Record Editor
+            <p className="smallcaps">
+              Record editor
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               Edit JSON, then save. Read-only fields like id and timestamps are ignored on save.
@@ -355,14 +355,15 @@ export function DatabaseClient() {
               onChange={(event) => setDraft(event.target.value)}
               disabled={!selectedRecord}
               spellCheck={false}
-              className="min-h-[320px] w-full resize-y rounded-lg border border-input bg-background p-4 font-mono text-xs leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50"
+              className="num min-h-[320px] w-full resize-y rounded-sm border border-input bg-background p-4 text-xs leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50"
               placeholder="Select a row to edit its JSON."
             />
             <div className="flex flex-wrap justify-end gap-2">
               <button
                 onClick={deleteRecord}
                 disabled={!selectedRecord || isSaving}
-                className="flex items-center gap-2 rounded-lg border border-destructive/40 px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-40"
+                className="flex items-center gap-2 rounded-sm border px-3 py-2 text-sm font-medium transition-colors disabled:opacity-40"
+                style={{ borderColor: "color-mix(in srgb, var(--destructive) 40%, transparent)", color: "var(--destructive)" }}
               >
                 <Trash2 className="h-4 w-4" />
                 Delete
@@ -370,10 +371,10 @@ export function DatabaseClient() {
               <button
                 onClick={saveRecord}
                 disabled={!selectedRecord || isSaving}
-                className="btn-primary gap-2 disabled:opacity-40"
+                className="btn-primary gap-2 rounded-sm disabled:opacity-40"
               >
                 <Save className="h-4 w-4" />
-                {isSaving ? "Saving..." : "Save record"}
+                {isSaving ? "Saving…" : "Save record"}
               </button>
             </div>
           </div>

@@ -1,9 +1,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
-import { Prisma } from "@prisma/client";
-import { addLocalDays, getLocalMidnight, parseLocalDate } from "@/lib/date-utils";
-import { applyCalorieBankOverageAdjustment } from "@/src/lib/calorieBank";
-import { clampInt, clampNumber, isValidDateString, truncate } from "@/src/lib/validation";
+import { addLocalDays, getLocalMidnight, isValidLocalDateKey, parseLocalDate } from "@/lib/date-utils";
+import { recordMeal } from "@/src/lib/nutrition-day";
+import { clampInt, clampNumber, truncate } from "@/src/lib/validation";
 import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
 
 export async function POST(req: NextRequest) {
@@ -22,7 +21,7 @@ export async function POST(req: NextRequest) {
       throw new ApiError(400, "Invalid meal data");
     }
 
-    if (dateParam != null && !isValidDateString(dateParam)) {
+    if (dateParam != null && !isValidLocalDateKey(dateParam)) {
       throw new ApiError(400, "Invalid date");
     }
 
@@ -62,105 +61,34 @@ export async function POST(req: NextRequest) {
     const targetDate = dateParam ? parseLocalDate(dateParam) : getLocalMidnight();
     const nextDay = addLocalDays(targetDate, 1);
 
-    // Create meal and update daily log in transaction
-    const result = await prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        // Find or create today's daily log
-        let dailyLog = await tx.dailyLog.findFirst({
-          where: {
-            userId: user.id,
-            date: {
-              gte: targetDate,
-              lt: nextDay,
-            },
-          },
-        });
-
-        if (!dailyLog) {
-          dailyLog = await tx.dailyLog.create({
-            data: {
-              userId: user.id,
-              date: targetDate,
-              calorieTarget: dailyTarget,
-            },
-          });
-        }
-
-        // Create the meal
-        const meal = await tx.meal.create({
-          data: {
-            dailyLogId: dailyLog.id,
-            name: safeName,
-            calories: safeCalories,
-            proteinG: nutrients.proteinG,
-            carbsG: nutrients.carbsG,
-            fatG: nutrients.fatG,
-            fiberG: nutrients.fiberG,
-            sugarG: nutrients.sugarG,
-            sodiumMg: nutrients.sodiumMg,
-            vitaminCMg: nutrients.vitaminCMg,
-            calciumMg: nutrients.calciumMg,
-            ironMg: nutrients.ironMg,
-            potassiumMg: nutrients.potassiumMg,
-            servingSizeG: safeServingSizeG,
-            mealType,
-          },
-        });
-
-        // Update daily log consumed calories and all nutrients
-        const newConsumed = dailyLog.caloriesConsumed + safeCalories;
-        const remaining = dailyLog.calorieTarget - newConsumed;
-
-        const updatedLog = await tx.dailyLog.update({
-          where: { id: dailyLog.id },
-          data: {
-            caloriesConsumed: newConsumed,
-            proteinG: (dailyLog.proteinG || 0) + nutrients.proteinG,
-            carbsG: (dailyLog.carbsG || 0) + nutrients.carbsG,
-            fatG: (dailyLog.fatG || 0) + nutrients.fatG,
-            fiberG: (dailyLog.fiberG || 0) + nutrients.fiberG,
-            sugarG: (dailyLog.sugarG || 0) + nutrients.sugarG,
-            sodiumMg: (dailyLog.sodiumMg || 0) + nutrients.sodiumMg,
-            vitaminCMg: (dailyLog.vitaminCMg || 0) + nutrients.vitaminCMg,
-            calciumMg: (dailyLog.calciumMg || 0) + nutrients.calciumMg,
-            ironMg: (dailyLog.ironMg || 0) + nutrients.ironMg,
-            potassiumMg: (dailyLog.potassiumMg || 0) + nutrients.potassiumMg,
-          },
-        });
-
-        const bankAdjustment = await applyCalorieBankOverageAdjustment({
-          bank: user.calorieBank,
-          tx,
-          previousConsumed: dailyLog.caloriesConsumed,
-          nextConsumed: newConsumed,
-          calorieTarget: dailyLog.calorieTarget,
-          sourceId: dailyLog.id,
-          spendReason: `Overspend from meal: ${safeName}`,
-          refundReason: `Refund from meal: ${safeName}`,
-        });
-
-        return {
-          meal,
-          dailyLog: updatedLog,
-          bankTransaction: bankAdjustment.bankTransaction,
-          bankAdjustment: bankAdjustment.adjustment,
-          remaining,
-          bankUpdate: bankAdjustment.bankUpdate,
-        };
-      }
-    );
+    const result = await prisma.$transaction((tx) => recordMeal({
+      tx,
+      userId: user.id,
+      bank: user.calorieBank,
+      day: { start: targetDate, end: nextDay },
+      calorieTarget: dailyTarget,
+      meal: {
+        name: safeName,
+        calories: safeCalories,
+        mealType,
+        servingSizeG: safeServingSizeG,
+        ...nutrients,
+      },
+      spendReason: `Overspend from meal: ${safeName}`,
+      refundReason: `Refund from meal: ${safeName}`,
+    }));
 
     return {
       success: true,
       meal: result.meal,
-      remainingCalories: result.remaining,
+      remainingCalories: result.remainingCalories,
       bankBalance: result.bankUpdate?.currentBalance ?? user.calorieBank.currentBalance,
       message:
-        result.remaining >= 0
-          ? `Logged ${safeCalories} calories. ${Math.round(result.remaining)} remaining today.`
+        result.remainingCalories >= 0
+          ? `Logged ${safeCalories} calories. ${Math.round(result.remainingCalories)} remaining today.`
           : result.bankTransaction
             ? `Logged ${safeCalories} calories. Used ${Math.round(result.bankAdjustment.amount)} from bank.`
-            : `Logged ${safeCalories} calories. ${Math.abs(Math.round(result.remaining))} over budget (insufficient bank balance).`,
+            : `Logged ${safeCalories} calories. ${Math.abs(Math.round(result.remainingCalories))} over budget (insufficient bank balance).`,
     };
   });
 }
@@ -171,7 +99,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
-    if (dateParam && !isValidDateString(dateParam)) {
+    if (dateParam && !isValidLocalDateKey(dateParam)) {
       throw new ApiError(400, "Invalid date");
     }
     const date = dateParam ? parseLocalDate(dateParam) : getLocalMidnight();

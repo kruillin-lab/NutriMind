@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -37,16 +36,17 @@ type MeasurementKey = Exclude<
   never
 >;
 
+// Vault chart palette, in order — var(--chart-1..5), cycled
 const MEASUREMENT_FIELDS: { key: MeasurementKey; label: string; unit: string; color: string }[] = [
-  { key: "waistCm", label: "Waist", unit: "cm", color: "#D97757" },
-  { key: "hipsCm", label: "Hips", unit: "cm", color: "#7D8A63" },
-  { key: "chestCm", label: "Chest", unit: "cm", color: "#6A96B8" },
-  { key: "thighCm", label: "Thigh", unit: "cm", color: "#D4A27F" },
-  { key: "bicepCm", label: "Bicep", unit: "cm", color: "#8E6C88" },
-  { key: "shoulderCm", label: "Shoulder", unit: "cm", color: "#B3402F" },
-  { key: "neckCm", label: "Neck", unit: "cm", color: "#C7913B" },
-  { key: "bodyFatPct", label: "Body Fat", unit: "%", color: "#D97757" },
-  { key: "muscleMassKg", label: "Muscle Mass", unit: "kg", color: "#7D8A63" },
+  { key: "waistCm", label: "Waist", unit: "cm", color: "var(--chart-1)" },
+  { key: "hipsCm", label: "Hips", unit: "cm", color: "var(--chart-2)" },
+  { key: "chestCm", label: "Chest", unit: "cm", color: "var(--chart-3)" },
+  { key: "thighCm", label: "Thigh", unit: "cm", color: "var(--chart-4)" },
+  { key: "bicepCm", label: "Bicep", unit: "cm", color: "var(--chart-5)" },
+  { key: "shoulderCm", label: "Shoulder", unit: "cm", color: "var(--chart-1)" },
+  { key: "neckCm", label: "Neck", unit: "cm", color: "var(--chart-2)" },
+  { key: "bodyFatPct", label: "Body Fat", unit: "%", color: "var(--chart-3)" },
+  { key: "muscleMassKg", label: "Muscle Mass", unit: "kg", color: "var(--chart-4)" },
 ];
 
 export default function BodyMeasurements() {
@@ -165,30 +165,30 @@ export default function BodyMeasurements() {
   if (loading) {
     return (
       <section className="surface p-6">
-        <div className="text-center text-muted-foreground">Loading...</div>
+        <div className="text-center smallcaps">Loading...</div>
       </section>
     );
   }
 
   return (
     <section className="surface overflow-hidden">
+      <div className="foil" />
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
-        <h3 className="text-sm font-semibold text-foreground">Body Measurements</h3>
-        <Button
-          variant="outline"
-          size="sm"
+        <h3 className="smallcaps">Body Measurements</h3>
+        <button
           onClick={() => setShowForm(!showForm)}
+          className="btn-ghost h-8 px-3 text-xs"
         >
           <Plus className="h-4 w-4 mr-1" />
           Log
-        </Button>
+        </button>
       </div>
       <div className="space-y-4 px-5 py-4">
         {showForm && (
-          <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-border bg-secondary/40 p-4">
+          <form onSubmit={handleSubmit} className="space-y-3 rounded-sm border border-border bg-secondary p-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <Label htmlFor="measure-date">Date</Label>
+                <Label htmlFor="measure-date" className="smallcaps">Date</Label>
                 <Input
                   id="measure-date"
                   type="date"
@@ -197,11 +197,12 @@ export default function BodyMeasurements() {
                     setFormData({ ...formData, date: e.target.value })
                   }
                   required
+                  className="num rounded-sm"
                 />
               </div>
               {MEASUREMENT_FIELDS.map((field) => (
                 <div key={field.key}>
-                  <Label htmlFor={field.key}>
+                  <Label htmlFor={field.key} className="smallcaps">
                     {field.label} ({field.unit})
                   </Label>
                   <Input
@@ -216,28 +217,28 @@ export default function BodyMeasurements() {
                         [field.key]: e.target.value,
                       })
                     }
+                    className="num rounded-sm"
                   />
                 </div>
               ))}
             </div>
             <div className="flex gap-2">
-              <Button type="submit" size="sm" disabled={submitting}>
+              <button type="submit" disabled={submitting} className="btn-primary h-8 px-4 text-xs">
                 {submitting ? "Saving..." : "Save"}
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
-                variant="ghost"
-                size="sm"
                 onClick={() => setShowForm(false)}
+                className="btn-ghost h-8 px-4 text-xs"
               >
                 Cancel
-              </Button>
+              </button>
             </div>
           </form>
         )}
 
         {measurements.length === 0 ? (
-          <div className="text-center text-muted-foreground py-6 text-sm">
+          <div className="text-center py-6 text-sm text-muted-foreground">
             No measurements logged yet. Click &quot;Log&quot; to start tracking.
           </div>
         ) : (
@@ -248,11 +249,11 @@ export default function BodyMeasurements() {
                 <button
                   key={field.key}
                   onClick={() => toggleMetric(field.key)}
-                  className={`px-2.5 py-1 text-xs rounded-full border transition ${
+                  className={
                     selectedMetrics.includes(field.key)
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted text-muted-foreground border-border"
-                  }`}
+                      ? "pill"
+                      : "smallcaps rounded-sm border border-border px-2 py-[0.1875rem] transition-colors hover:border-[var(--brass)]"
+                  }
                 >
                   {field.label}
                 </button>
@@ -263,28 +264,29 @@ export default function BodyMeasurements() {
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(20,20,19,0.08)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(23,20,13,0.08)" />
                   <XAxis
                     dataKey="date"
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fill: "var(--muted-foreground)" }}
+                    tick={{ fill: "var(--muted-foreground)", fontFamily: "var(--font-mono)" }}
                   />
                   <YAxis
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fill: "var(--muted-foreground)" }}
+                    tick={{ fill: "var(--muted-foreground)", fontFamily: "var(--font-mono)" }}
                   />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "var(--card)",
                       border: "1px solid var(--border)",
-                      borderRadius: "12px",
-                      boxShadow: "0 1px 2px rgba(20,20,19,0.04), 0 4px 16px rgba(20,20,19,0.05)",
+                      borderRadius: "0.25rem",
+                      boxShadow: "0 1px 0 rgba(23,20,13,0.05), 0 12px 30px rgba(23,20,13,0.08)",
                       fontSize: "12px",
                       color: "var(--foreground)",
+                      fontFamily: "var(--font-mono)",
                     }}
                   />
                   {MEASUREMENT_FIELDS.filter((f) =>
@@ -304,35 +306,34 @@ export default function BodyMeasurements() {
               </ResponsiveContainer>
             </div>
 
-            {/* Recent entries */}
-            <div className="space-y-2">
+            {/* Recent entries — statement rows */}
+            <div>
               {measurements.slice(0, 5).map((m) => (
                 <div
                   key={m.id}
-                  className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0"
+                  className="flex items-center justify-between border-t border-border py-2.5 first:border-t-0"
                 >
-                  <span className="text-muted-foreground w-20">
+                  <span className="num text-xs text-muted-foreground w-20 shrink-0">
                     {format(parseISO(m.date), "MMM d, yyyy")}
                   </span>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 flex-1 justify-end">
                     {MEASUREMENT_FIELDS.map((field) =>
                       m[field.key] !== null ? (
                         <span key={field.key} className="num text-xs text-foreground">
-                          <span style={{ color: field.color }}>●</span>{" "}
+                          <span style={{ color: field.color }}>&#9679;</span>{" "}
                           {m[field.key]}
                           {field.unit}
                         </span>
                       ) : null
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 ml-2"
+                  <button
                     onClick={() => handleDelete(m.id)}
+                    className="h-6 w-6 ml-2 flex items-center justify-center text-muted-foreground transition-colors hover:text-destructive"
+                    aria-label="Delete measurement"
                   >
-                    <Trash2 className="h-3 w-3 text-muted-foreground" />
-                  </Button>
+                    <Trash2 className="h-3 w-3" />
+                  </button>
                 </div>
               ))}
             </div>

@@ -36,12 +36,23 @@ interface CopyMealDialogProps {
   meal: MealToCopy;
   children?: React.ReactElement;
   onCopied?: () => void;
+  userId: string;
 }
 
-export function CopyMealDialog({ meal, children, onCopied }: CopyMealDialogProps) {
+export function CopyMealDialog({ meal, children, onCopied, userId }: CopyMealDialogProps) {
   const [open, setOpen] = useState(false);
   const [targetDate, setTargetDate] = useState("");
   const [isCopying, setIsCopying] = useState(false);
+
+  const jsonHeaders = () => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (process.env.NODE_ENV !== "production") {
+      headers["X-Test-User-Id"] = userId;
+    }
+    return headers;
+  };
 
   const handleCopy = async () => {
     if (!targetDate) return;
@@ -49,7 +60,7 @@ export function CopyMealDialog({ meal, children, onCopied }: CopyMealDialogProps
     try {
       const response = await fetch("/api/meals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({
           name: meal.name,
           calories: meal.calories,

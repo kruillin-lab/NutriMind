@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/src/lib/prisma";
 import { getSystemTimezone } from "@/lib/date-utils";
 import { ApiError, handleRoute } from "@/src/lib/api-helpers";
@@ -58,11 +59,10 @@ export async function POST(req: Request) {
 
     // Ensure user exists first - create if not (handles webhook failures)
     const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+    let email = `user_${userId}@placeholder.invalid`;
+    let name: string | null = null;
     if (!existingUser) {
       // Try to get user info from Clerk or use defaults
-      let email = "unknown@example.com";
-      let name: string | null = null;
-
       // Only try Clerk if not in test mode
       if (!testUserId) {
         try {
@@ -75,79 +75,85 @@ export async function POST(req: Request) {
           console.warn("[initialize] Could not fetch user from Clerk:", clerkError);
         }
       }
-
-      await prisma.user.create({
-        data: {
-          id: userId,
-          email,
-          name,
-        },
-      });
     }
 
-    // Create or update UserProfile
-    await prisma.userProfile.upsert({
-      where: { userId },
-      create: {
-        userId,
-        heightCm,
-        birthDate: birthDate ? new Date(birthDate) : null,
-        gender,
-        goalWeightKg,
-        targetDate: targetDate ? new Date(targetDate) : null,
-        activityLevel: prismaActivityLevel,
-        timezone,
-      },
-      update: {
-        heightCm,
-        birthDate: birthDate ? new Date(birthDate) : null,
-        gender,
-        goalWeightKg,
-        targetDate: targetDate ? new Date(targetDate) : null,
-        activityLevel: prismaActivityLevel,
-        timezone,
-      },
-    });
+    // Create/update the user record (if needed), UserProfile,
+    // MetabolicProfile, CalorieBank, and optional WeightEntry atomically.
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      if (!existingUser) {
+        await tx.user.create({
+          data: {
+            id: userId,
+            email,
+            name,
+          },
+        });
+      }
 
-    // Create or update MetabolicProfile
-    await prisma.metabolicProfile.upsert({
-      where: { userId },
-      create: {
-        userId,
-        trueMetabolicRate: trueMetabolicRate || bmrEstimate || 2000,
-        bmrEstimate: bmrEstimate || 2000,
-      },
-      update: {
-        trueMetabolicRate: trueMetabolicRate || bmrEstimate || 2000,
-        bmrEstimate: bmrEstimate || 2000,
-        lastCalculatedAt: new Date(),
-      },
-    });
-
-    // Create or update CalorieBank
-    await prisma.calorieBank.upsert({
-      where: { userId },
-      create: {
-        userId,
-        dailyTarget: dailyTarget || 2000,
-        allowNegative,
-      },
-      update: {
-        dailyTarget: dailyTarget || 2000,
-        allowNegative,
-      },
-    });
-
-    // Create weight entry if provided
-    if (weightKg) {
-      await prisma.weightEntry.create({
-        data: {
+      // Create or update UserProfile
+      await tx.userProfile.upsert({
+        where: { userId },
+        create: {
           userId,
-          weightKg,
-          date: new Date(),
+          heightCm,
+          birthDate: birthDate ? new Date(birthDate) : null,
+          gender,
+          goalWeightKg,
+          targetDate: targetDate ? new Date(targetDate) : null,
+          activityLevel: prismaActivityLevel,
+          timezone,
+        },
+        update: {
+          heightCm,
+          birthDate: birthDate ? new Date(birthDate) : null,
+          gender,
+          goalWeightKg,
+          targetDate: targetDate ? new Date(targetDate) : null,
+          activityLevel: prismaActivityLevel,
+          timezone,
         },
       });
-    }
+
+      // Create or update MetabolicProfile
+      await tx.metabolicProfile.upsert({
+        where: { userId },
+        create: {
+          userId,
+          trueMetabolicRate: trueMetabolicRate || bmrEstimate || 2000,
+          bmrEstimate: bmrEstimate || 2000,
+        },
+        update: {
+          trueMetabolicRate: trueMetabolicRate || bmrEstimate || 2000,
+          bmrEstimate: bmrEstimate || 2000,
+          lastCalculatedAt: new Date(),
+        },
+      });
+
+      // Create or update CalorieBank
+      await tx.calorieBank.upsert({
+        where: { userId },
+        create: {
+          userId,
+          dailyTarget: dailyTarget || 2000,
+          allowNegative,
+        },
+        update: {
+          dailyTarget: dailyTarget || 2000,
+          allowNegative,
+        },
+      });
+
+      // Create weight entry if provided
+      if (weightKg) {
+        await tx.weightEntry.create({
+          data: {
+            userId,
+            weightKg,
+            date: new Date(),
+          },
+        });
+      }
+    });
 
     return { success: true };
   });

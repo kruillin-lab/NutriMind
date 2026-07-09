@@ -1,8 +1,5 @@
 "use client";
 
-import { PiggyBank, TrendingUp, TrendingDown, RefreshCw, Clock, ArrowUpRight } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-
 interface BankTransaction {
   id: string;
   type: "BANK" | "SPEND" | "ADJUST" | "EXPIRE";
@@ -16,13 +13,14 @@ interface BankTransaction {
 
 interface BankTransactionHistoryProps {
   transactions: BankTransaction[];
+  currentBalance: number;
 }
 
-const typeConfig: Record<string, { icon: LucideIcon; label: string; positive: boolean }> = {
-  BANK:   { icon: TrendingUp,   label: "Banked",   positive: true },
-  SPEND:  { icon: TrendingDown, label: "Spent",    positive: false },
-  ADJUST: { icon: RefreshCw,    label: "Adjusted", positive: true },
-  EXPIRE: { icon: Clock,        label: "Expired",  positive: false },
+const typeConfig: Record<string, { label: string; positive: boolean }> = {
+  BANK:   { label: "Bank",   positive: true },
+  SPEND:  { label: "Spend",  positive: false },
+  ADJUST: { label: "Adjust", positive: true },
+  EXPIRE: { label: "Expire", positive: false },
 };
 
 function formatRelativeTime(dateString: string): string {
@@ -40,58 +38,84 @@ function formatRelativeTime(dateString: string): string {
   return date.toLocaleDateString();
 }
 
-export function BankTransactionHistory({ transactions }: BankTransactionHistoryProps) {
+export function BankTransactionHistory({
+  transactions,
+  currentBalance,
+}: BankTransactionHistoryProps) {
+  // Transactions arrive newest-first. Start at the actual current account
+  // balance and reverse each displayed entry to derive its historical balance.
+  const runningBalances: number[] = [];
+  {
+    let running = currentBalance;
+    for (const tx of transactions) {
+      runningBalances.push(running);
+      const config = typeConfig[tx.type] ?? typeConfig.ADJUST;
+      running -= config.positive ? tx.amount : -tx.amount;
+    }
+  }
+
   return (
-    <div className="surface overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border px-5 py-4">
-        <div className="flex items-center gap-2">
-          <PiggyBank className="h-4 w-4 text-chart-2" />
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Bank History</span>
+    <section aria-labelledby="reserve-ledger-heading" className="surface overflow-hidden">
+      <div className="flex items-baseline justify-between gap-4 px-5 pt-5 sm:px-6">
+        <div>
+          <h3 id="reserve-ledger-heading" className="text-sm font-bold tracking-tight text-foreground">
+            Reserve activity
+          </h3>
+          <p className="smallcaps mt-0.5">Calories banked and used</p>
         </div>
         {transactions.length > 0 && (
-          <span className="text-[11px] text-muted-foreground">{transactions.length} transactions</span>
+          <span className="smallcaps">
+            {transactions.length} {transactions.length === 1 ? "entry" : "entries"}
+          </span>
         )}
       </div>
 
       {transactions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 px-5 text-center">
-          <ArrowUpRight className="mb-3 h-8 w-8 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">No transactions yet</p>
-          <p className="mt-1 text-xs text-muted-foreground/70">Stay under target to bank calories</p>
+        <div className="px-6 py-6">
+          <p className="text-sm text-muted-foreground">
+            No entries yet. Finish a day under target and the difference is banked here.
+          </p>
         </div>
       ) : (
-        <div className="max-h-[300px] divide-y divide-border overflow-y-auto">
-          {transactions.map((tx) => {
-            const config = typeConfig[tx.type] ?? typeConfig.ADJUST;
-            const Icon = config.icon;
+        <>
+          <div className="mt-4 grid grid-cols-[4.25rem_minmax(0,1fr)_4.75rem] gap-x-3 px-5 pb-1 sm:grid-cols-[4.25rem_3rem_minmax(0,1fr)_5rem_5rem] sm:px-6">
+            <span className="smallcaps">When</span>
+            <span className="smallcaps hidden sm:block">Type</span>
+            <span className="smallcaps">Nutrition note</span>
+            <span className="smallcaps text-right">kcal</span>
+            <span className="smallcaps hidden text-right sm:block">Balance</span>
+          </div>
 
-            return (
-              <div key={tx.id} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-secondary">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-border bg-secondary">
-                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="px-5 pb-2 sm:px-6">
+            {transactions.map((tx, i) => {
+              const config = typeConfig[tx.type] ?? typeConfig.ADJUST;
+
+              return (
+                <div
+                  key={tx.id}
+                  className="grid grid-cols-[4.25rem_minmax(0,1fr)_4.75rem] items-baseline gap-x-3 border-t border-border py-3 sm:grid-cols-[4.25rem_3rem_minmax(0,1fr)_5rem_5rem]"
+                >
+                  <time dateTime={tx.createdAt} className="num text-xs text-muted-foreground">
+                    {formatRelativeTime(tx.createdAt)}
+                  </time>
+                  <span className="hidden text-[10px] tracking-wider text-muted-foreground sm:block">{config.label}</span>
+                  <span className="min-w-0 truncate text-sm text-foreground" title={tx.reason}>{tx.reason}</span>
+                  <span
+                    className="num text-right text-sm"
+                    style={{ color: config.positive ? "var(--ledger-green)" : "var(--ledger-red)" }}
+                  >
+                    {config.positive ? "+" : "−"}
+                    {tx.amount.toLocaleString()}
+                  </span>
+                  <span className="num hidden text-right text-sm text-foreground sm:block">
+                    {runningBalances[i].toLocaleString()}
+                  </span>
                 </div>
-
-                <div className="flex-1 min-w-0">
-                  <p className="truncate text-sm text-foreground">{tx.reason}</p>
-                  <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <span>{formatRelativeTime(tx.createdAt)}</span>
-                    {tx.caloriesConsumed != null && tx.caloriesTarget != null && (
-                      <>
-                        <span>·</span>
-                        <span>{tx.caloriesConsumed}/{tx.caloriesTarget} kcal</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <span className={`shrink-0 ${config.positive ? "chip-green" : "chip-rose"}`}>
-                  {config.positive ? "+" : "-"}{tx.amount}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
-    </div>
+    </section>
   );
 }

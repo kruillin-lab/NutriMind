@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const STATEMENT = [
   { date: "30 JUN", note: "Under target", ref: "DEP", amount: "+220", balance: "1,760" },
@@ -35,7 +36,7 @@ export default function Home() {
         <section className="grid gap-14 pt-16 lg:grid-cols-12 lg:gap-12 lg:pt-24">
           <div className="lg:col-span-6">
             <div className="flex items-center gap-3">
-              <span className="seal h-9 w-9 text-[10px] font-bold tracking-tight">NM</span>
+              <Image src="/nutrimind-mark.svg" alt="" aria-hidden="true" width={36} height={36} className="h-9 w-9" priority />
               <span className="page-kicker">
                 Nutrition, accounted for
               </span>

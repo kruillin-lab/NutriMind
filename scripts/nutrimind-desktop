@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="/home/kruillin/Projects/Projects/NutriMind/my-app"
+APP_URL="http://127.0.0.1:3000"
+HEALTH_URL="${APP_URL}/api/health"
+STATE_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/nutrimind"
+PID_FILE="${STATE_DIR}/server.pid"
+LOG_FILE="${STATE_DIR}/server.log"
+CHROMIUM_PROFILE="${STATE_DIR}/chromium-profile"
+NPM_BIN="/usr/bin/npm"
+CHROMIUM_BIN="/usr/bin/chromium"
+
+notify_error() {
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send --app-name="NutriMind" --urgency=critical "NutriMind could not start" "$1"
+  fi
+  printf 'NutriMind: %s\n' "$1" >&2
+}
+
+is_healthy() {
+  curl --noproxy '*' --silent --fail --max-time 2 "$HEALTH_URL" 2>/dev/null | grep -q '"status":"ok"'
+}
+
+stop_server() {
+  if [[ ! -f "$PID_FILE" ]]; then
+    return 0
+  fi
+
+  local pid
+  pid="$(<"$PID_FILE")"
+  if [[ "$pid" =~ ^[0-9]+$ ]] && kill -0 "$pid" 2>/dev/null; then
+    kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+  fi
+  rm -f "$PID_FILE"
+}
+
+start_server() {
+  mkdir -p "$STATE_DIR" "$CHROMIUM_PROFILE"
+
+  if is_healthy; then
+    return 0
+  fi
+
+  if [[ ! -d "$APP_DIR/node_modules" ]]; then
+    notify_error "NutriMind dependencies are missing. Run scripts/install-desktop-app.sh from the NutriMind folder."
+    return 1
+  fi
+
+  stop_server
+
+  (
+    cd "$APP_DIR"
+    "$NPM_BIN" exec -- prisma migrate deploy >>"$LOG_FILE" 2>&1
+    setsid "$NPM_BIN" run dev -- --hostname 127.0.0.1 >>"$LOG_FILE" 2>&1 &
+    printf '%s\n' "$!" >"$PID_FILE"
+  )
+
+  for _ in {1..40}; do
+    if is_healthy; then
+      return 0
+    fi
+    sleep 0.5
+  done
+
+  notify_error "The local server did not become ready. See ${LOG_FILE}."
+  return 1
+}
+
+launch_window() {
+  mkdir -p "$CHROMIUM_PROFILE"
+  setsid --fork "$CHROMIUM_BIN" \
+    --app="$APP_URL" \
+    --class=NutriMind \
+    --name=NutriMind \
+    --user-data-dir="$CHROMIUM_PROFILE" \
+    --no-first-run \
+    --disable-features=Translate \
+    </dev/null >/dev/null 2>&1
+}
+
+case "${1:-launch}" in
+  launch)
+    start_server
+    launch_window
+    ;;
+  stop)
+    stop_server
+    ;;
+  status)
+    if is_healthy; then
+      printf 'NutriMind is running at %s\n' "$APP_URL"
+    else
+      printf 'NutriMind is stopped\n'
+      exit 1
+    fi
+    ;;
+  *)
+    printf 'Usage: %s [launch|stop|status]\n' "$0" >&2
+    exit 2
+    ;;
+esac

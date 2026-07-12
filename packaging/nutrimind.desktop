@@ -1,0 +1,17 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=NutriMind
+GenericName=Nutrition Tracker
+Comment=Your private nutrition reserve
+Exec=/home/kruillin/Projects/Projects/NutriMind/my-app/scripts/nutrimind-desktop launch
+Icon=/home/kruillin/Projects/Projects/NutriMind/my-app/packaging/nutrimind.png
+Terminal=false
+Categories=Utility;
+StartupNotify=true
+StartupWMClass=NutriMind
+Actions=Stop;
+
+[Desktop Action Stop]
+Name=Stop NutriMind
+Exec=/home/kruillin/Projects/Projects/NutriMind/my-app/scripts/nutrimind-desktop stop

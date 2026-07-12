@@ -5,11 +5,13 @@ import { ThemeProvider } from "@wrksz/themes/next";
 import { MobileNav } from "@/components/MobileNav";
 import { DesktopNav } from "@/components/DesktopNav";
 import Link from "next/link";
+import Image from "next/image";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "NutriMind Reserve - Your Calorie Account",
   description: "Run your nutrition like an account: allocate today, build a reserve, and spend it deliberately.",
+  icons: { icon: "/nutrimind-mark.svg" },
 };
 
 export default async function RootLayout({
@@ -34,9 +36,15 @@ export default async function RootLayout({
             <header className="sticky top-0 z-50 border-b border-border bg-background/92 backdrop-blur-xl">
               <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                 <Link href="/" className="group flex items-center gap-3" aria-label="NutriMind Reserve home">
-                  <span className="seal flex h-9 w-9 items-center justify-center text-[9px] font-bold tracking-tight transition-transform group-hover:rotate-[-4deg]">
-                    NM
-                  </span>
+                  <Image
+                    src="/nutrimind-mark.svg"
+                    alt=""
+                    aria-hidden="true"
+                    width={36}
+                    height={36}
+                    className="h-9 w-9 transition-transform group-hover:rotate-[-4deg]"
+                    priority
+                  />
                   <span>
                     <span className="block text-[15px] font-bold tracking-[-0.02em] text-foreground">NutriMind</span>
                     <span className="smallcaps accent-text block text-[9px]">Reserve account</span>

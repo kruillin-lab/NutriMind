@@ -26,6 +26,18 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Desktop App
+
+Install the local KDE application launcher and validated desktop build:
+
+```bash
+./scripts/install-desktop-app.sh
+```
+
+Then open the application launcher and search for **NutriMind**. It runs locally
+in a standalone Chromium window. Right-click its launcher entry and choose
+**Stop NutriMind** to stop the background server.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

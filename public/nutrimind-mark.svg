@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="NutriMind currency coin">
+  <defs>
+    <radialGradient id="coin" cx="38%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#F4D77F"/>
+      <stop offset="0.55" stop-color="#C8A24B"/>
+      <stop offset="1" stop-color="#8A6418"/>
+    </radialGradient>
+  </defs>
+  <circle cx="128" cy="128" r="116" fill="url(#coin)" stroke="#6F4D0D" stroke-width="5"/>
+  <circle cx="128" cy="128" r="103" fill="none" stroke="#F8E2A0" stroke-width="2" opacity=".8"/>
+  <circle cx="128" cy="128" r="91" fill="#17140D" stroke="#7A5914" stroke-width="4"/>
+  <g fill="#F8E2A0">
+    <circle cx="128" cy="25" r="3.5"/>
+    <circle cx="128" cy="231" r="3.5"/>
+    <circle cx="25" cy="128" r="3.5"/>
+    <circle cx="231" cy="128" r="3.5"/>
+  </g>
+  <path d="M75 164V91L125 164V91L151 127L181 91V164"
+        fill="none" stroke="#F3EEE0" stroke-width="13"
+        stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="M65 118H191M65 136H191"
+        fill="none" stroke="#C8A24B" stroke-width="5"
+        stroke-linecap="round"/>
+</svg>

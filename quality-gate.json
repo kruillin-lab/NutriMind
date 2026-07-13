@@ -21,23 +21,23 @@
   },
   "commands": {
     "lint": {
-      "shell": "powershell",
+      "shell": "bash",
       "command": "npm run lint",
       "timeout_seconds": 240
     },
     "test": {
-      "shell": "powershell",
+      "shell": "bash",
       "command": "npm test",
       "timeout_seconds": 240
     },
     "build": {
-      "shell": "powershell",
+      "shell": "bash",
       "command": "npm run build",
       "timeout_seconds": 300
     },
     "markdown-audit": {
-      "shell": "powershell",
-      "command": "python C:\\Users\\kruil\\.codex\\skills\\obsidian-markdown-auditor\\scripts\\obsidian_markdown_audit.py validate --root C:\\Users\\kruil\\Documents\\Projects --stage stage2",
+      "shell": "bash",
+      "command": "internal-repo-markdown-audit",
       "timeout_seconds": 240
     }
   },

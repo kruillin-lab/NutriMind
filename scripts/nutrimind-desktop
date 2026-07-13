@@ -2,7 +2,9 @@
 set -euo pipefail
 
 APP_DIR="/home/kruillin/Projects/Projects/NutriMind/my-app"
-APP_URL="http://127.0.0.1:3000"
+APP_HOST="localhost"
+APP_PORT="3001"
+APP_URL="http://${APP_HOST}:${APP_PORT}"
 HEALTH_URL="${APP_URL}/api/health"
 STATE_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/nutrimind"
 PID_FILE="${STATE_DIR}/server.pid"
@@ -52,7 +54,7 @@ start_server() {
   (
     cd "$APP_DIR"
     "$NPM_BIN" exec -- prisma migrate deploy >>"$LOG_FILE" 2>&1
-    setsid "$NPM_BIN" run dev -- --hostname 127.0.0.1 >>"$LOG_FILE" 2>&1 &
+    setsid "$NPM_BIN" run dev -- --hostname "$APP_HOST" --port "$APP_PORT" >>"$LOG_FILE" 2>&1 &
     printf '%s\n' "$!" >"$PID_FILE"
   )
 

@@ -76,7 +76,7 @@ export default async function RootLayout({
                 </div>
               </div>
             </header>
-            <main className="flex-1">
+            <main className="flex-1 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:pb-0">
               {children}
             </main>
           </ThemeProvider>

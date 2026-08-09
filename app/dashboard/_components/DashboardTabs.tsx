@@ -143,7 +143,7 @@ export function DashboardTabs({
 
   return (
     <Tabs value={activeView} onValueChange={handleViewChange} className="w-full gap-0">
-      <TabsList aria-label="Account overview sections" className="mb-10 flex h-auto w-full items-end justify-start gap-7 overflow-x-auto rounded-none border-b border-border bg-transparent p-0 sm:gap-9">
+      <TabsList aria-label="Account overview sections" className="-mx-4 mb-10 flex h-auto w-[calc(100%+2rem)] items-end justify-start gap-7 overflow-x-auto rounded-none border-b border-border bg-transparent px-4 sm:mx-0 sm:w-full sm:gap-9 sm:px-0">
         {[
           { value: "today", label: "Today" },
           { value: "trends", label: "Trends" },

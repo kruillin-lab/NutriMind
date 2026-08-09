@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/src/generated/prisma/client";
 import { prisma } from "@/src/lib/prisma";
 import { getSystemTimezone } from "@/lib/date-utils";
 import { ApiError, handleRoute } from "@/src/lib/api-helpers";

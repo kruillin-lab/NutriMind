@@ -1,4 +1,4 @@
-import type { CalorieBank, DailyLog, Prisma } from "@prisma/client";
+import type { CalorieBank, DailyLog, Prisma } from "@/src/generated/prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../calorieBank", () => ({

@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/src/generated/prisma/client";
 import { prisma } from "./prisma";
 import { getSystemTimezone } from "@/lib/date-utils";
 

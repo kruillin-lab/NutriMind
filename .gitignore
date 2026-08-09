@@ -66,6 +66,9 @@ yarn-error.log*
 next-env.d.ts
 .gstack/
 
+# generated Prisma client
+/src/generated/prisma/
+
 apply-turso-schema.mjs
 verify-turso.mjs
 turso-schema.sql

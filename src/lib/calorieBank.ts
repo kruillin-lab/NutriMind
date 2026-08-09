@@ -1,4 +1,4 @@
-import type { BankTransaction, CalorieBank, Prisma } from "@prisma/client";
+import type { BankTransaction, CalorieBank, Prisma } from "@/src/generated/prisma/client";
 import { getLocalMidnight } from "@/lib/date-utils";
 import { prisma } from "@/src/lib/prisma";
 

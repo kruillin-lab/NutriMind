@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
-import { DailyLog } from '@prisma/client';
+import type { DailyLog } from '@/src/generated/prisma/client';
 import { formatLocalDateKey } from '@/lib/date-utils';
 import { ApiError, handleRoute, requireUserId } from '@/src/lib/api-helpers';
 

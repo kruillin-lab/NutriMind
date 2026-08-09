@@ -1,4 +1,4 @@
-import type { CalorieBank, Prisma } from "@prisma/client";
+import type { CalorieBank, Prisma } from "@/src/generated/prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import {
   applyCalorieBankOverageAdjustment,

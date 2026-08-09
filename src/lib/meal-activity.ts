@@ -1,4 +1,4 @@
-import type { Meal as PrismaMeal } from "@prisma/client";
+import type { Meal as PrismaMeal } from "@/src/generated/prisma/client";
 
 export interface MealActivityItem {
   id: string;

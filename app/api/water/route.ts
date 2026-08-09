@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@/src/generated/prisma/client";
 import { clampInt } from "@/src/lib/validation";
 import {
   ApiError,

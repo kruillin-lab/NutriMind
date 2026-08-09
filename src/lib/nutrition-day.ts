@@ -1,4 +1,4 @@
-import type { CalorieBank, MealType, Prisma } from "@prisma/client";
+import type { CalorieBank, MealType, Prisma } from "@/src/generated/prisma/client";
 import { applyCalorieBankOverageAdjustment } from "@/src/lib/calorieBank";
 
 export interface MealNutrition {

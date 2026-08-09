@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/src/lib/prisma";
-
-const CRON_SECRET = process.env.CRON_SECRET;
+import { hasAuthorizedCronRequest } from "@/src/lib/cron-auth";
 
 export async function POST(req: NextRequest) {
-  const isVercelCron = process.env.VERCEL === "1" && req.headers.get("x-vercel-cron") === "1";
-  const authHeader = req.headers.get("authorization");
-  const hasValidSecret = CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`;
-
-  if (!isVercelCron && !hasValidSecret) {
+  if (!hasAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

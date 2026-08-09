@@ -21,17 +21,17 @@
   },
   "commands": {
     "lint": {
-      "shell": "bash",
+      "shell": "cmd",
       "command": "npm run lint",
       "timeout_seconds": 240
     },
     "test": {
-      "shell": "bash",
+      "shell": "cmd",
       "command": "npm test",
       "timeout_seconds": 240
     },
     "build": {
-      "shell": "bash",
+      "shell": "cmd",
       "command": "npm run build",
       "timeout_seconds": 300
     },

@@ -6,16 +6,12 @@ import {
   IntakeSample,
   WeightSample,
 } from "@/src/lib/metabolic";
+import { hasAuthorizedCronRequest } from "@/src/lib/cron-auth";
 
-const CRON_SECRET = process.env.CRON_SECRET;
 const LOOKBACK_DAYS = 21;
 
 export async function POST(req: NextRequest) {
-  const isVercelCron = req.headers.get("x-vercel-cron") === "1";
-  const authHeader = req.headers.get("authorization");
-  const hasValidSecret = CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`;
-
-  if (!isVercelCron && !hasValidSecret) {
+  if (!hasAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

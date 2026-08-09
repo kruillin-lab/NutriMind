@@ -22,7 +22,14 @@
 /out/
 
 # production
-/build
+/build/*
+!/build/sites-vite-plugin.ts
+/dist/
+
+# Sites / Cloudflare local state
+/.wrangler/
+.dev.vars
+.dev.vars.*
 
 # misc
 .DS_Store
@@ -49,6 +56,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.local.example
 
 # vercel
 .vercel

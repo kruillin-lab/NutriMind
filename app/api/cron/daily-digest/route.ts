@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { hasAuthorizedCronRequest } from "@/src/lib/cron-auth";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
 const FROM_EMAIL = process.env.DIGEST_FROM_EMAIL ?? "NutriMind <digest@nutrimind.app>";
@@ -84,11 +85,7 @@ function digestHtml(data: {
 }
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-  const isVercelCron = req.headers.get("x-vercel-cron") === "1";
-
-  if (!isVercelCron && !(cronSecret && authHeader === `Bearer ${cronSecret}`)) {
+  if (!hasAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

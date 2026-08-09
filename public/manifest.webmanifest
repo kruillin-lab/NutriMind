@@ -1,0 +1,21 @@
+{
+  "name": "NutriMind Reserve",
+  "short_name": "NutriMind",
+  "description": "Run your nutrition like an account: allocate today, build a reserve, and spend it deliberately.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#EFE9DA",
+  "theme_color": "#17140D",
+  "orientation": "any",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Overview", "url": "/dashboard", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Activity", "url": "/meals", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Account", "url": "/settings", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

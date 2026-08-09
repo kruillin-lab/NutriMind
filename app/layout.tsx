@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AuthButtons } from "./_components/AuthButtons";
 import { ThemeProvider } from "@wrksz/themes/next";
 import { MobileNav } from "@/components/MobileNav";
 import { DesktopNav } from "@/components/DesktopNav";
+import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import Link from "next/link";
 import Image from "next/image";
 import "./globals.css";
@@ -11,7 +12,23 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "NutriMind Reserve - Your Calorie Account",
   description: "Run your nutrition like an account: allocate today, build a reserve, and spend it deliberately.",
-  icons: { icon: "/nutrimind-mark.svg" },
+  manifest: "/manifest.webmanifest",
+  applicationName: "NutriMind Reserve",
+  appleWebApp: { capable: true, title: "NutriMind Reserve", statusBarStyle: "default" },
+  icons: {
+    icon: [
+      { url: "/nutrimind-mark.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#17140D",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default async function RootLayout({
@@ -26,6 +43,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background">
+        <ServiceWorkerRegistrar />
         <ClerkProvider
           signInUrl="/sign-in"
           signUpUrl="/sign-up"

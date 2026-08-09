@@ -1,5 +1,5 @@
 import { PrismaClient } from "@/src/generated/prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { PrismaLibSql } from "@/src/lib/prisma-adapter";
 import { getDatabaseRuntimeConfig } from "./runtime-env";
 
 const databaseConfig = getDatabaseRuntimeConfig();

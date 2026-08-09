@@ -50,7 +50,7 @@ describe("POST /api/meals", () => {
       bankTransaction: null,
       bankAdjustment: { amount: 0 },
     } as never);
-    vi.mocked(checkAndAwardAchievements).mockResolvedValue(undefined);
+    vi.mocked(checkAndAwardAchievements).mockResolvedValue([]);
   });
 
   it("forwards validated photo provenance to the canonical meal transaction", async () => {

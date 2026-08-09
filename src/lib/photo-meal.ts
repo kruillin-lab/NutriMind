@@ -75,19 +75,19 @@ function parseFood(value: unknown): PhotoMealFood | null {
 
   return {
     name,
-    calories,
-    protein,
-    carbs,
-    fat,
-    fiber,
-    sugar,
-    sodium,
-    vitaminC,
-    calcium,
-    iron,
-    potassium,
-    servingSize,
-    confidence,
+    calories: calories!,
+    protein: protein!,
+    carbs: carbs!,
+    fat: fat!,
+    fiber: fiber!,
+    sugar: sugar!,
+    sodium: sodium!,
+    vitaminC: vitaminC!,
+    calcium: calcium!,
+    iron: iron!,
+    potassium: potassium!,
+    servingSize: servingSize!,
+    confidence: confidence!,
   };
 }
 

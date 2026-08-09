@@ -69,6 +69,12 @@ next-env.d.ts
 # generated Prisma client
 /src/generated/prisma/
 
+# Android build state
+/android/.gradle/
+/android/build/
+/android/app/build/
+/android/local.properties
+
 apply-turso-schema.mjs
 verify-turso.mjs
 turso-schema.sql

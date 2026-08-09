@@ -1,8 +1,10 @@
 import { PrismaClient } from "@/src/generated/prisma/client";
-import { PrismaLibSql } from "@/src/lib/prisma-adapter";
-import { getDatabaseRuntimeConfig } from "./runtime-env";
+import { PrismaLibSql as PrismaLibSqlNode } from "@prisma/adapter-libsql";
+import { PrismaLibSql as PrismaLibSqlWeb } from "@prisma/adapter-libsql/web";
+import { getDatabaseRuntimeConfig, isHostedRuntime } from "./runtime-env";
 
 const databaseConfig = getDatabaseRuntimeConfig();
+const PrismaLibSql = isHostedRuntime() ? PrismaLibSqlWeb : PrismaLibSqlNode;
 const adapter = new PrismaLibSql({
   url: databaseConfig.url,
   authToken: databaseConfig.authToken,

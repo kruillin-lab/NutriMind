@@ -31,11 +31,12 @@ From the project root, run:
 ```
 
 This builds `android\app\build\outputs\apk\debug\app-debug.apk` and copies
-the result to the ignored distribution folder:
+the result to an ignored artifact folder. This stays separate from the Sites
+deployment `dist\` directory, which is recreated by each hosted-site build:
 
 ```text
-dist\android\NutriMind-debug.apk
-dist\android\NutriMind-debug.apk.sha256
+artifacts\android\NutriMind-debug.apk
+artifacts\android\NutriMind-debug.apk.sha256
 ```
 
 The checksum file contains the SHA-256 hash of the APK. Use it to confirm that a

@@ -4,6 +4,13 @@ $debugApk = Join-Path $repoRoot 'android\app\build\outputs\apk\debug\app-debug.a
 $backupApk = "$debugApk.preflight-backup"
 
 Describe 'package-private-apk preflight' {
+    It 'keeps private APK artifacts outside the Sites dist directory' {
+        $scriptContent = Get-Content -LiteralPath $packagingScript -Raw
+
+        $scriptContent | Should Match 'artifacts\\android'
+        $scriptContent | Should Not Match 'dist\\android'
+    }
+
     It 'fails clearly when SkipBuild cannot find the debug APK' {
         Test-Path -LiteralPath $debugApk | Should Be $true
         Test-Path -LiteralPath $backupApk | Should Be $false

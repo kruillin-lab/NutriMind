@@ -9,8 +9,8 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $androidRoot = Join-Path $repoRoot 'android'
 $gradleWrapper = Join-Path $androidRoot 'gradlew.bat'
 $debugApk = Join-Path $androidRoot 'app\build\outputs\apk\debug\app-debug.apk'
-$distDirectory = Join-Path $repoRoot 'dist\android'
-$packagedApk = Join-Path $distDirectory 'NutriMind-debug.apk'
+$artifactDirectory = Join-Path $repoRoot 'artifacts\android'
+$packagedApk = Join-Path $artifactDirectory 'NutriMind-debug.apk'
 $checksumFile = "$packagedApk.sha256"
 
 if (-not (Test-Path -LiteralPath $gradleWrapper -PathType Leaf)) {
@@ -63,7 +63,7 @@ if (-not (Test-Path -LiteralPath $debugApk -PathType Leaf)) {
     throw "Expected Android debug APK was not found at $debugApk. Run this script without -SkipBuild to create it."
 }
 
-New-Item -ItemType Directory -Path $distDirectory -Force | Out-Null
+New-Item -ItemType Directory -Path $artifactDirectory -Force | Out-Null
 Copy-Item -LiteralPath $debugApk -Destination $packagedApk -Force
 
 $hash = (Get-FileHash -LiteralPath $packagedApk -Algorithm SHA256).Hash

@@ -25,6 +25,7 @@
 /build/*
 !/build/sites-vite-plugin.ts
 /dist/
+/artifacts/
 
 # Sites / Cloudflare local state
 /.wrangler/

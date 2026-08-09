@@ -47,7 +47,8 @@ Build a private, debug-signed Android APK from this Windows PC:
 ```
 
 The packaged APK and its SHA-256 checksum are written to the ignored
-`dist\android\` folder. Follow the [Android private testing guide](docs/android-private-testing.md)
+`artifacts\android\` folder, separately from the hosted-site build output.
+Follow the [Android private testing guide](docs/android-private-testing.md)
 to sideload it, validate the camera flows, and check remote data sync before any
 public release.
 

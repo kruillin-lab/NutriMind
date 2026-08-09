@@ -19,6 +19,9 @@ export interface NutritionResult {
   calciumMg: number;
   ironMg: number;
   potassiumMg: number;
+  source: "barcode" | "label" | "photo";
+  aiConfidence: number | null;
+  uncertaintyNote?: string;
 }
 
 interface ScannerModalProps {
@@ -26,7 +29,7 @@ interface ScannerModalProps {
   onClose: () => void;
 }
 
-type Tab = "barcode" | "label";
+type Tab = "barcode" | "label" | "meal";
 type Status = "idle" | "scanning" | "loading" | "error";
 
 export function ScannerModal({ onResult, onClose }: ScannerModalProps) {
@@ -73,7 +76,7 @@ export function ScannerModal({ onResult, onClose }: ScannerModalProps) {
                 setStatus("error");
                 return;
               }
-              setResult(data.product);
+              setResult({ ...data.product, source: "barcode", aiConfidence: null });
               setStatus("idle");
             } catch {
               setError("Failed to look up product");
@@ -114,7 +117,7 @@ export function ScannerModal({ onResult, onClose }: ScannerModalProps) {
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>, mode: "label" | "meal") {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -122,8 +125,14 @@ export function ScannerModal({ onResult, onClose }: ScannerModalProps) {
     setError(null);
 
     try {
-      const compressed = await compressImage(file);
-      const res = await fetch("/api/parse-label", {
+      const compressed = await compressImage(file, mode === "meal" ? 1600 : 1024);
+      if (compressed.length > 8_000_000) {
+        setError("Image is too large after compression. Please choose a smaller photo.");
+        setStatus("error");
+        return;
+      }
+
+      const res = await fetch(mode === "meal" ? "/api/parse-meal-photo" : "/api/parse-label", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: compressed }),
@@ -136,7 +145,11 @@ export function ScannerModal({ onResult, onClose }: ScannerModalProps) {
         return;
       }
 
-      setResult(data.nutrition);
+      if (mode === "meal") {
+        setResult(toMealPhotoResult(data.estimate));
+      } else {
+        setResult({ ...data.nutrition, source: "label", aiConfidence: null });
+      }
       setStatus("idle");
     } catch {
       setError("Failed to process image");
@@ -156,7 +169,7 @@ export function ScannerModal({ onResult, onClose }: ScannerModalProps) {
 
       {/* Tabs */}
       <div className="flex bg-background border-b border-border">
-        {(["barcode", "label"] as Tab[]).map((t) => (
+        {(["barcode", "label", "meal"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => switchTab(t)}
@@ -168,7 +181,7 @@ export function ScannerModal({ onResult, onClose }: ScannerModalProps) {
             style={tab === t ? { borderColor: "var(--brass)" } : undefined}
           >
             {t === "barcode" ? <QrCode className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
-            {t === "barcode" ? "Barcode" : "Nutrition Label"}
+            {t === "barcode" ? "Barcode" : t === "label" ? "Nutrition Label" : "Meal photo"}
           </button>
         ))}
       </div>
@@ -176,15 +189,22 @@ export function ScannerModal({ onResult, onClose }: ScannerModalProps) {
       {/* Body */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto">
         {result ? (
-          <ResultCard result={result} onRetry={retry} onConfirm={(edited) => onResult(edited)} />
+          <ResultCard key={`${result.source}:${result.name}`} result={result} onRetry={retry} onConfirm={(edited) => onResult(edited)} />
         ) : tab === "barcode" ? (
           <BarcodeView videoRef={videoRef} status={status} error={error} onRetry={retry} />
-        ) : (
+        ) : tab === "label" ? (
           <LabelView
             fileRef={fileRef}
             status={status}
             error={error}
-            onSelect={handleImageSelect}
+            onSelect={(event) => handleImageSelect(event, "label")}
+          />
+        ) : (
+          <MealPhotoView
+            fileRef={fileRef}
+            status={status}
+            error={error}
+            onSelect={(event) => handleImageSelect(event, "meal")}
           />
         )}
       </div>
@@ -203,48 +223,71 @@ function ResultCard({
   onRetry: () => void;
   onConfirm: (edited: NutritionResult) => void;
 }) {
-  const [editedName, setEditedName] = useState(result.name);
+  const [edited, setEdited] = useState(result);
 
   const handleConfirm = () => {
-    onConfirm({ ...result, name: editedName.trim() || result.name });
+    onConfirm({ ...edited, name: edited.name.trim() || result.name });
   };
+
+  const fields: Array<{ key: keyof NutritionResult; label: string; unit: string }> = [
+    { key: "calories", label: "Calories", unit: "kcal" },
+    { key: "proteinG", label: "Protein", unit: "g" },
+    { key: "carbsG", label: "Carbs", unit: "g" },
+    { key: "fatG", label: "Fat", unit: "g" },
+    { key: "fiberG", label: "Fiber", unit: "g" },
+    { key: "sugarG", label: "Sugar", unit: "g" },
+    { key: "sodiumMg", label: "Sodium", unit: "mg" },
+    { key: "vitaminCMg", label: "Vitamin C", unit: "mg" },
+    { key: "calciumMg", label: "Calcium", unit: "mg" },
+    { key: "ironMg", label: "Iron", unit: "mg" },
+    { key: "potassiumMg", label: "Potassium", unit: "mg" },
+  ];
 
   return (
     <div className="surface w-full max-w-sm space-y-5 overflow-hidden p-6">
       <div className="foil -mx-6 -mt-6 mb-1" />
       <div className="flex items-center gap-2" style={{ color: "var(--ledger-green)" }}>
         <CheckCircle className="h-5 w-5" />
-        <span className="smallcaps">Found</span>
+        <span className="smallcaps">{result.source === "photo" ? "Estimate ready" : "Found"}</span>
       </div>
       <div>
-        <label className="smallcaps mb-1 block">Name (editable)</label>
-        <Input
-          value={editedName}
-          onChange={(e) => setEditedName(e.target.value)}
+          <label className="smallcaps mb-1 block">Name (editable)</label>
+          <Input
+          value={edited.name}
+          onChange={(e) => setEdited((current) => ({ ...current, name: e.target.value }))}
           className="h-auto rounded-sm py-1.5 text-lg font-semibold leading-tight"
         />
         {result.servingSize && (
           <p className="mt-0.5 text-sm text-muted-foreground">Per serving: {result.servingSize}</p>
         )}
       </div>
+      {result.uncertaintyNote && (
+        <p className="rounded-sm border border-[var(--brass)]/30 bg-secondary px-3 py-2 text-xs leading-5 text-muted-foreground">
+          {result.uncertaintyNote}
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="surface-raised col-span-2 p-3 text-center">
-          <p className="num-display text-3xl text-foreground">{result.calories}</p>
-          <p className="smallcaps mt-0.5">Calories</p>
-        </div>
-        {[
-          ["Protein", `${result.proteinG}g`],
-          ["Carbs", `${result.carbsG}g`],
-          ["Fat", `${result.fatG}g`],
-          ["Fiber", `${result.fiberG}g`],
-          ["Sugar", `${result.sugarG}g`],
-          ["Sodium", `${result.sodiumMg}mg`],
-        ].map(([label, value]) => (
-          <div key={label} className="flex justify-between">
-            <span className="smallcaps">{label}</span>
-            <span className="num font-medium text-foreground">{value}</span>
-          </div>
-        ))}
+        {fields.map(({ key, label, unit }) => {
+          const value = edited[key];
+          if (typeof value !== "number") return null;
+          return (
+            <label key={key} className={key === "calories" ? "col-span-2" : "block"}>
+              <span className="smallcaps mb-1 block">{label} ({unit})</span>
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                inputMode="decimal"
+                value={value}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setEdited((current) => ({ ...current, [key]: Number.isFinite(next) && next >= 0 ? next : 0 }));
+                }}
+                className="num h-9 rounded-sm"
+              />
+            </label>
+          );
+        })}
       </div>
       <div className="flex gap-2 pt-1">
         <button className="btn-ghost flex-1" onClick={onRetry}>
@@ -367,22 +410,116 @@ function LabelView({
   );
 }
 
+function MealPhotoView({
+  fileRef,
+  status,
+  error,
+  onSelect,
+}: {
+  fileRef: React.RefObject<HTMLInputElement | null>;
+  status: Status;
+  error: string | null;
+  onSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  if (status === "loading") {
+    return (
+      <div className="flex flex-col items-center gap-4 text-white">
+        <Loader2 className="h-12 w-12 animate-spin" />
+        <p className="text-sm text-white/70">Estimating your meal…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-sm flex flex-col items-center gap-5 text-white">
+      <div className="w-full border-2 border-dashed border-white/25 rounded-sm p-8 flex flex-col items-center gap-3 text-white/70">
+        <ImageIcon className="h-14 w-14" />
+        <p className="text-sm text-center">Take a photo of your meal or choose one from your device.</p>
+      </div>
+      <p className="rounded-sm border border-white/20 bg-white/10 px-3 py-2 text-center text-xs leading-5 text-white/75">
+        Your photo is sent to NutriMind&apos;s AI provider solely for estimation, then discarded. Nothing is logged until you review and confirm it.
+      </p>
+      {error && (
+        <div className="flex items-center gap-2 rounded-sm bg-card/95 px-3 py-2 text-destructive text-sm">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={onSelect}
+      />
+      <button className="btn-primary w-full" onClick={() => fileRef.current?.click()}>
+        <ImageIcon className="h-4 w-4 mr-2" />
+        Take photo or choose image
+      </button>
+    </div>
+  );
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function compressImage(file: File, maxWidth = 1024): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
       const scale = Math.min(1, maxWidth / img.width);
       const canvas = document.createElement("canvas");
       canvas.width = Math.round(img.width * scale);
       canvas.height = Math.round(img.height * scale);
       const ctx = canvas.getContext("2d");
-      if (!ctx) { reject(new Error("Canvas not supported")); return; }
+      if (!ctx) { URL.revokeObjectURL(objectUrl); reject(new Error("Canvas not supported")); return; }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(objectUrl);
       resolve(canvas.toDataURL("image/jpeg", 0.85));
     };
-    img.onerror = () => reject(new Error("Failed to load image"));
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Failed to load image")); };
+    img.src = objectUrl;
   });
+}
+
+function toMealPhotoResult(estimate: {
+  foods: Array<{
+    name: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+    sugar: number;
+    sodium: number;
+    vitaminC: number;
+    calcium: number;
+    iron: number;
+    potassium: number;
+    confidence: number;
+  }>;
+  confidence: number;
+  uncertaintyNote: string;
+}): NutritionResult {
+  const sum = (field: keyof (typeof estimate.foods)[number]) =>
+    estimate.foods.reduce((total, food) => total + (typeof food[field] === "number" ? food[field] as number : 0), 0);
+
+  return {
+    name: estimate.foods.map((food) => food.name).join(", "),
+    calories: sum("calories"),
+    proteinG: sum("protein"),
+    carbsG: sum("carbs"),
+    fatG: sum("fat"),
+    fiberG: sum("fiber"),
+    sugarG: sum("sugar"),
+    sodiumMg: sum("sodium"),
+    vitaminCMg: sum("vitaminC"),
+    calciumMg: sum("calcium"),
+    ironMg: sum("iron"),
+    potassiumMg: sum("potassium"),
+    source: "photo",
+    aiConfidence: estimate.confidence,
+    uncertaintyNote: estimate.uncertaintyNote,
+  };
 }

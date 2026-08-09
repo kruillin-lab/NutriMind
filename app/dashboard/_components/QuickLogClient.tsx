@@ -70,6 +70,10 @@ const INITIAL_MANUAL_MEAL = {
 type LogMode = "ai" | "manual";
 type ManualMealState = typeof INITIAL_MANUAL_MEAL;
 type ManualMealNumberKey = Exclude<keyof ManualMealState, "name">;
+type CaptureMetadata = {
+  source: "ai" | "barcode" | "label" | "photo";
+  aiConfidence: number | null;
+};
 
 const MANUAL_MACRO_FIELDS: Array<{
   key: ManualMealNumberKey;
@@ -123,6 +127,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
   const [isLoadingPopular, setIsLoadingPopular] = useState(false);
   const [mealType, setMealType] = useState("OTHER");
   const [showMicros, setShowMicros] = useState(false);
+  const [captureMetadata, setCaptureMetadata] = useState<CaptureMetadata | null>(null);
 
   const jsonHeaders = () => {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -200,6 +205,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
     }]);
     setShowParsed(true);
     setShowScanner(false);
+    setCaptureMetadata({ source: result.source, aiConfidence: result.aiConfidence });
     setError(null);
   };
 
@@ -222,6 +228,10 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
       const data = await res.json();
       if (!data.success) throw new Error(data.error || "Failed to parse");
       setParsedFoods(data.foods);
+      const aiConfidence = data.foods.length > 0
+        ? data.foods.reduce((total: number, food: ParsedFood) => total + food.confidence, 0) / data.foods.length
+        : null;
+      setCaptureMetadata({ source: "ai", aiConfidence });
       setShowParsed(true);
       setRetryCount(0);
     } catch (err) {
@@ -262,6 +272,8 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
           potassiumMg: sum(f => f.potassium),
           servingSizeG: sum(f => f.servingSize) || null,
           mealType,
+          source: captureMetadata?.source ?? "ai",
+          aiConfidence: captureMetadata?.aiConfidence ?? null,
         }),
       });
       if (!res.ok) {
@@ -271,6 +283,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
       setInput("");
       setParsedFoods([]);
       setShowParsed(false);
+      setCaptureMetadata(null);
       window.location.reload();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Failed to log meal");
@@ -386,7 +399,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
 
   return (
     <>
-      <section aria-labelledby="quick-log-heading" className="surface overflow-hidden">
+      <section id="quick-log" aria-labelledby="quick-log-heading" className="surface scroll-mt-24 overflow-hidden">
         {/* Header */}
         <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -407,6 +420,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
                 aria-pressed={mode === option.value}
                 onClick={() => {
                   setMode(option.value);
+                  setCaptureMetadata(null);
                   setSubmitError(null);
                 }}
                 className={`smallcaps pb-0.5 transition-colors ${
@@ -625,7 +639,7 @@ export function QuickLogClient({ userId }: QuickLogClientProps) {
             <div className="border-t border-border pt-3">
               <div className="flex items-center justify-between pb-1">
                 <span className="smallcaps">Detected items</span>
-                <button type="button" aria-label="Dismiss detected items" onClick={() => setShowParsed(false)} className="text-muted-foreground transition-colors hover:text-foreground">
+                <button type="button" aria-label="Dismiss detected items" onClick={() => { setShowParsed(false); setCaptureMetadata(null); }} className="text-muted-foreground transition-colors hover:text-foreground">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>

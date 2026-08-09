@@ -38,6 +38,19 @@ Then open the application launcher and search for **NutriMind**. It runs locally
 in a standalone Chromium window. Right-click its launcher entry and choose
 **Stop NutriMind** to stop the background server.
 
+## Private Android APK
+
+Build a private, debug-signed Android APK from this Windows PC:
+
+```powershell
+.\packaging\android\package-private-apk.ps1
+```
+
+The packaged APK and its SHA-256 checksum are written to the ignored
+`dist\android\` folder. Follow the [Android private testing guide](docs/android-private-testing.md)
+to sideload it, validate the camera flows, and check remote data sync before any
+public release.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

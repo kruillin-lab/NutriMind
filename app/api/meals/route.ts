@@ -7,6 +7,8 @@ import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
 import { checkAndAwardAchievements } from "@/src/lib/achievements";
 import { toMealActivityItem } from "@/src/lib/meal-activity";
 
+const MEAL_SOURCES = new Set(["manual", "ai", "barcode", "label", "photo", "meal_plan"]);
+
 export async function POST(req: NextRequest) {
   return handleRoute("Failed to log meal", async () => {
     const userId = await requireUserId();
@@ -14,7 +16,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => {
       throw new ApiError(400, "Invalid meal data");
     });
-    const { name, calories, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg, vitaminCMg, calciumMg, ironMg, potassiumMg, servingSizeG, mealType = "OTHER", date: dateParam } = body;
+    const { name, calories, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg, vitaminCMg, calciumMg, ironMg, potassiumMg, servingSizeG, mealType = "OTHER", date: dateParam, source, aiConfidence } = body;
 
     const safeName = truncate(name, 200);
     const safeCalories = clampInt(calories, 0, 10000);
@@ -41,6 +43,8 @@ export async function POST(req: NextRequest) {
       potassiumMg: clampNumber(potassiumMg, 0, 10000) ?? 0,
     };
     const safeServingSizeG = servingSizeG != null ? clampNumber(servingSizeG, 0, 10000) : null;
+    const safeSource = typeof source === "string" && MEAL_SOURCES.has(source) ? source : "manual";
+    const safeAiConfidence = aiConfidence == null ? null : clampNumber(aiConfidence, 0, 1);
 
     // Get user with profile and calorie bank
     const user = await prisma.user.findUnique({
@@ -74,6 +78,8 @@ export async function POST(req: NextRequest) {
         calories: safeCalories,
         mealType,
         servingSizeG: safeServingSizeG,
+        source: safeSource,
+        aiConfidence: safeAiConfidence,
         ...nutrients,
       },
       spendReason: `Overspend from meal: ${safeName}`,

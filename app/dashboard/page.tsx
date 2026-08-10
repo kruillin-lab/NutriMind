@@ -131,25 +131,22 @@ export default async function DashboardPage({
   return (
     <div className="min-h-screen bg-hero">
       <div className="finance-shell">
-        <header className="mb-8 flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="seal mt-0.5 h-9 w-9 shrink-0 text-[9px] font-bold tracking-tight" aria-hidden="true">NM</span>
-            <div>
-              <p className="page-kicker">NutriMind private ledger</p>
-              <h1 className="mt-1 text-3xl font-bold tracking-[-0.03em] text-foreground sm:text-4xl">
-                Reserve account
-              </h1>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-                Your calorie budget, meals, and health records in one daily account view.
+        <header className="mb-8 border-b border-border pb-6">
+          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+            <p className="page-kicker">NutriMind private ledger</p>
+            <div className="text-right">
+              <p className="smallcaps">Statement date</p>
+              <p className="num mt-1 text-sm text-foreground">
+                {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
               </p>
             </div>
           </div>
-          <div className="sm:text-right">
-            <p className="smallcaps">Statement date</p>
-            <p className="num mt-1 text-sm text-foreground">
-              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-            </p>
-          </div>
+          <h1 className="mt-3 text-3xl font-bold tracking-[-0.03em] text-foreground sm:text-4xl">
+            Reserve account
+          </h1>
+          <p className="mt-3 max-w-lg text-[15px] leading-[1.65] text-muted-foreground">
+            Your calorie budget, meals, and health records in one daily account view.
+          </p>
         </header>
 
         <DashboardTabs

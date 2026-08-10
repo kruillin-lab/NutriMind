@@ -126,21 +126,21 @@ export default function OnboardingPage() {
 
   return (
     <div className="bg-hero min-h-screen px-4 py-10 sm:px-8 lg:py-16">
-      <div className="mx-auto grid w-full max-w-6xl items-start gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(28rem,1.15fr)] lg:gap-20">
-        <section aria-labelledby="account-opening-title" className="pt-2 lg:sticky lg:top-28">
+      <div className="mx-auto w-full max-w-2xl">
+        <header>
           <span className="seal h-11 w-11 text-[10px] font-bold tracking-tight">NM</span>
           <p className="smallcaps mt-10 text-foreground">NutriMind Reserve · Account opening</p>
           <h1
             id="account-opening-title"
-            className="mt-4 max-w-lg text-[clamp(2.5rem,6vw,4.5rem)] font-bold leading-[0.98] tracking-[-0.035em] text-foreground"
+            className="text-display mt-4 font-bold text-foreground"
           >
             Establish your daily reserve.
           </h1>
-          <p className="mt-6 max-w-md text-[15px] leading-[1.7] text-muted-foreground">
+          <p className="mt-5 max-w-lg text-[15px] leading-[1.7] text-muted-foreground">
             Three short entries set your opening allowance. NutriMind uses them to estimate a starting target; you remain in control of every setting afterward.
           </p>
 
-          <div className="mt-10 max-w-md border-y border-border py-4">
+          <div className="mt-10 border-y border-border py-4">
             <div className="ledger-row border-t-0">
               <span className="smallcaps">Application</span>
               <span className="num text-sm text-foreground">NM-NEW</span>
@@ -154,19 +154,19 @@ export default function OnboardingPage() {
               <span className="num text-sm text-foreground">0 kcal</span>
             </div>
           </div>
-        </section>
+        </header>
 
-        <section className="surface overflow-hidden" aria-label="Calorie reserve application">
+        <section className="surface mt-10 overflow-hidden" aria-label="Calorie reserve application">
           <div className="foil" />
           <div className="p-5 sm:p-8">
-            <div className="flex items-start justify-between gap-4 border-b border-border pb-5">
-              <div>
+            <div className="border-b border-border pb-5">
+              <div className="flex items-baseline justify-between gap-4">
                 <p className="smallcaps">Reserve application</p>
-                <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">
-                  Set up your Calorie Bank
-                </h2>
+                <span className="num text-xs text-muted-foreground">Step {step}/3</span>
               </div>
-              <span className="num text-xs text-muted-foreground">Step {step}/3</span>
+              <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">
+                Set up your Calorie Bank
+              </h2>
             </div>
 
             <ol className="mt-5 grid grid-cols-3 gap-2" aria-label="Account setup progress">

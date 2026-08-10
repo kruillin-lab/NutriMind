@@ -176,20 +176,20 @@ export function MealHistoryClient({
   return (
     <div className="app-field min-h-screen">
       <div className="finance-shell">
-        <header className="flex flex-col gap-6 border-b border-border pb-8 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-2xl">
+        <header className="border-b border-border pb-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="page-kicker">Nutrition account activity</p>
-            <h1 className="mt-3 text-[clamp(2.25rem,6vw,4rem)] leading-[0.98] tracking-[-0.045em] text-foreground">
-              Activity ledger
-            </h1>
-            <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-              Review every meal posted against your daily calorie allocation and inspect the nutrients behind each entry.
-            </p>
+            <a className="btn-ghost" href="/dashboard">
+              <Landmark aria-hidden="true" className="mr-2 size-4" />
+              Account overview
+            </a>
           </div>
-          <a className="btn-ghost w-fit" href="/dashboard">
-            <Landmark aria-hidden="true" className="mr-2 size-4" />
-            Account overview
-          </a>
+          <h1 className="mt-3 text-3xl font-bold tracking-[-0.03em] text-foreground sm:text-4xl">
+            Activity ledger
+          </h1>
+          <p className="mt-3 max-w-lg text-[15px] leading-[1.65] text-muted-foreground">
+            Review every meal posted against your daily calorie allocation and inspect the nutrients behind each entry.
+          </p>
         </header>
 
         <section aria-labelledby="statement-date" className="surface mt-6 overflow-hidden">
@@ -208,9 +208,9 @@ export function MealHistoryClient({
 
             <div className="min-w-0 text-center">
               <p id="statement-date" className="page-kicker">Daily statement</p>
-              <h2 className="mt-1 text-2xl tracking-[-0.025em] text-foreground">
+              <p className="num-display mt-1 text-2xl tracking-[-0.025em] text-foreground">
                 {formatDisplayDate(selectedDate)}
-              </h2>
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">{formatFullDate(selectedDate)}</p>
             </div>
 

@@ -19,10 +19,10 @@ export default async function DatabasePage() {
           <p className="page-kicker">
             Development only
           </p>
-          <h1 className="mt-2 text-4xl font-bold tracking-[-0.02em] text-foreground">
+          <h1 className="mt-3 text-3xl font-bold tracking-[-0.03em] text-foreground sm:text-4xl">
             Database
           </h1>
-          <p className="mt-2 max-w-2xl text-muted-foreground">
+          <p className="mt-3 max-w-lg text-[15px] leading-[1.65] text-muted-foreground">
             Inspect and edit NutriMind records directly. Changes save to the local Prisma database.
           </p>
         </header>

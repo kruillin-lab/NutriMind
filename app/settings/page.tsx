@@ -45,14 +45,12 @@ export default async function SettingsPage() {
   return (
     <div className="min-h-screen bg-hero">
       <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 lg:py-14">
-        <header className="mb-10 grid gap-5 border-b border-border pb-8 md:grid-cols-[minmax(0,1fr)_minmax(16rem,0.55fr)] md:items-end">
-          <div>
-            <p className="smallcaps text-foreground">NutriMind Reserve · Account administration</p>
-            <h1 className="mt-3 text-[clamp(2.25rem,5vw,3.75rem)] font-bold tracking-[-0.03em] leading-[1] text-foreground">
-              Account Controls
-            </h1>
-          </div>
-          <p className="text-[15px] leading-6 text-muted-foreground md:text-right">
+        <header className="mb-10 border-b border-border pb-8">
+          <p className="smallcaps text-foreground">NutriMind Reserve · Account administration</p>
+          <h1 className="mt-3 text-3xl font-bold tracking-[-0.03em] text-foreground sm:text-4xl">
+            Account Controls
+          </h1>
+          <p className="mt-3 max-w-lg text-[15px] leading-[1.65] text-muted-foreground">
             Manage the assumptions, limits, alerts, and statements that govern your calorie reserve.
           </p>
         </header>

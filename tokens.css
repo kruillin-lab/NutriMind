@@ -1,0 +1,76 @@
+/* Hallmark · genre: editorial · macrostructure: Stat-Led · design-system: design.md · designed-as-app
+ * NutriMind Reserve — "The Vault" canonical tokens (portable OKLCH form).
+ * Runtime shadcn variables stay in app/globals.css; this file is the locked
+ * design.md export consumed by new Hallmark-built surfaces.
+ */
+
+:root {
+  /* --- colour: statement paper (light, canonical) --- */
+  --color-paper:        oklch(93.5% 0.021 88.7);   /* #EFE9DA */
+  --color-paper-2:      oklch(89.5% 0.028 88.8);   /* #E4DCC8 paper well */
+  --color-card:         oklch(97.9% 0.011 89.7);   /* #FBF8F0 engraved card */
+  --color-ink:          oklch(19.2% 0.014 87.5);   /* #17140D */
+  --color-ink-2:        oklch(50.1% 0.041 91.2);   /* #6C6349 aged-ink label */
+  --color-rule:         oklch(19.2% 0.014 87.5 / 0.16);
+  --color-brass:        oklch(59.7% 0.109 88.4);   /* #9A7B23 decorative foil only */
+  --color-brass-ink:    oklch(48.4% 0.092 85.5);   /* #765A12 small-text brass */
+  --color-brass-foil:   oklch(73.0% 0.114 85.6);   /* #C8A24B */
+  --color-ledger-green: oklch(47.5% 0.080 159.3);  /* #2E6A4C deposits */
+  --color-ledger-red:   oklch(45.1% 0.149 28.6);   /* #97271F withdrawals */
+  --color-focus:        var(--color-brass);
+
+  /* --- type --- */
+  --font-display: var(--font-inter, "Inter"), ui-sans-serif, system-ui, sans-serif;
+  --font-body:    var(--font-inter, "Inter"), ui-sans-serif, system-ui, sans-serif;
+  --font-figures: var(--font-plex-mono, "IBM Plex Mono"), ui-monospace, "SF Mono", "SFMono-Regular", "Menlo", "Consolas", monospace;
+
+  /* --- type scale (4-pt anchored) --- */
+  --text-xs:      0.75rem;
+  --text-sm:      0.875rem;
+  --text-md:      1.125rem;
+  --text-lg:      1.375rem;
+  --text-xl:      1.75rem;
+  --text-2xl:     2.25rem;
+  --text-display: clamp(2.25rem, 4.5vw, 3.75rem);
+  --text-figure:  clamp(4rem, 14vw, 11rem);   /* Stat-Led hero figure */
+
+  /* --- spacing (4-pt) --- */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs:  0.75rem;
+  --space-sm:  1rem;
+  --space-md:  1.5rem;
+  --space-lg:  2rem;
+  --space-xl:  3rem;
+  --space-2xl: 4.5rem;
+  --space-3xl: 7rem;
+
+  /* --- motion (motion-cut stance) --- */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:     cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-short:   150ms;
+  --dur-med:     220ms;
+  --dur-long:    500ms;
+
+  /* --- shape & rules --- */
+  --radius-card:  0.25rem;
+  --radius-input: 0.25rem;
+  --radius-pill:  2px;         /* engraved tag, not a bubble */
+  --rule:         1px solid var(--color-rule);
+}
+
+.dark {
+  /* vault after hours — ink interior, brass holds */
+  --color-paper:        oklch(18.2% 0.012 91.8);   /* #14120C */
+  --color-paper-2:      oklch(23.5% 0.016 88.0);   /* #262215 */
+  --color-card:         oklch(21.8% 0.016 89.9);   /* #1D1A12 */
+  --color-ink:          oklch(94.0% 0.021 91.6);   /* #F0EBDC */
+  --color-ink-2:        oklch(70.9% 0.034 90.6);   /* #A79C7E */
+  --color-rule:         oklch(94.0% 0.021 91.6 / 0.14);
+  --color-brass:        oklch(73.0% 0.114 85.6);   /* #C8A24B */
+  --color-brass-ink:    oklch(77.5% 0.105 86.5);   /* #D8B85F */
+  --color-brass-foil:   oklch(81.0% 0.096 87.0);   /* #E0C078 */
+  --color-ledger-green: oklch(64.5% 0.085 158.0);  /* #5B9A76 */
+  --color-ledger-red:   oklch(59.5% 0.140 28.0);   /* #C6584C */
+}

@@ -1,17 +1,19 @@
+/* Hallmark · genre: editorial · macrostructure: Stat-Led · design-system: design.md · designed-as-app */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "../tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", monospace;
-  --font-heading: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter, "Inter"), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono, "IBM Plex Mono"), ui-monospace, "SF Mono", "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", monospace;
+  --font-heading: var(--font-inter, "Inter"), ui-sans-serif, system-ui, sans-serif;
   /* --font-serif repurposed as the Vault display face: a heavy grotesk, not a serif */
-  --font-serif: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-inter, "Inter"), ui-sans-serif, system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -138,21 +140,27 @@
   html {
     color-scheme: light;
   }
+  html,
+  body {
+    overflow-x: clip;
+  }
   body {
     @apply bg-background text-foreground;
-    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-inter, "Inter"), ui-sans-serif, system-ui, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     -webkit-font-smoothing: antialiased;
   }
   h1, h2 {
-    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-inter, "Inter"), ui-sans-serif, system-ui, sans-serif;
     font-weight: 700;
     letter-spacing: -0.025em;
+    overflow-wrap: anywhere;
   }
   h3, h4, h5, h6 {
-    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-inter, "Inter"), ui-sans-serif, system-ui, sans-serif;
     font-weight: 650;
     letter-spacing: -0.015em;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -302,7 +310,9 @@
     letter-spacing: 0.02em;
     border: 1px solid var(--brass);
     box-shadow: 0 1px 2px rgba(23, 20, 13, 0.16);
-    transition: all 0.15s;
+    transition: background-color var(--dur-short) var(--ease-out),
+      border-color var(--dur-short) var(--ease-out),
+      transform var(--dur-short) var(--ease-out);
   }
   .btn-primary:hover {
     background: #23200F;
@@ -327,7 +337,9 @@
     font-size: 0.8125rem;
     font-weight: 600;
     letter-spacing: 0.02em;
-    transition: all 0.15s;
+    transition: background-color var(--dur-short) var(--ease-out),
+      border-color var(--dur-short) var(--ease-out),
+      transform var(--dur-short) var(--ease-out);
   }
   .btn-ghost:hover {
     background: var(--secondary);
@@ -480,5 +492,50 @@
     padding: 0.625rem 0;
     border-top: 1px solid var(--border);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* --- Hallmark · Stat-Led (design.md) --- */
+
+  /* Hero figure — the Vault's engraved closing balance, IBM Plex Mono tabular */
+  .stat-figure {
+    font-family: var(--font-figures);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: var(--text-figure);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+
+  /* Worded display headline paired beneath the figure */
+  .text-display {
+    font-size: var(--text-display);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+
+  /* Reduced motion — spatial motion collapses; state changes stay instant */
+  @media (prefers-reduced-motion: reduce) {
+    .btn-primary,
+    .btn-ghost {
+      transition-duration: 150ms;
+    }
+    .btn-primary:active,
+    .btn-ghost:active {
+      transform: none;
+    }
+    .fill-indigo,
+    .track-fill-indigo,
+    .fill-green,
+    .track-fill-green,
+    .fill-rose,
+    .track-fill-red,
+    .fill-amber,
+    .track-fill-amber {
+      transition: none;
+    }
   }
 }

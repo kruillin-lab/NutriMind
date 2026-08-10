@@ -1,0 +1,10 @@
+[
+  {
+    "date": "2026-08-09",
+    "scope": "app",
+    "macrostructure": "Stat-Led",
+    "theme": "the-vault (design.md-locked)",
+    "enrichment": "Tier-A hand-built CSS artifact (statement ledger)",
+    "brief": "Multi-page redesign: locked the pre-existing Vault identity into design.md + tokens.css (OKLCH), IBM Plex Mono figures via next/font, landing rebuilt as Stat-Led; app pages pending"
+  }
+]

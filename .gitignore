@@ -67,8 +67,9 @@ yarn-error.log*
 next-env.d.ts
 .gstack/
 
-# generated Prisma client
+# generated Prisma clients (workerd + local node runtime)
 /src/generated/prisma/
+/src/generated/prisma-node/
 
 # Android build state
 /android/.gradle/

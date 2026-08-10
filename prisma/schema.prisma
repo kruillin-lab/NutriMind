@@ -4,6 +4,15 @@ generator client {
   runtime    = "workerd"
   engineType = "client"
 }
+// Local Node runtime (next dev / next start). The workerd client's wasm
+// loading path fails under next dev on Node (Prisma #28105), so local
+// runs use a nodejs-runtime client; hosted Sites builds keep the workerd one.
+generator clientNode {
+  provider   = "prisma-client"
+  output     = "../src/generated/prisma-node"
+  runtime    = "nodejs"
+  engineType = "client"
+}
 
 datasource db {
   provider = "sqlite"

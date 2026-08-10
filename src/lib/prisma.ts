@@ -1,4 +1,5 @@
-import { PrismaClient } from "@/src/generated/prisma/client";
+import { PrismaClient as PrismaClientWorkerd } from "@/src/generated/prisma/client";
+import { PrismaClient as PrismaClientNode } from "@/src/generated/prisma-node/client";
 import { PrismaLibSql as PrismaLibSqlNode } from "@prisma/adapter-libsql";
 import { PrismaLibSql as PrismaLibSqlWeb } from "@prisma/adapter-libsql/web";
 import { cloudflareLibsqlFetch } from "./libsql-fetch";
@@ -13,14 +14,23 @@ const adapter = new PrismaLibSql({
   ...(hostedRuntime ? { fetch: cloudflareLibsqlFetch } : {}),
 });
 
-const prismaClientSingleton = () => {
-  return new PrismaClient({
+// The workerd client's wasm loading path fails under next dev on Node
+// (Prisma #28105); local runs use the nodejs-runtime client, hosted
+// Sites builds keep the workerd one.
+const prismaClientSingleton = (): PrismaClientWorkerd => {
+  if (hostedRuntime) {
+    return new PrismaClientWorkerd({
+      adapter,
+      log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    });
+  }
+  return new PrismaClientNode({
     adapter,
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-  });
+  }) as PrismaClientWorkerd;
 };
 
-type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
+type PrismaClientSingleton = PrismaClientWorkerd;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClientSingleton | undefined;

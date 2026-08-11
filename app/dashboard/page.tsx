@@ -6,25 +6,14 @@ import { DashboardTabs } from "./_components/DashboardTabs";
 import { calculateStreaks } from "@/src/lib/streakUtils";
 import { addLocalDays, formatLocalDateKey, getLocalMidnight } from "@/lib/date-utils";
 
-const DASHBOARD_TRACE = "[DEBUG-dashboard-hang-20260810]";
-
-async function traceDashboardStage<T>(stage: string, operation: () => Promise<T>): Promise<T> {
-  console.error(`${DASHBOARD_TRACE}:start:${stage}`);
-  const result = await operation();
-  console.error(`${DASHBOARD_TRACE}:complete:${stage}`);
-  return result;
-}
-
 async function getDashboardData(userId: string) {
   const today = getLocalMidnight();
   const tomorrow = addLocalDays(today, 1);
 
-  const bankData = await traceDashboardStage("bank-id", () =>
-    prisma.calorieBank.findUnique({
-      where: { userId },
-      select: { id: true },
-    })
-  );
+  const bankData = await prisma.calorieBank.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
 
   const [
     userProfile,
@@ -34,31 +23,25 @@ async function getDashboardData(userId: string) {
     recentTransactions,
     weightEntries,
   ] = await Promise.all([
-    traceDashboardStage("profile", () => prisma.userProfile.findUnique({ where: { userId } })),
-    traceDashboardStage("bank", () => prisma.calorieBank.findUnique({ where: { userId } })),
-    traceDashboardStage("metabolic-profile", () => prisma.metabolicProfile.findUnique({ where: { userId } })),
-    traceDashboardStage("today-log", () =>
-      prisma.dailyLog.findFirst({
-        where: { userId, date: { gte: today, lt: tomorrow } },
-        include: { meals: true },
-      })
-    ),
+    prisma.userProfile.findUnique({ where: { userId } }),
+    prisma.calorieBank.findUnique({ where: { userId } }),
+    prisma.metabolicProfile.findUnique({ where: { userId } }),
+    prisma.dailyLog.findFirst({
+      where: { userId, date: { gte: today, lt: tomorrow } },
+      include: { meals: true },
+    }),
     bankData
-      ? traceDashboardStage("transactions", () =>
-          prisma.bankTransaction.findMany({
-            where: { bankId: bankData.id },
-            orderBy: { createdAt: "desc" },
-            take: 10,
-          })
-        )
+      ? prisma.bankTransaction.findMany({
+          where: { bankId: bankData.id },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        })
       : Promise.resolve([]),
-    traceDashboardStage("weights", () =>
-      prisma.weightEntry.findMany({
-        where: { userId },
-        orderBy: { date: "desc" },
-        take: 7,
-      })
-    ),
+    prisma.weightEntry.findMany({
+      where: { userId },
+      orderBy: { date: "desc" },
+      take: 7,
+    }),
   ]);
 
   const consumedCalories = todayLog?.meals.reduce((sum, meal) => sum + meal.calories, 0) || 0;
@@ -86,14 +69,12 @@ async function getDashboardData(userId: string) {
   const todayWeightEntry = weightEntries.find((e) => formatLocalDateKey(new Date(e.date)) === todayKey) ?? null;
   const previousWeightEntry = weightEntries.find((e) => formatLocalDateKey(new Date(e.date)) !== todayKey) ?? null;
 
-  const allDailyLogs = await traceDashboardStage("streak-history", () =>
-    prisma.dailyLog.findMany({
-      where: { userId },
-      orderBy: { date: "asc" },
-      take: 365,
-      select: { date: true, caloriesConsumed: true, calorieTarget: true },
-    })
-  );
+  const allDailyLogs = await prisma.dailyLog.findMany({
+    where: { userId },
+    orderBy: { date: "asc" },
+    take: 365,
+    select: { date: true, caloriesConsumed: true, calorieTarget: true },
+  });
 
   const effectiveTarget = calorieBank?.dailyTarget || 2000;
   const { currentStreak, maxStreak } = calculateStreaks(allDailyLogs, effectiveTarget);

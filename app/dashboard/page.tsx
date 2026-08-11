@@ -124,6 +124,26 @@ export default async function DashboardPage({
     return <p>Dashboard authentication succeeded.</p>;
   }
 
+  if (diagnosticMode === "component") {
+    return (
+      <DashboardTabs
+        userId={userId}
+        dailyTarget={2000}
+        consumedCalories={0}
+        meals={[]}
+        waterIntake={0}
+        calorieBank={null}
+        recentTransactions={[]}
+        weightEntries={[]}
+        todayWeightEntry={null}
+        previousWeightEntry={null}
+        currentStreak={0}
+        maxStreak={0}
+        todayLog={null}
+      />
+    );
+  }
+
   const data = await getDashboardData(userId);
 
   if (diagnosticMode === "data") {

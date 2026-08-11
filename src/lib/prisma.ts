@@ -3,22 +3,21 @@ import { PrismaClient as PrismaClientNode } from "@/src/generated/prisma-node/cl
 import { PrismaLibSql as PrismaLibSqlNode } from "@prisma/adapter-libsql";
 import { PrismaLibSql as PrismaLibSqlWeb } from "@prisma/adapter-libsql/web";
 import { cloudflareLibsqlFetch } from "./libsql-fetch";
-import { getDatabaseRuntimeConfig, isHostedRuntime } from "./runtime-env";
+import { getDatabaseRuntimeConfig, isWorkerdRuntime } from "./runtime-env";
 
 const databaseConfig = getDatabaseRuntimeConfig();
-const hostedRuntime = isHostedRuntime();
-const PrismaLibSql = hostedRuntime ? PrismaLibSqlWeb : PrismaLibSqlNode;
+const workerdRuntime = isWorkerdRuntime();
+const PrismaLibSql = workerdRuntime ? PrismaLibSqlWeb : PrismaLibSqlNode;
 const adapter = new PrismaLibSql({
   url: databaseConfig.url,
   authToken: databaseConfig.authToken,
-  ...(hostedRuntime ? { fetch: cloudflareLibsqlFetch } : {}),
+  ...(workerdRuntime ? { fetch: cloudflareLibsqlFetch } : {}),
 });
 
-// The workerd client's wasm loading path fails under next dev on Node
-// (Prisma #28105); local runs use the nodejs-runtime client, hosted
-// Sites builds keep the workerd one.
+// Select the client for the JavaScript engine: Node uses the nodejs-runtime
+// client, while Cloudflare Workers and local workerd use the workerd client.
 const prismaClientSingleton = (): PrismaClientWorkerd => {
-  if (hostedRuntime) {
+  if (workerdRuntime) {
     return new PrismaClientWorkerd({
       adapter,
       log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],

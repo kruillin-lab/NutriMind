@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { validateHostedRuntime } from "../runtime-env";
+import { describe, expect, it, vi } from "vitest";
+import {
+  isHostedRuntime,
+  isWorkerdRuntime,
+  validateHostedRuntime,
+} from "../runtime-env";
 
 const hostedEnvironment = {
   NUTRIMIND_HOSTED_RUNTIME: "1",
@@ -17,6 +21,20 @@ describe("validateHostedRuntime", () => {
     expect(
       validateHostedRuntime({ DATABASE_URL: "file:./prisma/dev.db" })
     ).toEqual({ ready: true, missing: [], invalid: [] });
+  });
+
+  it("does not treat local workerd as a hosted deployment without the flag", () => {
+    vi.stubGlobal("WebSocketPair", class WebSocketPair {});
+
+    try {
+      expect(isWorkerdRuntime()).toBe(true);
+      expect(isHostedRuntime({})).toBe(false);
+      expect(
+        validateHostedRuntime({ DATABASE_URL: "file:./prisma/dev.db" })
+      ).toEqual({ ready: true, missing: [], invalid: [] });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("accepts a fully configured remote libSQL runtime", () => {

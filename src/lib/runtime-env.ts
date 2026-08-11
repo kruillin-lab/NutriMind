@@ -14,6 +14,10 @@ const REQUIRED_HOSTED_VARIABLES = [
   "CRON_SECRET",
 ] as const;
 
+export function isWorkerdRuntime(): boolean {
+  return "WebSocketPair" in globalThis;
+}
+
 export function isHostedRuntime(environment: RuntimeEnvironment = process.env): boolean {
   return environment.NUTRIMIND_HOSTED_RUNTIME === "1";
 }

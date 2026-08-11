@@ -105,6 +105,7 @@ export default async function DashboardPage({
   const headerTestUserId = headersList.get("X-Test-User-Id");
   const params = await searchParams;
   const queryTestUserId = params["test-user-id"];
+  const diagnosticMode = typeof params.diagnostic === "string" ? params.diagnostic : null;
 
   let userId: string | null = null;
 
@@ -119,7 +120,15 @@ export default async function DashboardPage({
 
   if (!userId) redirect("/");
 
+  if (diagnosticMode === "auth") {
+    return <p>Dashboard authentication succeeded.</p>;
+  }
+
   const data = await getDashboardData(userId);
+
+  if (diagnosticMode === "data") {
+    return <p>Dashboard data load succeeded.</p>;
+  }
 
   if (!data.userProfile?.heightCm) redirect("/onboarding");
 

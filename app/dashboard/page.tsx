@@ -5,13 +5,10 @@ import { headers } from "next/headers";
 import { DashboardTabs } from "./_components/DashboardTabs";
 import { calculateStreaks } from "@/src/lib/streakUtils";
 import { addLocalDays, formatLocalDateKey, getLocalMidnight } from "@/lib/date-utils";
-import { bankPendingCompletedDays } from "@/src/lib/calorieBank";
 
 async function getDashboardData(userId: string) {
   const today = getLocalMidnight();
   const tomorrow = addLocalDays(today, 1);
-
-  await bankPendingCompletedDays(userId, today);
 
   const bankData = await prisma.calorieBank.findUnique({
     where: { userId },

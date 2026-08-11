@@ -140,6 +140,7 @@ export default async function DashboardPage({
         currentStreak={0}
         maxStreak={0}
         todayLog={null}
+        diagnostic
       />
     );
   }

@@ -56,8 +56,7 @@ interface WeightEntry {
   source?: string;
 }
 
-interface DashboardTabsProps {
-  diagnostic?: boolean;
+export interface DashboardTabsProps {
   userId: string;
   dailyTarget: number;
   consumedCalories: number;
@@ -111,7 +110,6 @@ function ViewIntroduction({
 }
 
 export function DashboardTabs({
-  diagnostic,
   userId,
   dailyTarget,
   consumedCalories,
@@ -129,10 +127,6 @@ export function DashboardTabs({
   const searchParams = useSearchParams();
   const requestedView = searchParams.get("view");
   const activeView: DashboardView = isDashboardView(requestedView) ? requestedView : "today";
-
-  if (diagnostic) {
-    return <p>Dashboard component shell succeeded.</p>;
-  }
 
   const handleViewChange = (view: string) => {
     if (!isDashboardView(view)) return;

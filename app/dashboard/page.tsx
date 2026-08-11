@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/src/lib/prisma";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { DashboardTabs } from "./_components/DashboardTabs";
+import { DashboardTabsClient } from "./_components/DashboardTabsClient";
 import { calculateStreaks } from "@/src/lib/streakUtils";
 import { addLocalDays, formatLocalDateKey, getLocalMidnight } from "@/lib/date-utils";
 
@@ -105,7 +105,6 @@ export default async function DashboardPage({
   const headerTestUserId = headersList.get("X-Test-User-Id");
   const params = await searchParams;
   const queryTestUserId = params["test-user-id"];
-  const diagnosticMode = typeof params.diagnostic === "string" ? params.diagnostic : null;
 
   let userId: string | null = null;
 
@@ -120,36 +119,7 @@ export default async function DashboardPage({
 
   if (!userId) redirect("/");
 
-  if (diagnosticMode === "auth") {
-    return <p>Dashboard authentication succeeded.</p>;
-  }
-
-  if (diagnosticMode === "component") {
-    return (
-      <DashboardTabs
-        userId={userId}
-        dailyTarget={2000}
-        consumedCalories={0}
-        meals={[]}
-        waterIntake={0}
-        calorieBank={null}
-        recentTransactions={[]}
-        weightEntries={[]}
-        todayWeightEntry={null}
-        previousWeightEntry={null}
-        currentStreak={0}
-        maxStreak={0}
-        todayLog={null}
-        diagnostic
-      />
-    );
-  }
-
   const data = await getDashboardData(userId);
-
-  if (diagnosticMode === "data") {
-    return <p>Dashboard data load succeeded.</p>;
-  }
 
   if (!data.userProfile?.heightCm) redirect("/onboarding");
 
@@ -176,7 +146,7 @@ export default async function DashboardPage({
           </p>
         </header>
 
-        <DashboardTabs
+        <DashboardTabsClient
           userId={userId}
           dailyTarget={dailyTarget}
           consumedCalories={data.consumedCalories}

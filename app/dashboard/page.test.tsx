@@ -34,8 +34,8 @@ vi.mock("@/src/lib/prisma", () => ({
 vi.mock("@/src/lib/streakUtils", () => ({
   calculateStreaks: () => ({ currentStreak: 0, maxStreak: 0 }),
 }));
-vi.mock("./_components/DashboardTabs", () => ({
-  DashboardTabs: () => null,
+vi.mock("./_components/DashboardTabsClient", () => ({
+  DashboardTabsClient: () => null,
 }));
 
 import DashboardPage from "./page";

@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { addZonedDays, DEFAULT_TIMEZONE, isValidLocalDateKey, parseZonedDate, zonedMidnightUtc } from "@/lib/date-utils";
 import { prisma } from "@/src/lib/prisma";
 
 // Shared helpers for API route handlers: auth guards, JSON error responses,
@@ -52,6 +53,20 @@ export async function requireUser() {
 }
 
 /**
+ * Returns the authenticated user's timezone (`UserProfile.timezone`),
+ * falling back to `DEFAULT_TIMEZONE` when the user has no profile yet or
+ * no timezone on record. Use this before any "what day is it for this
+ * user" computation — never the server's own clock/timezone.
+ */
+export async function requireUserTimezone(userId: string): Promise<string> {
+  const profile = await prisma.userProfile.findUnique({
+    where: { userId },
+    select: { timezone: true },
+  });
+  return profile?.timezone || DEFAULT_TIMEZONE;
+}
+
+/**
  * JSON error response in the shape all routes use: `{ error: message }`.
  */
 export function jsonError(status: number, message: string) {
@@ -76,29 +91,19 @@ export async function handleRoute<T>(fallbackMessage: string, fn: () => Promise<
 }
 
 /**
- * Computes the `[start, end)` window of a single day. `start` is `dateParam`
- * (or now, when absent) normalized to midnight; `end` is exactly one day
- * later. Defaults to local-time midnight (`setHours`); pass `{ utc: true }`
- * for routes that normalize with `setUTCHours`. Both semantics exist in this
- * codebase and must be preserved — do not change a route's choice.
+ * Computes the `[start, end)` window of a single day in the user's `timezone`.
+ * `start` is `dateParam` (a YYYY-MM-DD key) at local midnight in that zone,
+ * or today's local midnight when `dateParam` is omitted. `end` is exactly
+ * one zoned calendar day later (DST-safe, so not always +24h).
+ * Throws `ApiError(400)` when `dateParam` is present but malformed.
  */
-export function dayRange(
-  dateParam?: string | null,
-  opts?: { utc?: boolean }
-): { start: Date; end: Date } {
-  const start = dateParam ? new Date(dateParam) : new Date();
-  if (opts?.utc) {
-    start.setUTCHours(0, 0, 0, 0);
-  } else {
-    start.setHours(0, 0, 0, 0);
+export function dayRange(timezone: string, dateParam?: string | null): { start: Date; end: Date } {
+  if (dateParam != null && !isValidLocalDateKey(dateParam)) {
+    throw new ApiError(400, "Invalid date");
   }
 
-  const end = new Date(start);
-  if (opts?.utc) {
-    end.setUTCDate(end.getUTCDate() + 1);
-  } else {
-    end.setDate(end.getDate() + 1);
-  }
+  const start = dateParam ? parseZonedDate(dateParam, timezone) : zonedMidnightUtc(timezone);
+  const end = addZonedDays(start, 1, timezone);
 
   return { start, end };
 }

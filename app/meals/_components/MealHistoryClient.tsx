@@ -13,7 +13,7 @@ import {
   Landmark,
 } from 'lucide-react';
 import { MealList } from './MealList';
-import { addLocalDays, formatLocalDateKey, isValidLocalDateKey, parseLocalDate } from '@/lib/date-utils';
+import { addZonedDays, formatZonedDateKey, isValidLocalDateKey, parseZonedDate } from '@/lib/date-utils';
 import type { MealActivityItem } from '@/src/lib/meal-activity';
 
 interface CalorieBank {
@@ -33,18 +33,19 @@ interface MealHistoryClientProps {
   initialData: MealsResponse;
   initialDate: string;
   userId: string;
+  userTimezone: string;
 }
 
-function formatDisplayDate(date: Date): string {
+function formatDisplayDate(date: Date, timezone: string): string {
   const today = new Date();
+  const dateKey = formatZonedDateKey(date, timezone);
 
-  if (date.toDateString() === today.toDateString()) {
+  if (dateKey === formatZonedDateKey(today, timezone)) {
     return 'Today';
   }
 
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) {
+  const yesterday = addZonedDays(today, -1, timezone);
+  if (dateKey === formatZonedDateKey(yesterday, timezone)) {
     return 'Yesterday';
   }
 
@@ -52,15 +53,17 @@ function formatDisplayDate(date: Date): string {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
+    timeZone: timezone,
   });
 }
 
-function formatFullDate(date: Date): string {
+function formatFullDate(date: Date, timezone: string): string {
   return date.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: timezone,
   });
 }
 
@@ -68,11 +71,12 @@ export function MealHistoryClient({
   initialData,
   initialDate,
   userId,
+  userTimezone,
 }: MealHistoryClientProps) {
   const searchParams = useSearchParams();
   const queryDate = searchParams.get('date');
   const dateKey = isValidLocalDateKey(queryDate) ? queryDate : initialDate;
-  const selectedDate = useMemo(() => parseLocalDate(dateKey), [dateKey]);
+  const selectedDate = useMemo(() => parseZonedDate(dateKey, userTimezone), [dateKey, userTimezone]);
   const [data, setData] = useState<MealsResponse>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -100,7 +104,7 @@ export function MealHistoryClient({
     requestRef.current?.abort();
     const request = new AbortController();
     requestRef.current = request;
-    const requestedDate = formatLocalDateKey(date);
+    const requestedDate = formatZonedDateKey(date, userTimezone);
 
     setIsLoading(true);
     setLoadError('');
@@ -128,7 +132,7 @@ export function MealHistoryClient({
         setIsLoading(false);
       }
     }
-  }, [jsonHeaders]);
+  }, [jsonHeaders, userTimezone]);
 
   useEffect(() => {
     if (dateKey !== loadedDateRef.current) {
@@ -139,7 +143,7 @@ export function MealHistoryClient({
   useEffect(() => () => requestRef.current?.abort(), []);
 
   const selectDate = (date: Date) => {
-    const nextDate = formatLocalDateKey(date);
+    const nextDate = formatZonedDateKey(date, userTimezone);
     if (nextDate === dateKey) return;
 
     const params = new URLSearchParams(searchParams.toString());
@@ -149,7 +153,7 @@ export function MealHistoryClient({
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!isValidLocalDateKey(event.target.value)) return;
-    selectDate(parseLocalDate(event.target.value));
+    selectDate(parseZonedDate(event.target.value, userTimezone));
   };
 
   const refreshCurrentDay = () => {
@@ -198,7 +202,7 @@ export function MealHistoryClient({
               type="button"
               variant="outline"
               size="icon"
-              onClick={() => selectDate(addLocalDays(selectedDate, -1))}
+              onClick={() => selectDate(addZonedDays(selectedDate, -1, userTimezone))}
               disabled={isLoading}
               aria-label="View previous day"
               className="hidden lg:inline-flex"
@@ -209,16 +213,16 @@ export function MealHistoryClient({
             <div className="min-w-0 text-center">
               <p id="statement-date" className="page-kicker">Daily statement</p>
               <p className="num-display mt-1 text-2xl tracking-[-0.025em] text-foreground">
-                {formatDisplayDate(selectedDate)}
+                {formatDisplayDate(selectedDate, userTimezone)}
               </p>
-              <p className="mt-1 text-sm text-muted-foreground">{formatFullDate(selectedDate)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{formatFullDate(selectedDate, userTimezone)}</p>
             </div>
 
             <Button
               type="button"
               variant="outline"
               size="icon"
-              onClick={() => selectDate(addLocalDays(selectedDate, 1))}
+              onClick={() => selectDate(addZonedDays(selectedDate, 1, userTimezone))}
               disabled={isLoading}
               aria-label="View next day"
               className="hidden lg:inline-flex"
@@ -231,7 +235,7 @@ export function MealHistoryClient({
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={() => selectDate(addLocalDays(selectedDate, -1))}
+                onClick={() => selectDate(addZonedDays(selectedDate, -1, userTimezone))}
                 disabled={isLoading}
                 aria-label="View previous day"
                 className="lg:hidden"
@@ -252,7 +256,7 @@ export function MealHistoryClient({
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={() => selectDate(addLocalDays(selectedDate, 1))}
+                onClick={() => selectDate(addZonedDays(selectedDate, 1, userTimezone))}
                 disabled={isLoading}
                 aria-label="View next day"
                 className="lg:hidden"

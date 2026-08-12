@@ -58,6 +58,7 @@ interface WeightEntry {
 
 export interface DashboardTabsProps {
   userId: string;
+  userTimezone: string;
   dailyTarget: number;
   consumedCalories: number;
   meals: Meal[];
@@ -111,6 +112,7 @@ function ViewIntroduction({
 
 export function DashboardTabs({
   userId,
+  userTimezone,
   dailyTarget,
   consumedCalories,
   meals,
@@ -256,8 +258,8 @@ export function DashboardTabs({
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-12 xl:items-start">
           <div className="xl:col-span-5"><MealTemplatesWrapper /></div>
           <div className="xl:col-span-7"><RecipeBuilder /></div>
-          <div className="xl:col-span-5"><GroceryList /></div>
-          <div className="xl:col-span-7"><MealPlanner /></div>
+          <div className="xl:col-span-5"><GroceryList userTimezone={userTimezone} /></div>
+          <div className="xl:col-span-7"><MealPlanner userTimezone={userTimezone} /></div>
         </div>
       </TabsContent>
 
@@ -270,9 +272,9 @@ export function DashboardTabs({
         />
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
           <div className="lg:col-span-12"><AchievementBadges /></div>
-          <div className="lg:col-span-5"><DailyJournal /></div>
+          <div className="lg:col-span-5"><DailyJournal userTimezone={userTimezone} /></div>
           <div className="lg:col-span-7"><BodyMeasurements /></div>
-          <div className="lg:col-span-12"><ProgressPhotos /></div>
+          <div className="lg:col-span-12"><ProgressPhotos userTimezone={userTimezone} /></div>
         </div>
       </TabsContent>
     </Tabs>

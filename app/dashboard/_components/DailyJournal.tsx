@@ -4,20 +4,21 @@ import { useState, useEffect, useCallback } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2, Save, BookOpen } from "lucide-react";
-import { formatLocalDateKey } from "@/lib/date-utils";
+import { formatZonedDateKey } from "@/lib/date-utils";
 
 interface DailyJournalProps {
   initialDate?: string;
+  userTimezone: string;
 }
 
-export function DailyJournal({ initialDate }: DailyJournalProps) {
+export function DailyJournal({ initialDate, userTimezone }: DailyJournalProps) {
   const [notes, setNotes] = useState("");
   const [originalNotes, setOriginalNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const dateStr = initialDate || formatLocalDateKey(new Date());
+  const dateStr = initialDate || formatZonedDateKey(new Date(), userTimezone);
 
   const fetchNotes = useCallback(async () => {
     setLoading(true);

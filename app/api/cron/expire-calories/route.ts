@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@/src/generated/prisma/client";
+import { addZonedDays, DEFAULT_TIMEZONE, zonedMidnightUtc } from "@/lib/date-utils";
 import { prisma } from "@/src/lib/prisma";
 import { hasAuthorizedCronRequest } from "@/src/lib/cron-auth";
 
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest) {
       include: {
         user: {
           select: {
+            profile: true,
             dailyLogs: {
               include: {
                 meals: true,
@@ -29,9 +31,8 @@ export async function POST(req: NextRequest) {
     });
 
     for (const bank of calorieBanks) {
-      const expireDate = new Date();
-      expireDate.setHours(0, 0, 0, 0);
-      expireDate.setDate(expireDate.getDate() - bank.expireAfterDays);
+      const timezone = bank.user.profile?.timezone || DEFAULT_TIMEZONE;
+      const expireDate = addZonedDays(zonedMidnightUtc(timezone), -bank.expireAfterDays, timezone);
 
       const unexpiredBankTransactions = await prisma.bankTransaction.findMany({
         where: {
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
               bankId: bank.id,
               type: "EXPIRE",
               amount: expireFromThis,
-              reason: `Expired banked calories from ${new Date(bankTx.createdAt).toLocaleDateString()}`,
+              reason: `Expired banked calories from ${new Date(bankTx.createdAt).toLocaleDateString("en-US", { timeZone: timezone })}`,
               caloriesConsumed: bankTx.caloriesConsumed,
               caloriesTarget: bankTx.caloriesTarget,
               sourceType: "expiration",

@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Prisma } from "@/src/generated/prisma/client";
 import { prisma } from "@/src/lib/prisma";
-import { getSystemTimezone } from "@/lib/date-utils";
+import { DEFAULT_TIMEZONE } from "@/lib/date-utils";
 import { ApiError, handleRoute } from "@/src/lib/api-helpers";
 
 export async function POST(req: Request) {
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       goalWeightKg,
       targetDate,
       activityLevel,
-      timezone = getSystemTimezone(),
+      timezone = DEFAULT_TIMEZONE,
     } = profile || {};
 
     const { trueMetabolicRate, bmrEstimate } = metabolicProfile || {};

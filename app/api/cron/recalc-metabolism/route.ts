@@ -7,6 +7,7 @@ import {
   WeightSample,
 } from "@/src/lib/metabolic";
 import { hasAuthorizedCronRequest } from "@/src/lib/cron-auth";
+import { addZonedDays, DEFAULT_TIMEZONE, zonedMidnightUtc } from "@/lib/date-utils";
 
 const LOOKBACK_DAYS = 21;
 
@@ -15,9 +16,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const lookbackStart = new Date();
-  lookbackStart.setUTCHours(0, 0, 0, 0);
-  lookbackStart.setUTCDate(lookbackStart.getUTCDate() - LOOKBACK_DAYS);
+  const now = new Date();
+  // Query with one extra day of margin — exact per-user lookback filtering
+  // (via each user's own timezone) happens in the loop below.
+  const queryLookbackStart = new Date(now.getTime() - (LOOKBACK_DAYS + 1) * 24 * 60 * 60 * 1000);
 
   type ResultRow = {
     userId: string;
@@ -34,11 +36,11 @@ export async function POST(req: NextRequest) {
         calorieBank: true,
         profile: true,
         weightEntries: {
-          where: { date: { gte: lookbackStart } },
+          where: { date: { gte: queryLookbackStart } },
           orderBy: { date: "asc" },
         },
         dailyLogs: {
-          where: { date: { gte: lookbackStart } },
+          where: { date: { gte: queryLookbackStart } },
           select: { date: true, caloriesConsumed: true },
         },
       },
@@ -48,14 +50,21 @@ export async function POST(req: NextRequest) {
       const metabolic = user.metabolicProfile;
       if (!metabolic) continue;
 
-      const weights: WeightSample[] = user.weightEntries.map((e) => ({
-        date: e.date,
-        weightKg: e.weightKg,
-      }));
-      const intake: IntakeSample[] = user.dailyLogs.map((l) => ({
-        date: l.date,
-        caloriesConsumed: l.caloriesConsumed,
-      }));
+      const timezone = user.profile?.timezone || DEFAULT_TIMEZONE;
+      const userLookbackStart = addZonedDays(zonedMidnightUtc(timezone, now), -LOOKBACK_DAYS, timezone);
+
+      const weights: WeightSample[] = user.weightEntries
+        .filter((e) => e.date >= userLookbackStart)
+        .map((e) => ({
+          date: e.date,
+          weightKg: e.weightKg,
+        }));
+      const intake: IntakeSample[] = user.dailyLogs
+        .filter((l) => l.date >= userLookbackStart)
+        .map((l) => ({
+          date: l.date,
+          caloriesConsumed: l.caloriesConsumed,
+        }));
 
       const recalc = recalcMetabolism({
         weights,

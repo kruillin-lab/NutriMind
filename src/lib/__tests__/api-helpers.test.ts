@@ -12,54 +12,46 @@ vi.mock("@/src/lib/prisma", () => ({ prisma: {} }));
 import { ApiError, dayRange, handleRoute, requireUserId } from "../api-helpers";
 
 describe("dayRange", () => {
-  it("defaults to today at local midnight and spans exactly one day", () => {
-    const { start, end } = dayRange();
+  it("defaults to today at zoned midnight in the given timezone and spans exactly one day", () => {
+    const { start, end } = dayRange("America/New_York");
 
-    expect(start.getHours()).toBe(0);
-    expect(start.getMinutes()).toBe(0);
-    expect(start.getSeconds()).toBe(0);
+    const startParts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(start);
+    const partMap = Object.fromEntries(startParts.map((p) => [p.type, p.value]));
+    expect(partMap.hour).toBe("00");
+    expect(partMap.minute).toBe("00");
+    expect(partMap.second).toBe("00");
     expect(start.getMilliseconds()).toBe(0);
 
-    const expectedEnd = new Date(start);
-    expectedEnd.setDate(expectedEnd.getDate() + 1);
-    expect(end.getTime()).toBe(expectedEnd.getTime());
+    // end is exactly the next zoned calendar day's midnight, not necessarily +24h (DST).
+    expect(end.getTime()).toBeGreaterThan(start.getTime());
+    expect(end.getTime() - start.getTime()).toBeGreaterThanOrEqual(23 * 60 * 60 * 1000);
+    expect(end.getTime() - start.getTime()).toBeLessThanOrEqual(25 * 60 * 60 * 1000);
   });
 
-  it("defaults to today at UTC midnight when opts.utc is set", () => {
-    const { start, end } = dayRange(null, { utc: true });
-
-    expect(start.getUTCHours()).toBe(0);
-    expect(start.getUTCMinutes()).toBe(0);
-    expect(start.getUTCSeconds()).toBe(0);
-    expect(start.getUTCMilliseconds()).toBe(0);
-
-    const expectedEnd = new Date(start);
-    expectedEnd.setUTCDate(expectedEnd.getUTCDate() + 1);
-    expect(end.getTime()).toBe(expectedEnd.getTime());
-  });
-
-  it("normalizes an explicit date param to that day's UTC window", () => {
-    const { start, end } = dayRange("2025-01-10", { utc: true });
+  it("normalizes an explicit date param to that day's midnight in UTC", () => {
+    const { start, end } = dayRange("UTC", "2025-01-10");
 
     expect(start.toISOString()).toBe("2025-01-10T00:00:00.000Z");
     expect(end.toISOString()).toBe("2025-01-11T00:00:00.000Z");
   });
 
-  it("normalizes an explicit date param to local midnight by default", () => {
-    // Local-time timestamp (no Z suffix) so the parsed day is 2025-01-10
-    // in the machine's timezone regardless of where the test runs.
-    const { start, end } = dayRange("2025-01-10T12:34:56");
+  it("normalizes an explicit date param to that day's midnight in a non-UTC timezone", () => {
+    const { start, end } = dayRange("America/New_York", "2025-01-10");
 
-    expect(start.getFullYear()).toBe(2025);
-    expect(start.getMonth()).toBe(0);
-    expect(start.getDate()).toBe(10);
-    expect(start.getHours()).toBe(0);
-    expect(start.getMinutes()).toBe(0);
-    expect(start.getSeconds()).toBe(0);
-    expect(start.getMilliseconds()).toBe(0);
+    // EST is UTC-5 in January.
+    expect(start.toISOString()).toBe("2025-01-10T05:00:00.000Z");
+    expect(end.toISOString()).toBe("2025-01-11T05:00:00.000Z");
+  });
 
-    expect(end.getDate()).toBe(11);
-    expect(end.getHours()).toBe(0);
+  it("rejects a malformed date param", () => {
+    expect(() => dayRange("UTC", "not-a-date")).toThrow(ApiError);
+    expect(() => dayRange("UTC", "2025-13-40")).toThrow(ApiError);
   });
 });
 

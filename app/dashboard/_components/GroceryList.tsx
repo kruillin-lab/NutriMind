@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ShoppingCart, Plus, Trash2, Check, RefreshCw, Loader2, X } from "lucide-react";
+import { addZonedDays, zonedMidnightUtc } from "@/lib/date-utils";
 
 interface MealPlanItem {
   id: string;
@@ -39,25 +40,18 @@ function fmt(dateStr: string) {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-export function GroceryList() {
+export function GroceryList({ userTimezone }: { userTimezone: string }) {
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [planItems, setPlanItems] = useState<MealPlanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [newItem, setNewItem] = useState("");
 
-  useEffect(() => {
-    setItems(loadStored());
-    loadPlan();
-  }, []);
-
-  async function loadPlan() {
+  const loadPlan = useCallback(async () => {
     setLoading(true);
     try {
-      const today = new Date();
-      today.setUTCHours(0, 0, 0, 0);
-      const end = new Date(today);
-      end.setDate(end.getDate() + 7);
+      const today = zonedMidnightUtc(userTimezone);
+      const end = addZonedDays(today, 7, userTimezone);
 
       const res = await fetch("/api/meal-plans?includeItems=true");
       const data = await res.json();
@@ -83,7 +77,12 @@ export function GroceryList() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [userTimezone]);
+
+  useEffect(() => {
+    setItems(loadStored());
+    loadPlan();
+  }, [loadPlan]);
 
   const syncFromPlan = useCallback(() => {
     setSyncing(true);

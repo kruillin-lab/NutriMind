@@ -6,15 +6,17 @@ import {
   dayRange,
   handleRoute,
   requireUserId,
+  requireUserTimezone,
 } from "@/src/lib/api-helpers";
 
 export async function GET(req: NextRequest) {
   return handleRoute("Failed to fetch daily notes", async () => {
     const userId = await requireUserId();
+    const timezone = await requireUserTimezone(userId);
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
-    const { start: date, end: nextDay } = dayRange(dateParam);
+    const { start: date, end: nextDay } = dayRange(timezone, dateParam);
 
     const dailyLog = await prisma.dailyLog.findFirst({
       where: {
@@ -34,6 +36,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   return handleRoute("Failed to save daily notes", async () => {
     const userId = await requireUserId();
+    const timezone = await requireUserTimezone(userId);
 
     const body = await req.json();
     const { notes, date } = body;
@@ -42,7 +45,7 @@ export async function PUT(req: NextRequest) {
       throw new ApiError(400, "Notes must be a string of at most 10000 characters");
     }
 
-    const { start: noteDate, end: nextDay } = dayRange(date);
+    const { start: noteDate, end: nextDay } = dayRange(timezone, date);
 
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       let dailyLog = await tx.dailyLog.findFirst({

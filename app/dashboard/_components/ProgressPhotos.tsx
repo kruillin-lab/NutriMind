@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Camera, Plus, Trash2, Loader2, ImageIcon } from "lucide-react";
-import { formatLocalDateKey } from "@/lib/date-utils";
+import { formatZonedDateKey } from "@/lib/date-utils";
 
 interface ProgressPhoto {
   id: string;
@@ -23,7 +23,7 @@ interface ProgressPhoto {
   createdAt: string;
 }
 
-export function ProgressPhotos() {
+export function ProgressPhotos({ userTimezone }: { userTimezone: string }) {
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -32,7 +32,7 @@ export function ProgressPhotos() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [weightKg, setWeightKg] = useState("");
-  const [photoDate, setPhotoDate] = useState(formatLocalDateKey(new Date()));
+  const [photoDate, setPhotoDate] = useState(formatZonedDateKey(new Date(), userTimezone));
 
   const fetchPhotos = useCallback(async () => {
     try {

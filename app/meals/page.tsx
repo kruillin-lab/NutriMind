@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { prisma } from '@/src/lib/prisma';
 import { MealHistoryClient } from './_components/MealHistoryClient';
-import { addLocalDays, formatLocalDateKey, isValidLocalDateKey, parseLocalDate } from '@/lib/date-utils';
+import { addZonedDays, formatZonedDateKey, isValidLocalDateKey, parseZonedDate } from '@/lib/date-utils';
+import { requireUserTimezone } from '@/src/lib/api-helpers';
 import { toMealActivityItem, type MealActivityItem } from '@/src/lib/meal-activity';
 
 interface MealsPageData {
@@ -17,9 +18,9 @@ interface MealsPageData {
   };
 }
 
-async function getMealsForDate(userId: string, dateParam: string): Promise<MealsPageData> {
-  const date = parseLocalDate(dateParam);
-  const nextDay = addLocalDays(date, 1);
+async function getMealsForDate(userId: string, dateParam: string, timezone: string): Promise<MealsPageData> {
+  const date = parseZonedDate(dateParam, timezone);
+  const nextDay = addZonedDays(date, 1, timezone);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -105,19 +106,22 @@ export default async function MealsPage({
     redirect('/sign-in');
   }
 
+  const timezone = await requireUserTimezone(userId);
+
   // Default to today if no date provided
-  const today = formatLocalDateKey(new Date());
+  const today = formatZonedDateKey(new Date(), timezone);
   const dateParam = params.date || today;
 
   const date = isValidLocalDateKey(dateParam) ? dateParam : today;
 
-  const data = await getMealsForDate(userId, date);
+  const data = await getMealsForDate(userId, date, timezone);
 
   return (
     <MealHistoryClient
       initialData={data}
       initialDate={date}
       userId={userId}
+      userTimezone={timezone}
     />
   );
 }

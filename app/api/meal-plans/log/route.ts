@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
-import { addLocalDays, getLocalMidnight, isValidLocalDateKey, parseLocalDate } from "@/lib/date-utils";
-import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
+import { ApiError, dayRange, handleRoute, requireUserId, requireUserTimezone } from "@/src/lib/api-helpers";
 import { recordMeal } from "@/src/lib/nutrition-day";
 
 export async function POST(req: NextRequest) {
@@ -17,12 +16,7 @@ export async function POST(req: NextRequest) {
       throw new ApiError(400, "Missing required field: itemId");
     }
 
-    if (date != null && !isValidLocalDateKey(date)) {
-      throw new ApiError(400, "Invalid date");
-    }
-
-    const targetDate = date ? parseLocalDate(date) : getLocalMidnight();
-    const nextDay = addLocalDays(targetDate, 1);
+    const { start: targetDate, end: nextDay } = dayRange(await requireUserTimezone(userId), date);
 
     return prisma.$transaction(async (tx) => {
       const planItem = await tx.mealPlanItem.findUnique({

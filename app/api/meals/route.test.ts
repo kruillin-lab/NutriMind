@@ -18,6 +18,7 @@ vi.mock("@/src/lib/api-helpers", async () => {
 vi.mock("@/src/lib/prisma", () => ({
   prisma: {
     user: { findUnique: vi.fn() },
+    userProfile: { findUnique: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -41,6 +42,9 @@ describe("POST /api/meals", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "user-1",
       calorieBank: { currentBalance: 240, dailyTarget: 2_000 },
+    } as never);
+    vi.mocked(prisma.userProfile.findUnique).mockResolvedValue({
+      timezone: "America/New_York",
     } as never);
     vi.mocked(prisma.$transaction).mockImplementation(async (callback) => callback({} as never));
     vi.mocked(recordMeal).mockResolvedValue({

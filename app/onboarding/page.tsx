@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useRouter } from "next/navigation";
+import { getSystemTimezone } from "@/lib/date-utils";
 
 const STEPS = [
   { n: "01", label: "About you" },
@@ -23,6 +24,7 @@ export default function OnboardingPage() {
     gender: "MALE",
     goalWeightKg: "",
     activityLevel: "SEDENTARY",
+    timezone: getSystemTimezone(),
   });
   const [currentWeight, setCurrentWeight] = useState("");
   const [currentBodyFat, setCurrentBodyFat] = useState("");

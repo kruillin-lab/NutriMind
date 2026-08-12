@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import type { Prisma } from "@/src/generated/prisma/client";
-import { getSystemTimezone } from "@/lib/date-utils";
+import { DEFAULT_TIMEZONE } from "@/lib/date-utils";
 
 const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
             goalWeightKg: null,
             targetDate: null,
             activityLevel: "SEDENTARY",
-            timezone: getSystemTimezone(),
+            timezone: DEFAULT_TIMEZONE,
           },
         });
 

@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
-import { addLocalDays, getLocalMidnight, isValidLocalDateKey, parseLocalDate } from "@/lib/date-utils";
+import { isValidLocalDateKey } from "@/lib/date-utils";
 import { recordMeal } from "@/src/lib/nutrition-day";
 import { clampInt, clampNumber, truncate } from "@/src/lib/validation";
-import { ApiError, handleRoute, requireUserId } from "@/src/lib/api-helpers";
+import { ApiError, dayRange, handleRoute, requireUserId, requireUserTimezone } from "@/src/lib/api-helpers";
 import { checkAndAwardAchievements } from "@/src/lib/achievements";
 import { toMealActivityItem } from "@/src/lib/meal-activity";
 
@@ -63,9 +63,7 @@ export async function POST(req: NextRequest) {
     }
 
     const dailyTarget = user.calorieBank.dailyTarget;
-    // Use UTC dates to ensure consistency across server/API boundaries
-    const targetDate = dateParam ? parseLocalDate(dateParam) : getLocalMidnight();
-    const nextDay = addLocalDays(targetDate, 1);
+    const { start: targetDate, end: nextDay } = dayRange(await requireUserTimezone(userId), dateParam);
 
     const result = await prisma.$transaction((tx) => recordMeal({
       tx,
@@ -110,11 +108,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
-    if (dateParam && !isValidLocalDateKey(dateParam)) {
-      throw new ApiError(400, "Invalid date");
-    }
-    const date = dateParam ? parseLocalDate(dateParam) : getLocalMidnight();
-    const nextDay = addLocalDays(date, 1);
+    const { start: date, end: nextDay } = dayRange(await requireUserTimezone(userId), dateParam);
 
     // Get user with daily log and meals for the date
     const user = await prisma.user.findUnique({

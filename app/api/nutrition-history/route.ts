@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import type { DailyLog } from '@/src/generated/prisma/client';
-import { formatLocalDateKey } from '@/lib/date-utils';
-import { ApiError, handleRoute, requireUserId } from '@/src/lib/api-helpers';
+import { addZonedDays, formatZonedDateKey, zonedMidnightUtc } from '@/lib/date-utils';
+import { ApiError, handleRoute, requireUserId, requireUserTimezone } from '@/src/lib/api-helpers';
 
 const MICRONUTRIENTS = [
   { key: 'fiberG', label: 'Fiber', unit: 'g', target: 30 },
@@ -17,6 +17,7 @@ const MICRONUTRIENTS = [
 export async function GET(request: NextRequest) {
   return handleRoute('Failed to fetch nutrition history', async () => {
     const userId = await requireUserId();
+    const timezone = await requireUserTimezone(userId);
 
     const searchParams = request.nextUrl.searchParams;
     const daysParam = searchParams.get('days') || '7';
@@ -26,18 +27,16 @@ export async function GET(request: NextRequest) {
       throw new ApiError(400, 'Invalid days parameter');
     }
 
-    const endDate = new Date();
-    endDate.setHours(23, 59, 59, 999);
-    const startDate = new Date(endDate);
-    startDate.setDate(endDate.getDate() - days + 1);
-    startDate.setHours(0, 0, 0, 0);
+    const todayStart = zonedMidnightUtc(timezone);
+    const startDate = addZonedDays(todayStart, -(days - 1), timezone);
+    const endDate = addZonedDays(todayStart, 1, timezone);
 
     const dailyLogs = await prisma.dailyLog.findMany({
       where: {
         userId,
         date: {
           gte: startDate,
-          lte: endDate,
+          lt: endDate,
         },
       },
       orderBy: {
@@ -49,9 +48,8 @@ export async function GET(request: NextRequest) {
     const dateMap = new Map<string, { date: string; values: Record<string, number> }>();
 
     for (let i = 0; i < days; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
-      const dateStr = formatLocalDateKey(date);
+      const date = addZonedDays(startDate, i, timezone);
+      const dateStr = formatZonedDateKey(date, timezone);
 
       const values: Record<string, number> = {};
       MICRONUTRIENTS.forEach(nutrient => {
@@ -63,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     // Fill in actual data from database
     dailyLogs.forEach((log: DailyLog) => {
-      const dateStr = formatLocalDateKey(log.date);
+      const dateStr = formatZonedDateKey(log.date, timezone);
       if (dateMap.has(dateStr)) {
         const entry = dateMap.get(dateStr)!;
         entry.values.fiberG = log.fiberG || 0;

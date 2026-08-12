@@ -5,6 +5,7 @@ import {
   dayRange,
   handleRoute,
   requireUserId,
+  requireUserTimezone,
 } from "@/src/lib/api-helpers";
 
 export async function POST(req: NextRequest) {
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
       throw new ApiError(400, "Invalid weight value");
     }
 
-    const { start: entryDate } = dayRange(date);
+    const { start: entryDate } = dayRange(await requireUserTimezone(userId), date);
 
     const existingEntry = await prisma.weightEntry.findUnique({
       where: {

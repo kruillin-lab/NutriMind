@@ -7,6 +7,7 @@ import {
   dayRange,
   handleRoute,
   requireUserId,
+  requireUserTimezone,
 } from "@/src/lib/api-helpers";
 
 export async function POST(req: NextRequest) {
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
       throw new ApiError(404, "User or calorie bank not found");
     }
 
-    const { start: today, end: tomorrow } = dayRange();
+    const { start: today, end: tomorrow } = dayRange(await requireUserTimezone(userId));
 
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       let dailyLog = await tx.dailyLog.findFirst({
@@ -101,10 +102,11 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   return handleRoute("Failed to fetch exercise data", async () => {
     const userId = await requireUserId();
+    const timezone = await requireUserTimezone(userId);
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
-    const { start: date, end: nextDay } = dayRange(dateParam);
+    const { start: date, end: nextDay } = dayRange(timezone, dateParam);
 
     const dailyLog = await prisma.dailyLog.findFirst({
       where: {

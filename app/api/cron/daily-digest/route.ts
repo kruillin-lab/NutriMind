@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { addZonedDays, DEFAULT_TIMEZONE, formatZonedDateKey, zonedMidnightUtc } from "@/lib/date-utils";
 import { hasAuthorizedCronRequest } from "@/src/lib/cron-auth";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? "";
@@ -114,27 +115,31 @@ export async function POST(req: NextRequest) {
 
   let sent = 0;
   let failed = 0;
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  yesterday.setUTCHours(0, 0, 0, 0);
 
   for (const profile of usersWithDigest) {
     const email = profile.user.email;
     if (!email) continue;
 
-    const yesterdayLog = profile.user.dailyLogs.find((l) => {
-      const d = new Date(l.date);
-      d.setUTCHours(0, 0, 0, 0);
-      return d.getTime() === yesterday.getTime();
-    });
+    const timezone = profile.timezone || DEFAULT_TIMEZONE;
+    const yesterday = addZonedDays(zonedMidnightUtc(timezone), -1, timezone);
+    const yesterdayKey = formatZonedDateKey(yesterday, timezone);
+
+    const yesterdayLog = profile.user.dailyLogs.find(
+      (l) => formatZonedDateKey(l.date, timezone) === yesterdayKey
+    );
 
     // Skip users who didn't log anything yesterday
     if (!yesterdayLog || yesterdayLog.caloriesConsumed === 0) continue;
 
     // Compute streak from recent logs
-    const streak = computeStreak(profile.user.dailyLogs.map((l) => l.date));
+    const streak = computeStreak(profile.user.dailyLogs.map((l) => l.date), timezone);
 
-    const dateStr = yesterday.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+    const dateStr = yesterday.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      timeZone: timezone,
+    });
     const html = digestHtml({
       name: profile.user.name ?? "",
       date: dateStr,
@@ -154,23 +159,14 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ success: true, sent, failed, total: usersWithDigest.length });
 }
 
-function computeStreak(dates: Date[]): number {
+function computeStreak(dates: Date[], timezone: string): number {
   if (dates.length === 0) return 0;
-  const sorted = [...dates]
-    .map((d) => { const x = new Date(d); x.setUTCHours(0, 0, 0, 0); return x.getTime(); })
-    .sort((a, b) => b - a);
-  const unique = [...new Set(sorted)];
+  const loggedDays = new Set(dates.map((d) => formatZonedDateKey(d, timezone)));
   let streak = 0;
-  const expected = new Date();
-  expected.setUTCHours(0, 0, 0, 0);
-  expected.setDate(expected.getDate() - 1); // start from yesterday
-  for (const ts of unique) {
-    if (ts === expected.getTime()) {
-      streak++;
-      expected.setDate(expected.getDate() - 1);
-    } else {
-      break;
-    }
+  let cursor = addZonedDays(zonedMidnightUtc(timezone), -1, timezone); // start from yesterday
+  while (loggedDays.has(formatZonedDateKey(cursor, timezone))) {
+    streak++;
+    cursor = addZonedDays(cursor, -1, timezone);
   }
   return streak;
 }

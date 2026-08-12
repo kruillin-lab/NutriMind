@@ -1,11 +1,13 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { addZonedDays, zonedMidnightUtc } from "@/lib/date-utils";
 import { calculateStreaks } from "@/src/lib/streakUtils";
-import { handleRoute, requireUserId } from "@/src/lib/api-helpers";
+import { handleRoute, requireUserId, requireUserTimezone } from "@/src/lib/api-helpers";
 
 export async function GET(req: NextRequest) {
   return handleRoute("Failed to fetch daily logs", async () => {
     const userId = await requireUserId();
+    const timezone = await requireUserTimezone(userId);
 
     const { searchParams } = new URL(req.url);
     const range = searchParams.get("range") || "week";
@@ -23,15 +25,11 @@ export async function GET(req: NextRequest) {
     });
 
     const dailyTarget = calorieBank?.dailyTarget || 2000;
-    const { currentStreak, maxStreak } = calculateStreaks(dailyLogs, dailyTarget);
+    const { currentStreak, maxStreak } = calculateStreaks(dailyLogs, dailyTarget, timezone);
 
     // Filter logs for the requested range
-    const rangeStart = new Date();
-    rangeStart.setHours(0, 0, 0, 0);
-    rangeStart.setDate(rangeStart.getDate() - days + 1);
-
-    const rangeEnd = new Date(rangeStart);
-    rangeEnd.setDate(rangeEnd.getDate() + days);
+    const rangeEnd = addZonedDays(zonedMidnightUtc(timezone), 1, timezone);
+    const rangeStart = addZonedDays(rangeEnd, -days, timezone);
 
     const rangeLogs = dailyLogs.filter(
       (log) => log.date >= rangeStart && log.date < rangeEnd

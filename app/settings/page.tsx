@@ -3,7 +3,7 @@ import { prisma } from "@/src/lib/prisma";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { SettingsClient } from "./_components/SettingsClient";
-import { getSystemTimezone } from "@/lib/date-utils";
+import { DEFAULT_TIMEZONE } from "@/lib/date-utils";
 
 async function getUserSettings(userId: string) {
   const [userProfile, metabolicProfile, calorieBank] = await Promise.all([
@@ -63,7 +63,7 @@ export default async function SettingsPage() {
             goalWeightKg: data.userProfile.goalWeightKg,
             targetDate: data.userProfile.targetDate?.toISOString().split("T")[0] || "",
             activityLevel: data.userProfile.activityLevel || "SEDENTARY",
-            timezone: data.userProfile.timezone || getSystemTimezone(),
+            timezone: data.userProfile.timezone || DEFAULT_TIMEZONE,
             emailDigest: data.userProfile.emailDigest ?? false,
           }}
           initialCalorieBank={{

@@ -22,6 +22,17 @@ export function isHostedRuntime(environment: RuntimeEnvironment = process.env): 
   return environment.NUTRIMIND_HOSTED_RUNTIME === "1";
 }
 
+/**
+ * Prisma must use its workerd client in an actual Sites deployment. Some
+ * Workers isolates do not expose `WebSocketPair`, so that runtime feature is
+ * useful for local workerd detection but cannot be the production gate.
+ */
+export function usesWorkerdPrismaRuntime(
+  environment: RuntimeEnvironment = process.env
+): boolean {
+  return isHostedRuntime(environment) || isWorkerdRuntime();
+}
+
 export function validateHostedRuntime(
   environment: RuntimeEnvironment = process.env
 ): HostedRuntimeValidation {

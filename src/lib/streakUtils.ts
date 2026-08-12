@@ -1,11 +1,9 @@
+import { addZonedDays, formatZonedDateKey, parseZonedDate } from "@/lib/date-utils";
+
 export interface DailyLogEntry {
   date: Date;
   caloriesConsumed: number;
   calorieTarget: number;
-}
-
-function toDateKey(date: Date): string {
-  return date.toISOString().split("T")[0];
 }
 
 export interface StreakResult {
@@ -16,7 +14,8 @@ export interface StreakResult {
 export function calculateStreaks(
   logs: DailyLogEntry[],
   effectiveTarget: number,
-  referenceDate?: Date
+  timezone: string,
+  referenceDate: Date = new Date()
 ): StreakResult {
   if (logs.length === 0) return { currentStreak: 0, maxStreak: 0 };
 
@@ -24,20 +23,19 @@ export function calculateStreaks(
   const sorted = [...logs].sort((a, b) => a.date.getTime() - b.date.getTime());
 
   const logByDate = new Map(
-    sorted.map((l) => [toDateKey(l.date), l])
+    sorted.map((l) => [formatZonedDateKey(l.date, timezone), l])
   );
 
-  const todayUTC = referenceDate ? new Date(referenceDate) : new Date();
-  todayUTC.setUTCHours(0, 0, 0, 0);
+  const todayKey = formatZonedDateKey(referenceDate, timezone);
 
   let currentStreak = 0;
-  const checkDate = new Date(todayUTC);
+  let cursor = parseZonedDate(todayKey, timezone);
   while (true) {
-    const log = logByDate.get(toDateKey(checkDate));
+    const log = logByDate.get(formatZonedDateKey(cursor, timezone));
     if (!log) break;
     if (log.caloriesConsumed > (log.calorieTarget || effectiveTarget)) break;
     currentStreak++;
-    checkDate.setUTCDate(checkDate.getUTCDate() - 1);
+    cursor = addZonedDays(cursor, -1, timezone);
   }
 
   let maxStreak = 0;
@@ -49,9 +47,8 @@ export function calculateStreaks(
       if (i === 0) {
         tempStreak = 1;
       } else {
-        const prevDate = new Date(sorted[i - 1].date);
-        prevDate.setUTCDate(prevDate.getUTCDate() + 1);
-        const isConsecutive = toDateKey(prevDate) === toDateKey(log.date);
+        const expectedKey = formatZonedDateKey(addZonedDays(sorted[i - 1].date, 1, timezone), timezone);
+        const isConsecutive = expectedKey === formatZonedDateKey(log.date, timezone);
         tempStreak = isConsecutive ? tempStreak + 1 : 1;
       }
       maxStreak = Math.max(maxStreak, tempStreak);

@@ -4,11 +4,16 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { DashboardTabsClient } from "./_components/DashboardTabsClient";
 import { calculateStreaks } from "@/src/lib/streakUtils";
-import { addLocalDays, formatLocalDateKey, getLocalMidnight } from "@/lib/date-utils";
+import { addZonedDays, DEFAULT_TIMEZONE, formatZonedDateKey, zonedMidnightUtc } from "@/lib/date-utils";
 
 async function getDashboardData(userId: string) {
-  const today = getLocalMidnight();
-  const tomorrow = addLocalDays(today, 1);
+  // Fetch the profile first — every other "what day is it" computation below
+  // depends on the user's own timezone, not the server's.
+  const userProfile = await prisma.userProfile.findUnique({ where: { userId } });
+  const timezone = userProfile?.timezone || DEFAULT_TIMEZONE;
+
+  const today = zonedMidnightUtc(timezone);
+  const tomorrow = addZonedDays(today, 1, timezone);
 
   const bankData = await prisma.calorieBank.findUnique({
     where: { userId },
@@ -16,14 +21,12 @@ async function getDashboardData(userId: string) {
   });
 
   const [
-    userProfile,
     calorieBank,
     metabolicProfile,
     todayLog,
     recentTransactions,
     weightEntries,
   ] = await Promise.all([
-    prisma.userProfile.findUnique({ where: { userId } }),
     prisma.calorieBank.findUnique({ where: { userId } }),
     prisma.metabolicProfile.findUnique({ where: { userId } }),
     prisma.dailyLog.findFirst({
@@ -65,9 +68,9 @@ async function getDashboardData(userId: string) {
     loggedAt: meal.createdAt,
   })) || [];
 
-  const todayKey = formatLocalDateKey(today);
-  const todayWeightEntry = weightEntries.find((e) => formatLocalDateKey(new Date(e.date)) === todayKey) ?? null;
-  const previousWeightEntry = weightEntries.find((e) => formatLocalDateKey(new Date(e.date)) !== todayKey) ?? null;
+  const todayKey = formatZonedDateKey(today, timezone);
+  const todayWeightEntry = weightEntries.find((e) => formatZonedDateKey(new Date(e.date), timezone) === todayKey) ?? null;
+  const previousWeightEntry = weightEntries.find((e) => formatZonedDateKey(new Date(e.date), timezone) !== todayKey) ?? null;
 
   const allDailyLogs = await prisma.dailyLog.findMany({
     where: { userId },
@@ -77,10 +80,11 @@ async function getDashboardData(userId: string) {
   });
 
   const effectiveTarget = calorieBank?.dailyTarget || 2000;
-  const { currentStreak, maxStreak } = calculateStreaks(allDailyLogs, effectiveTarget);
+  const { currentStreak, maxStreak } = calculateStreaks(allDailyLogs, effectiveTarget, timezone);
 
   return {
     userProfile,
+    timezone,
     calorieBank,
     metabolicProfile,
     todayLog,
@@ -134,7 +138,12 @@ export default async function DashboardPage({
             <div className="text-right">
               <p className="smallcaps">Statement date</p>
               <p className="num mt-1 text-sm text-foreground">
-                {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                {new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  timeZone: data.timezone,
+                })}
               </p>
             </div>
           </div>
@@ -148,6 +157,7 @@ export default async function DashboardPage({
 
         <DashboardTabsClient
           userId={userId}
+          userTimezone={data.timezone}
           dailyTarget={dailyTarget}
           consumedCalories={data.consumedCalories}
           meals={data.meals}

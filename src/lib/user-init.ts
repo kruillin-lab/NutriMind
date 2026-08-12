@@ -1,6 +1,6 @@
 import type { Prisma } from "@/src/generated/prisma/client";
 import { prisma } from "./prisma";
-import { getSystemTimezone } from "@/lib/date-utils";
+import { DEFAULT_TIMEZONE } from "@/lib/date-utils";
 
 interface InitializeUserParams {
   id: string;
@@ -43,7 +43,7 @@ export async function initializeUser({ id, email, name }: InitializeUserParams) 
         goalWeightKg: null,
         targetDate: null,
         activityLevel: "SEDENTARY",
-        timezone: getSystemTimezone(),
+        timezone: DEFAULT_TIMEZONE,
       },
     });
 

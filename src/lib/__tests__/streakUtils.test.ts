@@ -8,7 +8,7 @@ function makeLog(dateStr: string, consumed: number, target: number): DailyLogEnt
 
 describe("calculateStreaks", () => {
   it("returns zero streaks for empty log list", () => {
-    const result = calculateStreaks([], 2000);
+    const result = calculateStreaks([], 2000, "UTC");
     expect(result).toEqual({ currentStreak: 0, maxStreak: 0 });
   });
 
@@ -17,7 +17,7 @@ describe("calculateStreaks", () => {
     today.setUTCHours(0, 0, 0, 0);
     const todayStr = today.toISOString().split("T")[0];
     const logs = [makeLog(todayStr, 1800, 2000)];
-    const result = calculateStreaks(logs, 2000, today);
+    const result = calculateStreaks(logs, 2000, "UTC", today);
     expect(result.currentStreak).toBe(1);
     expect(result.maxStreak).toBe(1);
   });
@@ -29,7 +29,7 @@ describe("calculateStreaks", () => {
       makeLog("2025-01-09", 1800, 2000), // under
       makeLog("2025-01-10", 1900, 2000), // under — today
     ];
-    const result = calculateStreaks(logs, 2000, ref);
+    const result = calculateStreaks(logs, 2000, "UTC", ref);
     // Current streak starts at today and walks back: today=under, yesterday=under, day before=over → streak=2
     expect(result.currentStreak).toBe(2);
   });
@@ -40,7 +40,7 @@ describe("calculateStreaks", () => {
       makeLog("2025-01-08", 1800, 2000), // under, but gap on 01-09
       makeLog("2025-01-10", 1900, 2000), // under — today
     ];
-    const result = calculateStreaks(logs, 2000, ref);
+    const result = calculateStreaks(logs, 2000, "UTC", ref);
     // Gap on 01-09 breaks current streak; today alone = 1
     expect(result.currentStreak).toBe(1);
   });
@@ -48,14 +48,14 @@ describe("calculateStreaks", () => {
   it("returns 0 current streak when today is over target", () => {
     const ref = new Date("2025-01-10T00:00:00.000Z");
     const logs = [makeLog("2025-01-10", 2500, 2000)];
-    const result = calculateStreaks(logs, 2000, ref);
+    const result = calculateStreaks(logs, 2000, "UTC", ref);
     expect(result.currentStreak).toBe(0);
   });
 
   it("returns 0 current streak when today has no log", () => {
     const ref = new Date("2025-01-10T00:00:00.000Z");
     const logs = [makeLog("2025-01-09", 1800, 2000)];
-    const result = calculateStreaks(logs, 2000, ref);
+    const result = calculateStreaks(logs, 2000, "UTC", ref);
     expect(result.currentStreak).toBe(0);
   });
 
@@ -71,7 +71,7 @@ describe("calculateStreaks", () => {
       makeLog("2025-01-08", 1800, 2000),
       makeLog("2025-01-09", 1800, 2000),
     ];
-    const result = calculateStreaks(logs, 2000, ref);
+    const result = calculateStreaks(logs, 2000, "UTC", ref);
     expect(result.maxStreak).toBe(5);
   });
 
@@ -79,7 +79,7 @@ describe("calculateStreaks", () => {
     const ref = new Date("2025-01-01T00:00:00.000Z");
     // Per-day target is 1500, consumed is 1600 — over per-day target
     const logs = [makeLog("2025-01-01", 1600, 1500)];
-    const result = calculateStreaks(logs, 2000, ref);
+    const result = calculateStreaks(logs, 2000, "UTC", ref);
     // caloriesConsumed (1600) > calorieTarget (1500) → streak breaks
     expect(result.currentStreak).toBe(0);
   });

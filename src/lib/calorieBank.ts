@@ -1,5 +1,5 @@
 import type { BankTransaction, CalorieBank, Prisma } from "@/src/generated/prisma/client";
-import { getLocalMidnight } from "@/lib/date-utils";
+import { DEFAULT_TIMEZONE, zonedMidnightUtc } from "@/lib/date-utils";
 import { prisma } from "@/src/lib/prisma";
 
 type OverageAdjustmentType = "spend" | "refund" | "none";
@@ -69,7 +69,7 @@ export function calculateOverageAdjustment({
 
 export function calculateCompletedDaySurplus(
   log: CompletedDayLog,
-  today: Date = getLocalMidnight()
+  today: Date
 ): number | null {
   if (
     log.bankedAmount !== 0 ||
@@ -197,18 +197,17 @@ export async function applyCalorieBankOverageAdjustment({
 
 export async function bankPendingCompletedDays(
   userId?: string,
-  today: Date = getLocalMidnight()
+  reference: Date = new Date()
 ): Promise<Array<{ userId: string; banked: number }>> {
   const candidateLogs = await prisma.dailyLog.findMany({
     where: {
       ...(userId ? { userId } : {}),
-      date: { lt: today },
       bankedAmount: 0,
       caloriesConsumed: { gt: 0 },
     },
     include: {
       user: {
-        include: { calorieBank: true },
+        include: { calorieBank: true, profile: true },
       },
     },
   });
@@ -217,6 +216,8 @@ export async function bankPendingCompletedDays(
 
   for (const log of candidateLogs) {
     const bank = log.user.calorieBank;
+    const timezone = log.user.profile?.timezone || DEFAULT_TIMEZONE;
+    const today = zonedMidnightUtc(timezone, reference);
     const surplus = calculateCompletedDaySurplus(log, today);
 
     if (!bank || surplus == null) {
@@ -227,6 +228,7 @@ export async function bankPendingCompletedDays(
       weekday: "long",
       month: "short",
       day: "numeric",
+      timeZone: timezone,
     });
 
     const banked = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {

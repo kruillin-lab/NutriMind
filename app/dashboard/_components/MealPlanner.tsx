@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { Calendar, Plus, Check, Loader2, CalendarDays } from "lucide-react";
-import { formatLocalDateKey } from "@/lib/date-utils";
+import { formatZonedDateKey } from "@/lib/date-utils";
 
 interface MealPlanItem {
   id: string;
@@ -35,7 +35,7 @@ interface MealPlan {
   items: MealPlanItem[];
 }
 
-export default function MealPlanner() {
+export default function MealPlanner({ userTimezone }: { userTimezone: string }) {
   const [plans, setPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -114,7 +114,7 @@ export default function MealPlanner() {
   };
 
   const getTodayPlans = () => {
-    const today = formatLocalDateKey(new Date());
+    const today = formatZonedDateKey(new Date(), userTimezone);
     return plans
       .filter(
         (p) =>

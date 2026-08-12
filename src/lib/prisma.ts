@@ -3,10 +3,10 @@ import { PrismaClient as PrismaClientNode } from "@/src/generated/prisma-node/cl
 import { PrismaLibSql as PrismaLibSqlNode } from "@prisma/adapter-libsql";
 import { PrismaLibSql as PrismaLibSqlWeb } from "@prisma/adapter-libsql/web";
 import { cloudflareLibsqlFetch } from "./libsql-fetch";
-import { getDatabaseRuntimeConfig, isWorkerdRuntime } from "./runtime-env";
+import { getDatabaseRuntimeConfig, usesWorkerdPrismaRuntime } from "./runtime-env";
 
 const databaseConfig = getDatabaseRuntimeConfig();
-const workerdRuntime = isWorkerdRuntime();
+const workerdRuntime = usesWorkerdPrismaRuntime();
 const PrismaLibSql = workerdRuntime ? PrismaLibSqlWeb : PrismaLibSqlNode;
 const adapter = new PrismaLibSql({
   url: databaseConfig.url,

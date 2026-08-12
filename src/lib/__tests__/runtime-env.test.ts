@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   isHostedRuntime,
   isWorkerdRuntime,
+  usesWorkerdPrismaRuntime,
   validateHostedRuntime,
 } from "../runtime-env";
 
@@ -35,6 +36,10 @@ describe("validateHostedRuntime", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it("uses Prisma's workerd runtime for a hosted deployment even without WebSocketPair", () => {
+    expect(usesWorkerdPrismaRuntime(hostedEnvironment)).toBe(true);
   });
 
   it("accepts a fully configured remote libSQL runtime", () => {

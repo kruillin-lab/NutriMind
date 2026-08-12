@@ -1,3 +1,4 @@
+import { DEFAULT_TIMEZONE, addZonedDays, formatZonedDateKey } from "@/lib/date-utils";
 import { prisma } from "@/src/lib/prisma";
 
 interface BadgeDef {
@@ -38,6 +39,7 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
         include: { meals: { select: { id: true } } },
       },
       achievements: { select: { type: true } },
+      profile: true,
     },
   });
 
@@ -59,7 +61,7 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
   if (candidate("meals_200") && totalMeals >= 200) earned.push("meals_200");
 
   // streaks
-  const streak = computeStreak(user.dailyLogs.map((l) => l.date));
+  const streak = computeStreak(user.dailyLogs.map((l) => l.date), user.profile?.timezone || DEFAULT_TIMEZONE);
   for (const [type, threshold] of [["streak_3", 3], ["streak_7", 7], ["streak_14", 14], ["streak_30", 30]] as const) {
     if (candidate(type) && streak >= threshold) earned.push(type);
   }
@@ -106,23 +108,15 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
   return earned;
 }
 
-function computeStreak(dates: Date[]): number {
+function computeStreak(dates: Date[], timezone: string): number {
   if (dates.length === 0) return 0;
-  const unique = [...new Set(
-    dates.map((d) => { const x = new Date(d); x.setUTCHours(0, 0, 0, 0); return x.getTime(); })
-  )].sort((a, b) => b - a);
+  const loggedDays = new Set(dates.map((d) => formatZonedDateKey(d, timezone)));
 
   let streak = 0;
-  const today = new Date(); today.setUTCHours(0, 0, 0, 0);
-  let expected = today.getTime();
-
-  for (const ts of unique) {
-    if (ts === expected) {
-      streak++;
-      expected -= 86400000;
-    } else if (ts < expected) {
-      break;
-    }
+  let cursor = new Date();
+  while (loggedDays.has(formatZonedDateKey(cursor, timezone))) {
+    streak++;
+    cursor = addZonedDays(cursor, -1, timezone);
   }
   return streak;
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
-import { formatLocalDateKey } from "@/lib/date-utils";
-import { ApiError, jsonError, requireUserId } from "@/src/lib/api-helpers";
+import { addZonedDays, formatZonedDateKey, zonedMidnightUtc } from "@/lib/date-utils";
+import { ApiError, jsonError, requireUserId, requireUserTimezone } from "@/src/lib/api-helpers";
 
 function escapeCsv(value: string | number | null): string {
   if (value === null || value === undefined) return "";
@@ -17,14 +17,13 @@ export async function GET(req: NextRequest) {
   // download headers, not JSON.
   try {
     const userId = await requireUserId();
+    const timezone = await requireUserTimezone(userId);
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type") || "all";
     const days = parseInt(searchParams.get("days") || "90", 10);
 
-    const startDate = new Date();
-    startDate.setHours(0, 0, 0, 0);
-    startDate.setDate(startDate.getDate() - days);
+    const startDate = addZonedDays(zonedMidnightUtc(timezone), -days, timezone);
 
     let csvContent = "";
 
@@ -41,7 +40,7 @@ export async function GET(req: NextRequest) {
       csvContent += "Date,Name,Meal Type,Calories,Protein (g),Carbs (g),Fat (g),Fiber (g),Sugar (g),Sodium (mg),Vitamin C (mg),Calcium (mg),Iron (mg),Potassium (mg),Source,Logged At\n";
       for (const meal of meals) {
         csvContent += [
-          formatLocalDateKey(meal.dailyLog.date),
+          formatZonedDateKey(meal.dailyLog.date, timezone),
           meal.name,
           meal.mealType,
           meal.calories,
@@ -72,7 +71,7 @@ export async function GET(req: NextRequest) {
       csvContent += "Date,Calories Consumed,Calorie Target,Protein (g),Carbs (g),Fat (g),Fiber (g),Sugar (g),Sodium (mg),Vitamin C (mg),Calcium (mg),Iron (mg),Potassium (mg),Water (ml),Exercise (min),Calories Burned,Notes\n";
       for (const log of dailyLogs) {
         csvContent += [
-          formatLocalDateKey(log.date),
+          formatZonedDateKey(log.date, timezone),
           log.caloriesConsumed,
           log.calorieTarget,
           log.proteinG,
@@ -104,7 +103,7 @@ export async function GET(req: NextRequest) {
       csvContent += "Date,Weight (kg),Source\n";
       for (const entry of weightEntries) {
         csvContent += [
-          formatLocalDateKey(entry.date),
+          formatZonedDateKey(entry.date, timezone),
           entry.weightKg,
           entry.source,
         ].map(escapeCsv).join(",") + "\n";
@@ -126,7 +125,7 @@ export async function GET(req: NextRequest) {
       csvContent += "Date,Duration (min),Calories Burned\n";
       for (const log of dailyLogs) {
         csvContent += [
-          formatLocalDateKey(log.date),
+          formatZonedDateKey(log.date, timezone),
           log.exerciseMinutes,
           log.caloriesBurned,
         ].map(escapeCsv).join(",") + "\n";
@@ -148,13 +147,13 @@ export async function GET(req: NextRequest) {
       csvContent += "Date,Notes\n";
       for (const log of dailyLogs) {
         csvContent += [
-          formatLocalDateKey(log.date),
+          formatZonedDateKey(log.date, timezone),
           log.notes,
         ].map(escapeCsv).join(",") + "\n";
       }
     }
 
-    const filename = `nutrimind-export-${new Date().toISOString().split("T")[0]}.csv`;
+    const filename = `nutrimind-export-${formatZonedDateKey(new Date(), timezone)}.csv`;
 
     return new NextResponse(csvContent, {
       headers: {

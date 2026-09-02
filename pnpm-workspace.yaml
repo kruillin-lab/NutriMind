@@ -1,0 +1,6 @@
+onlyBuiltDependencies:
+  - '@prisma/engines'
+  - prisma
+  - esbuild
+  - unrs-resolver
+  - workerd

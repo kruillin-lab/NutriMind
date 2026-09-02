@@ -1,6 +1,7 @@
-onlyBuiltDependencies:
-  - '@prisma/engines'
-  - prisma
-  - esbuild
-  - unrs-resolver
-  - workerd
+# pnpm 11: build scripts run only for packages approved here (onlyBuiltDependencies is ignored).
+allowBuilds:
+  '@prisma/engines': true
+  prisma: true
+  esbuild: true
+  unrs-resolver: true
+  workerd: true

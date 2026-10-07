@@ -39,27 +39,32 @@ function toNonNegativeNumber(val: unknown): number {
     return Math.max(0, val);
   }
   if (typeof val === "string") {
-    const parsed = parseFloat(val.replace(/[^0-9.]/g, ""));
+    const directParsed = parseFloat(val);
+    if (!isNaN(directParsed)) {
+      return Math.max(0, directParsed);
+    }
+    const parsed = parseFloat(val.replace(/[^0-9.-]/g, ""));
     return isNaN(parsed) ? 0 : Math.max(0, parsed);
   }
   return 0;
 }
 
-export function sanitizeLabelItem(raw: Record<string, unknown>): ScannedLabelItem {
+export function sanitizeLabelItem(raw?: Record<string, unknown> | null): ScannedLabelItem {
+  const safeRaw = (raw && typeof raw === "object") ? raw : {};
   return {
-    name: typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : "Scanned Item",
-    servingSize: typeof raw.servingSize === "string" && raw.servingSize.trim() ? raw.servingSize.trim() : "1 serving",
-    calories: toNonNegativeNumber(raw.calories),
-    proteinG: toNonNegativeNumber(raw.proteinG),
-    carbsG: toNonNegativeNumber(raw.carbsG),
-    fatG: toNonNegativeNumber(raw.fatG),
-    fiberG: toNonNegativeNumber(raw.fiberG),
-    sugarG: toNonNegativeNumber(raw.sugarG),
-    sodiumMg: toNonNegativeNumber(raw.sodiumMg),
-    vitaminCMg: toNonNegativeNumber(raw.vitaminCMg),
-    calciumMg: toNonNegativeNumber(raw.calciumMg),
-    ironMg: toNonNegativeNumber(raw.ironMg),
-    potassiumMg: toNonNegativeNumber(raw.potassiumMg),
+    name: typeof safeRaw.name === "string" && safeRaw.name.trim() ? safeRaw.name.trim() : "Scanned Item",
+    servingSize: typeof safeRaw.servingSize === "string" && safeRaw.servingSize.trim() ? safeRaw.servingSize.trim() : "1 serving",
+    calories: toNonNegativeNumber(safeRaw.calories),
+    proteinG: toNonNegativeNumber(safeRaw.proteinG),
+    carbsG: toNonNegativeNumber(safeRaw.carbsG),
+    fatG: toNonNegativeNumber(safeRaw.fatG),
+    fiberG: toNonNegativeNumber(safeRaw.fiberG),
+    sugarG: toNonNegativeNumber(safeRaw.sugarG),
+    sodiumMg: toNonNegativeNumber(safeRaw.sodiumMg),
+    vitaminCMg: toNonNegativeNumber(safeRaw.vitaminCMg),
+    calciumMg: toNonNegativeNumber(safeRaw.calciumMg),
+    ironMg: toNonNegativeNumber(safeRaw.ironMg),
+    potassiumMg: toNonNegativeNumber(safeRaw.potassiumMg),
   };
 }
 

@@ -29,6 +29,7 @@ describe("sanitizeLabelItem", () => {
       servingSize: "",
       calories: "unknown",
       fiberG: "12.5g",
+      sugarG: "-5g",
     };
 
     const sanitized = sanitizeLabelItem(raw);
@@ -36,6 +37,18 @@ describe("sanitizeLabelItem", () => {
     expect(sanitized.servingSize).toBe("1 serving");
     expect(sanitized.calories).toBe(0);
     expect(sanitized.fiberG).toBe(12.5);
+    expect(sanitized.sugarG).toBe(0); // negative string clamped to 0
+  });
+
+  it("handles null or non-object raw input safely", () => {
+    const sanitizedNull = sanitizeLabelItem(null as unknown as Record<string, unknown>);
+    expect(sanitizedNull.name).toBe("Scanned Item");
+    expect(sanitizedNull.servingSize).toBe("1 serving");
+    expect(sanitizedNull.calories).toBe(0);
+
+    const sanitizedUndefined = sanitizeLabelItem(undefined);
+    expect(sanitizedUndefined.name).toBe("Scanned Item");
+    expect(sanitizedUndefined.calories).toBe(0);
   });
 });
 

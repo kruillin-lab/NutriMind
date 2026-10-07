@@ -3,16 +3,10 @@ import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { checkRateLimit } from "@/src/lib/rateLimit";
 import { POST } from "./route";
-
-const openaiCreate = vi.hoisted(() => vi.fn());
+import * as visionRouter from "@/src/lib/vision/router";
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: vi.fn() }));
 vi.mock("@/src/lib/rateLimit", () => ({ checkRateLimit: vi.fn() }));
-vi.mock("openai", () => ({
-  default: class OpenAI {
-    chat = { completions: { create: openaiCreate } };
-  },
-}));
 
 const validEstimate = {
   foods: [{
@@ -46,32 +40,56 @@ function photoRequest(image: string) {
 describe("POST /api/parse-meal-photo", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.NUTRIMIND_OPENAI_API_KEY = "sk-test-key";
+    delete process.env.NUTRIMIND_OPENAI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
     vi.mocked(auth).mockResolvedValue({ userId: "user-1" } as never);
     vi.mocked(checkRateLimit).mockReturnValue(true);
   });
 
+  it("rejects unauthorized request with 401", async () => {
+    vi.mocked(auth).mockResolvedValue({ userId: null } as never);
+    const response = await POST(photoRequest("data:image/jpeg;base64,YWJj"));
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Unauthorized" });
+  });
+
+  it("rejects rate-limited requests with 429", async () => {
+    vi.mocked(checkRateLimit).mockReturnValue(false);
+    const response = await POST(photoRequest("data:image/jpeg;base64,YWJj"));
+    expect(response.status).toBe(429);
+    expect(await response.json()).toEqual({ error: "Too many meal photo estimates. Please try again later." });
+  });
+
   it("rejects a non-image payload before calling the AI provider", async () => {
+    const dispatchSpy = vi.spyOn(visionRouter, "dispatchMealPhotoParse");
     const response = await POST(photoRequest("data:text/plain;base64,YWJj"));
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "Missing or invalid image" });
-    expect(openaiCreate).not.toHaveBeenCalled();
+    expect(dispatchSpy).not.toHaveBeenCalled();
   });
 
-  it("returns a validated estimate for an authenticated photo request", async () => {
-    openaiCreate.mockResolvedValue({
-      choices: [{ message: { content: JSON.stringify(validEstimate) } }],
+  it("returns a validated estimate using local vision provider without OpenAI API key", async () => {
+    const dispatchSpy = vi.spyOn(visionRouter, "dispatchMealPhotoParse").mockResolvedValue({
+      provider: "local",
+      data: validEstimate,
     });
 
     const response = await POST(photoRequest("data:image/jpeg;base64,YWJj"));
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ success: true, estimate: validEstimate });
+    expect(await response.json()).toEqual({
+      success: true,
+      provider: "local",
+      estimate: validEstimate,
+    });
+    expect(dispatchSpy).toHaveBeenCalledWith("data:image/jpeg;base64,YWJj");
   });
 
-  it("does not expose a provider error message", async () => {
-    openaiCreate.mockRejectedValue(new Error("photo payload leaked"));
+  it("does not expose a provider error message on failure", async () => {
+    vi.spyOn(visionRouter, "dispatchMealPhotoParse").mockRejectedValue(
+      new Error("photo payload leaked sensitive provider info")
+    );
 
     const response = await POST(photoRequest("data:image/jpeg;base64,YWJj"));
 

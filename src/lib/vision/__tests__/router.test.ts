@@ -227,6 +227,44 @@ describe("router dispatches", () => {
     );
   });
 
+  it("throws structured error when openai returns malformed JSON for label parse", async () => {
+    vi.spyOn(OllamaVisionClient.prototype, "isAvailable").mockResolvedValue(false);
+    process.env.NUTRIMIND_OPENAI_API_KEY = "sk-test";
+
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: "not-json-content{",
+          },
+        },
+      ],
+    });
+
+    await expect(dispatchLabelParse("data:image/jpeg;base64,TEST")).rejects.toThrow(
+      "OpenAI returned invalid JSON for nutrition label"
+    );
+  });
+
+  it("throws structured error when openai returns malformed JSON for meal photo parse", async () => {
+    vi.spyOn(OllamaVisionClient.prototype, "isAvailable").mockResolvedValue(false);
+    process.env.NUTRIMIND_OPENAI_API_KEY = "sk-test";
+
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: "not-json-content{",
+          },
+        },
+      ],
+    });
+
+    await expect(dispatchMealPhotoParse("data:image/jpeg;base64,TEST")).rejects.toThrow(
+      "OpenAI returned invalid JSON for meal photo estimate"
+    );
+  });
+
   it("throws when no vision provider is available", async () => {
     vi.spyOn(OllamaVisionClient.prototype, "isAvailable").mockResolvedValue(false);
     await expect(dispatchLabelParse("data:image/jpeg;base64,TEST")).rejects.toThrow(

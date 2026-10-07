@@ -59,7 +59,12 @@ export async function dispatchLabelParse(
       temperature: 0.1,
       response_format: { type: "json_object" },
     });
-    const parsed = JSON.parse(completion.choices[0].message?.content || "{}");
+    let parsed: Record<string, unknown> | null | undefined;
+    try {
+      parsed = JSON.parse(completion.choices[0].message?.content || "{}");
+    } catch {
+      throw new Error("OpenAI returned invalid JSON for nutrition label");
+    }
     const { sanitizeLabelItem } = await import("./label-parser");
     return { provider: "openai", data: sanitizeLabelItem(parsed) };
   }
@@ -97,7 +102,12 @@ export async function dispatchMealPhotoParse(
       temperature: 0.1,
       response_format: { type: "json_object" },
     });
-    const parsed = JSON.parse(completion.choices[0].message?.content || "{}");
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(completion.choices[0].message?.content || "{}");
+    } catch {
+      throw new Error("OpenAI returned invalid JSON for meal photo estimate");
+    }
     const { parsePhotoMealEstimate } = await import("../photo-meal");
     const estimate = parsePhotoMealEstimate(parsed);
     if (!estimate) {

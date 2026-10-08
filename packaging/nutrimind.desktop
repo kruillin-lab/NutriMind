@@ -4,8 +4,8 @@ Type=Application
 Name=NutriMind
 GenericName=Nutrition Tracker
 Comment=Your private nutrition reserve
-Exec=/home/kruillin/Projects/Projects/NutriMind/my-app/scripts/nutrimind-desktop launch
-Icon=/home/kruillin/Projects/Projects/NutriMind/my-app/packaging/nutrimind.png
+Exec=@APP_DIR@/scripts/nutrimind-desktop launch
+Icon=@APP_DIR@/packaging/nutrimind.png
 Terminal=false
 Categories=Utility;
 StartupNotify=true
@@ -14,4 +14,4 @@ Actions=Stop;
 
 [Desktop Action Stop]
 Name=Stop NutriMind
-Exec=/home/kruillin/Projects/Projects/NutriMind/my-app/scripts/nutrimind-desktop stop
+Exec=@APP_DIR@/scripts/nutrimind-desktop stop

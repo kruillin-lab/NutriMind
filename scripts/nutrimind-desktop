@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="/home/kruillin/Projects/Projects/NutriMind/my-app"
+APP_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 APP_HOST="localhost"
-APP_PORT="3001"
+APP_PORT="${NUTRIMIND_PORT:-3001}"
 APP_URL="http://${APP_HOST}:${APP_PORT}"
 HEALTH_URL="${APP_URL}/api/health"
 STATE_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/nutrimind"
 PID_FILE="${STATE_DIR}/server.pid"
 LOG_FILE="${STATE_DIR}/server.log"
 CHROMIUM_PROFILE="${STATE_DIR}/chromium-profile"
-NPM_BIN="/usr/bin/npm"
-CHROMIUM_BIN="/usr/bin/chromium"
+NEXT_BIN="${APP_DIR}/node_modules/.bin/next"
+PRISMA_BIN="${APP_DIR}/node_modules/.bin/prisma"
+DESKTOP_DIST="${APP_DIR}/.next-desktop"
 
 notify_error() {
   if command -v notify-send >/dev/null 2>&1; then
@@ -22,6 +23,17 @@ notify_error() {
 
 is_healthy() {
   curl --noproxy '*' --silent --fail --max-time 2 "$HEALTH_URL" 2>/dev/null | grep -q '"status":"ok"'
+}
+
+find_browser() {
+  local candidate path
+  for candidate in chromium chromium-browser google-chrome google-chrome-stable brave-browser microsoft-edge; do
+    if path="$(command -v "$candidate" 2>/dev/null)"; then
+      printf '%s\n' "$path"
+      return 0
+    fi
+  done
+  return 1
 }
 
 stop_server() {
@@ -44,7 +56,7 @@ start_server() {
     return 0
   fi
 
-  if [[ ! -d "$APP_DIR/node_modules" ]]; then
+  if [[ ! -x "$NEXT_BIN" ]]; then
     notify_error "NutriMind dependencies are missing. Run scripts/install-desktop-app.sh from the NutriMind folder."
     return 1
   fi
@@ -53,12 +65,20 @@ start_server() {
 
   (
     cd "$APP_DIR"
-    "$NPM_BIN" exec -- prisma migrate deploy >>"$LOG_FILE" 2>&1
-    setsid "$NPM_BIN" run dev -- --hostname "$APP_HOST" --port "$APP_PORT" >>"$LOG_FILE" 2>&1 &
+    if [[ -x "$PRISMA_BIN" ]]; then
+      "$PRISMA_BIN" migrate deploy >>"$LOG_FILE" 2>&1 || true
+    fi
+
+    # Serve the prebuilt desktop bundle when present, otherwise fall back to the dev server.
+    if [[ -f "${DESKTOP_DIST}/BUILD_ID" ]]; then
+      setsid env NUTRIMIND_DESKTOP=1 "$NEXT_BIN" start --hostname "$APP_HOST" --port "$APP_PORT" >>"$LOG_FILE" 2>&1 &
+    else
+      setsid "$NEXT_BIN" dev --webpack --hostname "$APP_HOST" --port "$APP_PORT" >>"$LOG_FILE" 2>&1 &
+    fi
     printf '%s\n' "$!" >"$PID_FILE"
   )
 
-  for _ in {1..40}; do
+  for _ in {1..60}; do
     if is_healthy; then
       return 0
     fi
@@ -71,7 +91,14 @@ start_server() {
 
 launch_window() {
   mkdir -p "$CHROMIUM_PROFILE"
-  setsid --fork "$CHROMIUM_BIN" \
+
+  local browser
+  if ! browser="$(find_browser)"; then
+    notify_error "No Chromium-based browser found. Install google-chrome or chromium to open the NutriMind window."
+    return 1
+  fi
+
+  setsid --fork "$browser" \
     --app="$APP_URL" \
     --class=NutriMind \
     --name=NutriMind \
